@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>à contre-temps — Back office</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:#EDF0F3;color:#2B2925;min-height:100vh;}
+:root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.55);--ru:#A6713F;--gn:#4A7C59;--rd:#A63333;}
+.fd{font-family:'Fraunces',serif;}
+.app{display:flex;min-height:100vh;}
+aside{width:210px;background:var(--bd);display:flex;flex-direction:column;padding:1.5rem 0;flex-shrink:0;position:sticky;top:0;height:100vh;}
+.brand{padding:0 1.25rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.1);}
+.brand-name{font-family:'Fraunces',serif;font-size:16px;color:var(--cr);}
+.brand-sub{font-size:10px;letter-spacing:.2em;color:rgba(243,231,218,.45);margin-top:3px;}
+nav{flex:1;padding:.75rem 0;}
+.nb{display:flex;align-items:center;gap:9px;width:100%;padding:.6rem 1.25rem;background:transparent;color:rgba(243,231,218,.55);border:none;border-left:3px solid transparent;cursor:pointer;font-size:13px;font-family:'Outfit',sans-serif;text-align:left;}
+.nb.on{background:rgba(255,255,255,.12);color:var(--cr);border-left-color:var(--cr);}
+.logout{display:flex;align-items:center;gap:7px;margin:0 1.25rem;padding:.55rem .9rem;background:rgba(255,255,255,.07);border:none;border-radius:7px;color:rgba(243,231,218,.6);cursor:pointer;font-size:12px;font-family:'Outfit',sans-serif;}
+main{flex:1;padding:2rem 2.25rem;overflow-y:auto;}
+.page{display:none;} .page.on{display:block;}
+h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25rem;}
+.sub{color:var(--is);font-size:13px;margin-bottom:1.25rem;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.stat{background:var(--cr);border-radius:10px;padding:.9rem 1.1rem;}
+.stat.acc{background:var(--bd);}
+.sl{font-size:10px;letter-spacing:.13em;color:var(--is);margin-bottom:3px;}
+.stat.acc .sl{color:rgba(243,231,218,.55);}
+.sv{font-family:'Fraunces',serif;font-size:24px;font-weight:500;}
+.stat.acc .sv{color:var(--cr);}
+.ss{font-size:11px;color:var(--is);margin-top:2px;}
+.stat.acc .ss{color:rgba(243,231,218,.6);}
+.card{background:var(--pp);border:1px solid var(--bs);border-radius:11px;padding:1.1rem;margin-bottom:1.1rem;}
+.card0{padding:0;overflow:hidden;}
+.badge{display:inline-block;font-size:10px;letter-spacing:.09em;font-weight:500;padding:2px 9px;border-radius:999px;}
+.orow{border-bottom:1px solid var(--bs);}
+.orow:last-child{border-bottom:none;}
+.ohead{display:flex;align-items:center;gap:10px;padding:.85rem 1.1rem;cursor:pointer;}
+.ohead:hover{background:rgba(0,0,0,.02);}
+.obody{background:#f7f9fa;padding:1rem 1.1rem;border-top:1px solid var(--bs);display:none;}
+.obody.on{display:block;}
+.sbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.sbtn{padding:.3rem .8rem;border-radius:999px;font-size:10px;letter-spacing:.08em;cursor:pointer;font-family:'Outfit',sans-serif;}
+.prow{display:flex;align-items:center;gap:9px;padding:.8rem 1.1rem;border-bottom:1px solid var(--bs);}
+.prow:last-child{border-bottom:none;}
+.tog{width:24px;height:24px;border-radius:50%;border:1px solid var(--bs);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tog.on{background:var(--b);border-color:var(--b);}
+.einp{border:1px solid var(--b);border-radius:6px;padding:3px 7px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;border-radius:8px;font-size:11px;letter-spacing:.1em;cursor:pointer;font-family:'Outfit',sans-serif;border:none;}
+.bp{background:var(--bd);color:var(--cr);}
+.bg{background:transparent;border:1px solid var(--bs);color:var(--is);}
+.bsm{padding:.3rem .7rem;font-size:10px;}
+.alert{display:flex;align-items:center;gap:7px;padding:.65rem .9rem;border-radius:7px;font-size:12px;margin-bottom:1rem;}
+.aw{background:rgba(166,113,63,.12);border:1px solid var(--ru);color:var(--ru);}
+.fbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+.fbtn{padding:.3rem .85rem;border-radius:999px;font-size:10px;letter-spacing:.1em;border:1px solid var(--bs);background:transparent;color:var(--ink);cursor:pointer;font-family:'Outfit',sans-serif;}
+.fbtn.on{background:var(--bd);border-color:var(--bd);color:var(--cr);}
+.drow{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem;font-size:12px;margin-bottom:.75rem;}
+.di{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
+.dt{display:flex;justify-content:space-between;font-family:'Fraunces',serif;font-size:15px;padding-top:7px;margin-top:5px;border-top:1px solid var(--bs);}
+.spin{width:18px;height:18px;border:2px solid var(--bs);border-top-color:var(--b);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ldr{display:flex;align-items:center;gap:10px;padding:2rem;color:var(--is);font-size:13px;}
+.nf{background:var(--cr);border-radius:10px;padding:1rem;margin-bottom:1.1rem;}
+.ng{display:grid;grid-template-columns:1fr 2fr 90px;gap:7px;margin-bottom:8px;}
+.fi{width:100%;padding:.45rem .7rem;border:1px solid var(--bs);border-radius:6px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;}
+.pin-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--b);}
+.pin-box{background:var(--pp);border-radius:14px;padding:2.5rem 2.25rem;width:300px;text-align:center;}
+.pin-ico{width:42px;height:42px;border-radius:50%;background:var(--bs);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;}
+.pin-inp{width:100%;padding:.7rem 1rem;border:1px solid var(--bs);border-radius:7px;font-size:18px;background:var(--cr);outline:none;text-align:center;letter-spacing:.35em;margin-bottom:10px;}
+.pin-inp.err{border-color:var(--rd);}
+.em{color:var(--rd);font-size:11px;margin-bottom:8px;}
+.sl-label{font-size:10px;letter-spacing:.13em;color:var(--ru);margin-bottom:.75rem;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="pin-wrap">
+  <div class="pin-box">
+    <div class="pin-ico">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E5A70" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </div>
+    <p class="fd" style="font-size:20px;margin-bottom:4px">Back office</p>
+    <p style="font-size:10px;letter-spacing:.2em;color:var(--is);margin-bottom:1.5rem">À CONTRE-TEMPS</p>
+    <input class="pin-inp" id="pin-inp" type="password" placeholder="Code PIN" />
+    <p class="em" id="pin-err" style="display:none">Code incorrect</p>
+    <button class="btn bp" style="width:100%;justify-content:center" onclick="tryLogin()">ENTRER</button>
+    <p style="font-size:11px;color:var(--is);margin-top:1.25rem">Code par défaut : 1234</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app" style="display:none">
+  <aside>
+    <div class="brand">
+      <div class="brand-name">à contre-temps</div>
+      <div class="brand-sub">BACK OFFICE</div>
+    </div>
+    <nav>
+      <button class="nb on" onclick="goTab('dashboard',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Tableau de bord
+      </button>
+      <button class="nb" onclick="goTab('orders',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Commandes
+      </button>
+      <button class="nb" onclick="goTab('products',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        Articles & box
+      </button>
+      <button class="nb" onclick="goTab('settings',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Paramètres
+      </button>
+    </nav>
+    <button class="logout" onclick="logout()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Déconnexion
+    </button>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page on">
+      <h1>Tableau de bord</h1>
+      <p class="sub" id="today-date"></p>
+      <div class="stats" id="stats-grid"></div>
+      <div id="alert-pending" class="alert aw" style="display:none"></div>
+      <p class="fd" style="font-size:17px;margin-bottom:.65rem">Dernières commandes</p>
+      <div class="card card0" id="dash-orders"></div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="page-orders" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
+        <h1 style="margin-bottom:0">Commandes</h1>
+        <button class="btn bg bsm" onclick="loadOrders()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+      <div class="fbar" id="filter-bar"></div>
+      <div id="orders-list"></div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <div id="page-products" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <h1 style="margin-bottom:0">Articles & box</h1>
+        <button class="btn bp bsm" onclick="toggleNewForm()">+ NOUVEL ARTICLE</button>
+      </div>
+      <div id="new-form" style="display:none" class="nf">
+        <p class="sl-label">AJOUTER UN ARTICLE</p>
+        <div class="ng">
+          <input class="fi" id="new-cat" placeholder="Catégorie" />
+          <input class="fi" id="new-name" placeholder="Nom de l'article" />
+          <input class="fi" id="new-price" type="number" step="0.5" placeholder="Prix €" />
+        </div>
+        <div style="display:flex;gap:7px">
+          <button class="btn bp bsm" onclick="addProduct()">Ajouter</button>
+          <button class="btn bg bsm" onclick="toggleNewForm()">Annuler</button>
+        </div>
+      </div>
+      <div id="products-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <h1>Paramètres</h1>
+      <p class="sub">Configuration du back office</p>
+      <div class="card settings-block" style="max-width:440px;margin-bottom:1.1rem">
+        <p class="sl-label">SÉCURITÉ — CODE PIN</p>
+        <div style="display:flex;gap:7px;margin-top:5px">
+          <input type="password" class="fi" id="new-pin" style="flex:1" placeholder="Nouveau code (min 4 chiffres)" />
+          <button class="btn bp" onclick="savePin()">Enregistrer</button>
+        </div>
+        <p id="pin-saved" style="display:none;color:var(--gn);font-size:12px;margin-top:6px">✓ Code enregistré</p>
+      </div>
+      <div class="card" style="max-width:440px">
+        <p class="sl-label">DONNÉES</p>
+        <p style="font-size:13px;color:var(--is);margin-bottom:1rem">Exporter toutes les commandes en CSV compatible Excel.</p>
+        <button class="btn bp" onclick="exportCSV()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          EXPORTER LES COMMANDES
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const SB = "https://jxxgafyqfbnqieiqltcn.supabase.co";
+const KEY = "sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+let PIN = localStorage.getItem("act_pin")||"1234";
+let currentFilter = "all";
+let expandedOrder = null;
+
+const STATUSES = [
+  {key:"new",label:"Nouvelle",color:"#7C97AC"},
+  {key:"confirmed",label:"Confirmée",color:"#A6713F"},
+  {key:"ready",label:"Prête",color:"#4A7C59"},
+  {key:"delivered",label:"Livrée",color:"#7C97AC"},
+  {key:"cancelled",label:"Annulée",color:"#A63333"},
+];
+const sm = k => STATUSES.find(s=>s.key===k)||STATUSES[0];
+
+async function sb(path, opts={}) {
+  const r = await fetch(SB+"/rest/v1/"+path, {
+    ...opts,
+    headers:{
+      "apikey":KEY,"Authorization":"Bearer "+KEY,
+      "Content-Type":"application/json",
+      "Prefer": (opts.method==="POST"||opts.method==="PATCH")?"return=representation":"",
+      ...(opts.headers||{})
+    }
+  });
+  const t = await r.text();
+  return t ? JSON.parse(t) : [];
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+document.getElementById("pin-inp").addEventListener("keydown", e => { if(e.key==="Enter") tryLogin(); });
+
+function tryLogin() {
+  const v = document.getElementById("pin-inp").value;
+  if(v===PIN) {
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="flex";
+    document.getElementById("pin-err").style.display="none";
+    loadDashboard();
+  } else {
+    document.getElementById("pin-inp").classList.add("err");
+    document.getElementById("pin-err").style.display="block";
+    document.getElementById("pin-inp").value="";
+  }
+}
+function logout() {
+  document.getElementById("app").style.display="none";
+  document.getElementById("login").style.display="flex";
+  document.getElementById("pin-inp").value="";
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function goTab(name, btn) {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
+  document.querySelectorAll(".nb").forEach(b=>b.classList.remove("on"));
+  document.getElementById("page-"+name).classList.add("on");
+  btn.classList.add("on");
+  if(name==="dashboard") loadDashboard();
+  if(name==="orders") loadOrders();
+  if(name==="products") loadProducts();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById("today-date").textContent = new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const [orders, products] = await Promise.all([
+    sb("orders?order=created_at.desc&limit=20"),
+    sb("products?select=active")
+  ]);
+  const today = new Date().toDateString();
+  const todayO = orders.filter(o=>new Date(o.created_at).toDateString()===today);
+  const pending = orders.filter(o=>o.status==="new"||o.status==="confirmed");
+  const total = todayO.reduce((s,o)=>s+Number(o.total),0);
+  const inactive = products.filter(p=>!p.active);
+
+  document.getElementById("stats-grid").innerHTML = `
+    <div class="stat"><div class="sl">AUJOURD'HUI</div><div class="sv">${todayO.length}</div><div class="ss">commandes</div></div>
+    <div class="stat"><div class="sl">CHIFFRE DU JOUR</div><div class="sv">${total.toFixed(2)} €</div></div>
+    <div class="stat${pending.length>0?" acc":""}"><div class="sl">EN ATTENTE</div><div class="sv">${pending.length}</div><div class="ss">à traiter</div></div>
+    <div class="stat"><div class="sl">DÉSACTIVÉS</div><div class="sv">${inactive.length}</div><div class="ss">articles masqués</div></div>
+  `;
+  const ap = document.getElementById("alert-pending");
+  if(pending.length>0){ ap.style.display="flex"; ap.textContent=`⚡ ${pending.length} commande${pending.length>1?"s":""} en attente de traitement.`; }
+  else ap.style.display="none";
+
+  document.getElementById("dash-orders").innerHTML = orders.slice(0,6).map(o=>`
+    <div class="orow">
+      <div class="ohead" style="cursor:default">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap">
+            <span style="font-weight:500;font-size:14px">${o.name}</span>
+            <span class="badge" style="background:${sm(o.status).color}22;color:${sm(o.status).color}">${sm(o.status).label}</span>
+          </div>
+          <p style="font-size:11px;color:var(--is)">${new Date(o.created_at).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${Number(o.total).toFixed(2)} €</p>
+        </div>
+      </div>
+    </div>
+  `).join("")||`<p style="padding:1rem;font-size:13px;color:var(--is)">Aucune commande pour le moment.</p>`;
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
+let allOrders = [];
+async function loadOrders() {
+  document.getElementById("orders-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
+  allOrders = await sb("orders?order=created_at.desc");
+  renderFilterBar();
+  renderOrders();
+}
+function renderFilterBar() {
+  document.getElementById("filter-bar").innerHTML =
+    [{key:"all",label:"TOUTES"},...STATUSES].map(s=>
+      `<button class="fbtn${currentFilter===s.key?" on":""}" onclick="setFilter('${s.key}')">${s.label}</button>`
+    ).join("");
+}
+function setFilter(f){ currentFilter=f; renderFilterBar(); renderOrders(); }
+function renderOrders() {
+  const list = currentFilter==="all"?allOrders:allOrders.filter(o=>o.status===currentFilter);
+  if(!list.length){ document.getElementById("orders-list").innerHTML=`<p style="font-size:13px;color:var(--is);padding:.5rem 0">Aucune commande dans cette catégorie.</p>`; return; }
+  document.getElementById("orders-list").innerHTML=`<div class="card card0">${list.map(o=>orderRow(o)).join("")}</div>`;
+}
+function orderRow(o) {
+  const items = Array.isArray(o.items)?o.items:[];
+  const open = expandedOrder===o.id;
+  return `<div class="orow" id="orow-${o.id}">
+    <div class="ohead" onclick="toggleOrder('${o.id}')">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap">
+          <span style="font-weight:500;font-size:14px">${o.name}</span>
+          <span class="badge" style="background:${sm(o.status).color}22;color:${sm(o.status).color}">${sm(o.status).label}</span>
+          ${o.shipping==="chronopost"?`<span class="badge" style="background:#3E5A7022;color:#3E5A70">Chronopost</span>`:""}
+        </div>
+        <p style="font-size:11px;color:var(--is)">${new Date(o.created_at).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${items.length} article${items.length>1?"s":""} · ${Number(o.total).toFixed(2)} €</p>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="${open?"18 15 12 9 6 15":"6 9 12 15 18 9"}"/></svg>
+    </div>
+    <div class="obody${open?" on":""}" id="obody-${o.id}">
+      <div class="drow">
+        <div><span style="color:var(--is)">Email : </span>${o.email}</div>
+        <div><span style="color:var(--is)">Tél : </span>${o.phone||"—"}</div>
+        ${o.note?`<div style="grid-column:1/-1"><span style="color:var(--is)">Note : </span>${o.note}</div>`:""}
+      </div>
+      <div style="border-top:1px solid var(--bs);padding:.6rem 0;margin-bottom:.6rem">
+        ${items.map(it=>`<div class="di"><span>${it.name} × ${it.qty}</span><span style="color:var(--is)">${(it.price*it.qty).toFixed(2)} €</span></div>`).join("")}
+        <div class="dt"><span>Total</span><span>${Number(o.total).toFixed(2)} €</span></div>
+      </div>
+      <p style="font-size:10px;letter-spacing:.12em;color:var(--is);margin-bottom:5px">STATUT</p>
+      <div class="sbtns">
+        ${STATUSES.map(s=>`<button class="sbtn" style="border:1px solid ${s.color};background:${o.status===s.key?s.color:"transparent"};color:${o.status===s.key?"#FBF8F4":s.color}" onclick="updateStatus('${o.id}','${s.key}')">${s.label}</button>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+function toggleOrder(id){
+  expandedOrder = expandedOrder===id?null:id;
+  renderOrders();
+}
+async function updateStatus(id, status){
+  await sb(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({status})});
+  allOrders = allOrders.map(o=>o.id===id?{...o,status}:o);
+  renderOrders();
+}
+
+// ── Products ──────────────────────────────────────────────────────────────────
+let allProducts = [];
+let editingId = null;
+async function loadProducts() {
+  document.getElementById("products-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
+  allProducts = await sb("products?order=position.asc");
+  renderProducts();
+}
+function renderProducts() {
+  const cats = [...new Set(allProducts.map(p=>p.cat))];
+  document.getElementById("products-list").innerHTML = cats.map(cat=>`
+    <div style="margin-bottom:1.25rem">
+      <p class="sl-label">${cat.toUpperCase()}</p>
+      <div class="card card0">
+        ${allProducts.filter(p=>p.cat===cat).map(p=>productRow(p)).join("")}
+      </div>
+    </div>
+  `).join("")+`<p style="font-size:11px;color:var(--is)">Un article décoché est masqué sur le site client. Modifications instantanées.</p>`;
+}
+function productRow(p) {
+  const editing = editingId===p.id;
+  return `<div class="prow" style="opacity:${p.active?1:.45}" id="prow-${p.id}">
+    <button class="tog${p.active?" on":""}" onclick="toggleProduct('${p.id}')" title="${p.active?"Désactiver":"Activer"}">
+      ${p.active?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:""}
+    </button>
+    <div style="flex:1">
+      ${editing
+        ?`<input class="einp" id="ename-${p.id}" style="width:100%" value="${p.name.replace(/"/g,'&quot;')}" />`
+        :`<p style="font-size:13px">${p.name}</p>`}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      ${editing?`
+        <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:65px;text-align:right" value="${p.price}" />
+        <span style="font-size:11px;color:var(--is)">€</span>
+        <button class="btn bp bsm" style="padding:3px 8px" onclick="saveProduct('${p.id}')">✓</button>
+        <button class="btn bg bsm" style="padding:3px 6px" onclick="cancelEdit()">✕</button>
+      `:`
+        <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
+        <button class="btn bg bsm" style="padding:3px 6px" onclick="startEdit('${p.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn bsm" style="padding:3px 6px;border:1px solid #A6333322;background:transparent;color:var(--rd)" onclick="deleteProduct('${p.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </button>
+      `}
+    </div>
+  </div>`;
+}
+function startEdit(id){ editingId=id; renderProducts(); }
+function cancelEdit(){ editingId=null; renderProducts(); }
+async function saveProduct(id){
+  const name = document.getElementById("ename-"+id).value;
+  const price = parseFloat(document.getElementById("eprice-"+id).value)||0;
+  await sb(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({name,price})});
+  allProducts = allProducts.map(p=>p.id===id?{...p,name,price}:p);
+  editingId=null; renderProducts();
+}
+async function toggleProduct(id){
+  const p = allProducts.find(x=>x.id===id);
+  await sb(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({active:!p.active})});
+  allProducts = allProducts.map(x=>x.id===id?{...x,active:!p.active}:x);
+  renderProducts();
+}
+async function deleteProduct(id){
+  if(!confirm("Supprimer cet article ?")) return;
+  await sb(`products?id=eq.${id}`,{method:"DELETE",headers:{"Prefer":""}});
+  allProducts = allProducts.filter(p=>p.id!==id);
+  renderProducts();
+}
+function toggleNewForm(){ const f=document.getElementById("new-form"); f.style.display=f.style.display==="none"?"block":"none"; }
+async function addProduct(){
+  const cat=document.getElementById("new-cat").value.trim();
+  const name=document.getElementById("new-name").value.trim();
+  const price=parseFloat(document.getElementById("new-price").value)||0;
+  if(!cat||!name||!price) return alert("Remplis tous les champs.");
+  const id="p"+Date.now().toString(36);
+  const pos=Math.max(0,...allProducts.map(p=>p.position||0))+1;
+  const row={id,cat,name,price,active:true,position:pos};
+  await sb("products",{method:"POST",body:JSON.stringify(row)});
+  allProducts.push(row);
+  document.getElementById("new-cat").value=""; document.getElementById("new-name").value=""; document.getElementById("new-price").value="";
+  toggleNewForm(); renderProducts();
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function savePin(){
+  const v=document.getElementById("new-pin").value;
+  if(v.length<4) return alert("Code trop court (minimum 4 caractères)");
+  PIN=v; localStorage.setItem("act_pin",v);
+  document.getElementById("new-pin").value="";
+  const ok=document.getElementById("pin-saved"); ok.style.display="block"; setTimeout(()=>ok.style.display="none",2500);
+}
+async function exportCSV(){
+  const orders=await sb("orders?order=created_at.desc");
+  if(!orders?.length) return alert("Aucune commande à exporter.");
+  const rows=[["ID","Date","Nom","Email","Téléphone","Articles","Total","Statut","Livraison"],
+    ...orders.map(o=>[o.id,new Date(o.created_at).toLocaleDateString("fr-FR"),o.name,o.email,o.phone||"",(o.items||[]).map(i=>`${i.name} x${i.qty}`).join("|"),Number(o.total).toFixed(2),sm(o.status).label,o.shipping||"—"])
+  ].map(r=>r.join(";")).join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(rows);
+  a.download=`commandes-${new Date().toISOString().split("T")[0]}.csv`; a.click();
+}
+</script>
+</body>
+</html>
