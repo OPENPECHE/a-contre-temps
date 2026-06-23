@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useAuth, AuthModal, MonCompte } from "./Auth.jsx";
 
 // ─── Supabase ─────────────────────────────────────────────────────────────────
 const SB_URL = "https://jxxgafyqfbnqieiqltcn.supabase.co";
@@ -18,7 +19,7 @@ async function sbFetch(path, opts = {}) {
   const t = await r.text();
   return t ? JSON.parse(t) : [];
 }
-import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck } from "lucide-react";
+import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck, User } from "lucide-react";
 
 const COLORS = {
   blueDeep: "#3E5A70",
@@ -178,6 +179,9 @@ const MARKETS = [
 ];
 
 export default function ContreTempsSite() {
+  const { user } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [cart, setCart] = useState({});
@@ -292,6 +296,14 @@ export default function ContreTempsSite() {
             >
               <ShoppingBag size={14} />
               {cartCount > 0 ? `Sélection (${cartCount})` : "Composer"}
+            </button>
+            <button
+              onClick={() => user ? setShowAccount(true) : setShowAuth(true)}
+              className="flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full text-xs tracked uppercase"
+              style={{ border: `1px solid rgba(243,231,218,0.45)`, color: COLORS.cream, opacity: 0.85 }}
+            >
+              <User size={14} />
+              {user ? "Mon compte" : "Connexion"}
             </button>
           </nav>
 
@@ -571,6 +583,16 @@ export default function ContreTempsSite() {
         </p>
       </footer>
 
+      {/* AUTH MODAL */}
+      {showAuth && (
+        <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />
+      )}
+
+      {/* MON COMPTE */}
+      {showAccount && user && (
+        <MonCompte user={user} onClose={() => setShowAccount(false)} />
+      )}
+
       {/* CART DRAWER */}
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
@@ -624,7 +646,26 @@ export default function ContreTempsSite() {
                     </a>
                   )}
 
-                  <button onClick={() => setOrderStep("form")}
+                  <button onClick={() => {
+                      if (user) {
+                        // Pré-remplir avec les infos du compte
+                        import("./Auth.jsx").then(({ supabase }) => {
+                          supabase.from("clients").select("*").eq("id", user.id).single()
+                            .then(({ data }) => {
+                              if (data) setOrderForm(f => ({
+                                ...f,
+                                nom: data.name || f.nom,
+                                email: user.email || f.email,
+                                phone: data.phone || f.phone,
+                                address: data.address || f.address,
+                                city: data.city || f.city,
+                                zip: data.zip || f.zip,
+                              }));
+                            });
+                        });
+                      }
+                      setOrderStep("form");
+                    }}
                     className="mt-2 text-center px-6 py-3.5 rounded-full text-xs tracked uppercase"
                     style={{ backgroundColor: COLORS.rust, color: COLORS.cream }}>
                     Commander →
