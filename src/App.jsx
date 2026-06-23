@@ -105,7 +105,7 @@ const RHYTHMS = [
       { id: "m2", name: "Box petit-déjeuner — formule premium", price: 9.0 },
       { id: "m3", name: "Café & thé en supplément", price: 2.0 },
     ],
-    offset: "md:mt-0",
+    offset: "",
   },
   {
     id: "midi",
@@ -119,7 +119,7 @@ const RHYTHMS = [
       { id: "d2", name: "Salade composée du jour", price: 8.5 },
       { id: "d3", name: "Pain à partager — focaccia", price: 7.0 },
     ],
-    offset: "md:mt-12",
+    offset: "",
   },
   {
     id: "soir",
@@ -133,7 +133,7 @@ const RHYTHMS = [
       { id: "s2", name: "Box apéritif — planche pour 4 à 6", price: 32.0 },
       { id: "s3", name: "Box apéritif — planche pour 8 à 10", price: 52.0 },
     ],
-    offset: "md:mt-3",
+    offset: "",
   },
 ];
 
