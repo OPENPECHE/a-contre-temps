@@ -93,9 +93,18 @@ function GrainOverlay() {
   );
 }
 
+const PHOTOS = {
+  hero:        "https://images.unsplash.com/photo-1568471173242-461f0a730452?w=1400&q=80",
+  matin:       "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80",
+  midi:        "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&q=80",
+  soir:        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80",
+  biscuiterie: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80",
+};
+
 const RHYTHMS = [
   {
     id: "matin",
+    photo: PHOTOS.matin,
     label: "Le matin",
     time: "Livré avant 9h",
     title: "Box petit-déjeuner",
@@ -110,6 +119,7 @@ const RHYTHMS = [
   },
   {
     id: "midi",
+    photo: PHOTOS.midi,
     label: "Le midi",
     time: "Livré entre 12h et 13h",
     title: "Pain & traiteur léger",
@@ -124,6 +134,7 @@ const RHYTHMS = [
   },
   {
     id: "soir",
+    photo: PHOTOS.soir,
     label: "Soir & week-end",
     time: "Sur réservation",
     title: "Box brunch & apéritif",
@@ -140,6 +151,7 @@ const RHYTHMS = [
 
 const BISCUITERIE = {
   id: "biscuiterie",
+  photo: PHOTOS.biscuiterie,
   label: "Expédiée partout en France",
   title: "La biscuiterie",
   text: "Sablés au beurre, biscuits du fournil et mendiants pensés pour voyager : emballés et expédiés en Chronopost, où que vous soyez.",
@@ -338,6 +350,7 @@ export default function ContreTempsSite() {
 
       {/* HERO */}
       <section className="relative overflow-hidden px-6 md:px-10 pt-44 pb-28 md:pt-56 md:pb-40 text-center flex flex-col items-center" style={{ backgroundColor: COLORS.blue }}>
+        <img src={PHOTOS.hero} alt="fournil" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.2 }} />
         <GrainOverlay />
         <div className="relative">
           <HeartMark size={56} tone="cream" />
@@ -386,9 +399,20 @@ export default function ContreTempsSite() {
           {RHYTHMS.map((r) => (
             <div
               key={r.id}
-              className={`p-8 flex flex-col ${r.offset}`}
-              style={{ backgroundColor: COLORS.paper, border: `1px solid ${COLORS.blueSoft}` }}
+              className={`flex flex-col ${r.offset}`}
+              style={{ backgroundColor: COLORS.paper, border: `1px solid ${COLORS.blueSoft}`, overflow:"hidden", borderRadius:8 }}
             >
+              {r.photo && (
+                <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
+                  <img src={r.photo} alt={r.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
+                  <div style={{ position:"absolute", bottom:12, left:16 }}>
+                    <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{r.label.toUpperCase()}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{r.title}</p>
+                  </div>
+                </div>
+              )}
+              <div className="p-8 flex flex-col flex-1">
               <p className="tracked text-[10px]" style={{ color: COLORS.rust }}>
                 {r.label.toUpperCase()}
               </p>
@@ -419,6 +443,7 @@ export default function ContreTempsSite() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
           ))}
         </div>
@@ -430,6 +455,17 @@ export default function ContreTempsSite() {
       {/* BISCUITERIE */}
       <section id="biscuiterie" className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
         <div className="max-w-5xl mx-auto">
+          {BISCUITERIE.photo && (
+            <div style={{ height:300, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
+              <img src={BISCUITERIE.photo} alt="biscuiterie" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
+              <div style={{ position:"absolute", bottom:28, left:32 }}>
+                <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>EXPÉDIÉ PARTOUT EN FRANCE</p>
+                <p style={{ fontFamily:FONT_DISPLAY, fontSize:30, fontWeight:500, color:COLORS.cream, marginTop:6 }}>La biscuiterie</p>
+                <p style={{ fontSize:13, color:COLORS.cream, opacity:.85, marginTop:6, maxWidth:340, lineHeight:1.65 }}>{BISCUITERIE.text}</p>
+              </div>
+            </div>
+          )}
           <div className="text-center mb-4">
             <Eyebrow>{BISCUITERIE.label.toUpperCase()}</Eyebrow>
             <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
