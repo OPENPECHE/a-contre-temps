@@ -214,8 +214,18 @@ export default function ContreTempsSite() {
   const [orderForm, setOrderForm] = useState({
     nom: "", email: "", phone: "", note: "",
     address: "", city: "", zip: "",
+    deliveryMode: "pickup", // "pickup" | "home" | "chronopost"
+    pickupPointId: "", timeSlotId: "", timeSlotLabel: "",
   });
   const [orderLoading, setOrderLoading] = useState(false);
+  const [pickupPoints, setPickupPoints] = useState([]);
+  const [timeSlots, setTimeSlots] = useState([]);
+
+  useEffect(() => {
+    sbFetch("pickup_points?active=eq.true&order=position.asc")
+      .then(d => setPickupPoints(d || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -717,7 +727,7 @@ export default function ContreTempsSite() {
                   { label: "Nom", key: "nom", type: "text", placeholder: "Votre nom" },
                   { label: "Email", key: "email", type: "email", placeholder: "votre@email.fr" },
                   { label: "Téléphone", key: "phone", type: "tel", placeholder: "06 …" },
-                  { label: "Note (optionnel)", key: "note", type: "text", placeholder: "Horaire souhaité, allergies…" },
+                  { label: "Note (optionnel)", key: "note", type: "text", placeholder: "Allergies, précisions…" },
                 ].map(({ label, key, type, placeholder }) => (
                   <div key={key}>
                     <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>{label}</label>
@@ -728,11 +738,100 @@ export default function ContreTempsSite() {
                   </div>
                 ))}
 
-                {hasBiscuiterie && (
+                {/* Mode de retrait — seulement si pas de biscuiterie */}
+                {!hasBiscuiterie && (
                   <div className="pt-2">
                     <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>
-                      Adresse de livraison — Chronopost
+                      Mode de retrait
                     </p>
+                    <div className="flex flex-col gap-2">
+                      {[
+                        { value: "pickup", label: "Point relais / Marché" },
+                        { value: "home",   label: "Livraison à domicile" },
+                      ].map(opt => (
+                        <label key={opt.value} style={{ display:"flex", alignItems:"center", gap:10,
+                          padding:".65rem .9rem", border:`1px solid ${orderForm.deliveryMode===opt.value ? COLORS.blueDeep : COLORS.blueSoft}`,
+                          borderRadius:8, cursor:"pointer", fontSize:13,
+                          backgroundColor: orderForm.deliveryMode===opt.value ? COLORS.blueDeep+"11" : "transparent" }}>
+                          <input type="radio" name="deliveryMode" value={opt.value}
+                            checked={orderForm.deliveryMode===opt.value}
+                            onChange={() => setOrderForm(f => ({ ...f, deliveryMode:opt.value, pickupPointId:"", timeSlotId:"", timeSlotLabel:"" }))}
+                            style={{ accentColor: COLORS.blueDeep }} />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sélection point relais */}
+                {orderForm.deliveryMode === "pickup" && !hasBiscuiterie && pickupPoints.length > 0 && (
+                  <div>
+                    <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>Point de retrait</label>
+                    <select value={orderForm.pickupPointId}
+                      onChange={async e => {
+                        const id = e.target.value;
+                        setOrderForm(f => ({ ...f, pickupPointId: id, timeSlotId:"", timeSlotLabel:"" }));
+                        if (id) {
+                          const sl = await sbFetch(`time_slots?pickup_point_id=eq.${id}&active=eq.true&order=position.asc`);
+                          setTimeSlots(sl || []);
+                        } else { setTimeSlots([]); }
+                      }}
+                      className="w-full mt-2 bg-transparent outline-none text-sm"
+                      style={{ border:"none", borderBottom:`1px solid ${COLORS.blue}`, fontFamily:"inherit", fontSize:14, padding:".5rem 0" }}>
+                      <option value="">— Choisir un point de retrait —</option>
+                      {pickupPoints.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}{p.day ? ` — ${p.day}` : ""}{p.address ? ` (${p.address})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Sélection créneau */}
+                {orderForm.pickupPointId && timeSlots.length > 0 && (
+                  <div>
+                    <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>Créneau horaire</label>
+                    <select value={orderForm.timeSlotId}
+                      onChange={e => {
+                        const sl = timeSlots.find(s => s.id===e.target.value);
+                        setOrderForm(f => ({ ...f, timeSlotId:e.target.value, timeSlotLabel:sl?.label||"" }));
+                      }}
+                      className="w-full mt-2 bg-transparent outline-none text-sm"
+                      style={{ border:"none", borderBottom:`1px solid ${COLORS.blue}`, fontFamily:"inherit", fontSize:14, padding:".5rem 0" }}>
+                      <option value="">— Choisir un créneau —</option>
+                      {timeSlots.map(s => (
+                        <option key={s.id} value={s.id}>{s.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Livraison à domicile */}
+                {orderForm.deliveryMode === "home" && !hasBiscuiterie && (
+                  <div>
+                    <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>Adresse de livraison</p>
+                    {[
+                      { label: "Adresse", key: "address", placeholder: "12 rue du Fournil" },
+                      { label: "Ville", key: "city", placeholder: "Clermont-Ferrand" },
+                      { label: "Code postal", key: "zip", placeholder: "63000" },
+                    ].map(({ label, key, placeholder }) => (
+                      <div key={key} className="mb-4">
+                        <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>{label}</label>
+                        <input type="text" placeholder={placeholder} value={orderForm[key]}
+                          onChange={e => setOrderForm(f => ({ ...f, [key]: e.target.value }))}
+                          className="w-full mt-2 pb-2 bg-transparent outline-none text-sm"
+                          style={{ borderBottom: `1px solid ${COLORS.blue}`, fontFamily: "inherit" }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Chronopost pour biscuiterie */}
+                {hasBiscuiterie && (
+                  <div className="pt-2">
+                    <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>Adresse de livraison — Chronopost</p>
                     {[
                       { label: "Adresse", key: "address", placeholder: "12 rue du Fournil" },
                       { label: "Ville", key: "city", placeholder: "Clermont-Ferrand" },
@@ -766,20 +865,23 @@ export default function ContreTempsSite() {
                           return { id, name: item?.name || id, price: item?.price || 0, qty };
                         });
                         const total = items.reduce((s, i) => s + i.price * i.qty, 0);
-                        const hasChrono = Object.keys(cart).some(id => BISCUITERIE.items.find(i => i.id === id));
+                        const pickup = pickupPoints.find(p => p.id===orderForm.pickupPointId);
+                        let noteDetails = orderForm.note;
+                        if (pickup) noteDetails += ` | Retrait : ${pickup.name}${orderForm.timeSlotLabel ? " — " + orderForm.timeSlotLabel : ""}`;
+                        if (orderForm.deliveryMode==="home" && orderForm.address) noteDetails += ` | Livraison : ${orderForm.address}, ${orderForm.zip} ${orderForm.city}`;
+                        if (hasBiscuiterie) noteDetails += ` | Chronopost : ${orderForm.address}, ${orderForm.zip} ${orderForm.city}`;
                         const order = {
                           id: "cmd" + Date.now().toString(36),
                           name: orderForm.nom,
                           email: orderForm.email,
                           phone: orderForm.phone,
-                          note: orderForm.note + (hasChrono ? ` | Livraison : ${orderForm.address}, ${orderForm.zip} ${orderForm.city}` : ""),
+                          note: noteDetails,
                           status: "new",
-                          shipping: hasChrono ? "chronopost" : "local",
+                          shipping: hasBiscuiterie ? "chronopost" : orderForm.deliveryMode,
                           total: parseFloat(total.toFixed(2)),
                           items,
                         };
                         await sbFetch("orders", { method: "POST", body: JSON.stringify(order) });
-                        // Envoyer email de confirmation
                         try {
                           await fetch("/api/send-email", {
                             method: "POST",
