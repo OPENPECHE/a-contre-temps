@@ -470,10 +470,12 @@ export default function ContreTempsSite() {
               style={{ border: `1px solid rgba(243,231,218,0.45)`, color: COLORS.cream, opacity: 0.85 }}
             >
               {user ? (
-                <div style={{ width:26, height:26, borderRadius:"50%",
-                  backgroundColor:COLORS.cream, color:COLORS.blueDeep,
+                <div style={{ width:30, height:30, borderRadius:"50%",
+                  backgroundColor:COLORS.rust, color:COLORS.cream,
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:10, fontWeight:600, letterSpacing:".05em" }}>
+                  fontSize:12, fontWeight:700, letterSpacing:".05em",
+                  border:`2px solid ${COLORS.cream}`,
+                  boxShadow:"0 2px 8px rgba(0,0,0,.2)" }}>
                   {(user.email||"?")[0].toUpperCase()}
                 </div>
               ) : (
