@@ -466,23 +466,21 @@ export default function ContreTempsSite() {
             </button>
             <button
               onClick={() => user ? setShowAccount(true) : setShowAuth(true)}
-              className="flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full text-xs tracked uppercase"
-              style={{ border: `1px solid rgba(243,231,218,0.45)`, color: COLORS.cream, opacity: 0.85 }}
+              style={{ background:"transparent", border:"none", cursor:"pointer", padding:0, display:"flex", alignItems:"center" }}
             >
               {user ? (
-                <div style={{ width:30, height:30, borderRadius:"50%",
-                  backgroundColor:COLORS.rust, color:COLORS.cream,
+                <div style={{ width:34, height:34, borderRadius:"50%",
+                  backgroundColor:COLORS.cream, color:COLORS.blueDeep,
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:12, fontWeight:700, letterSpacing:".05em",
-                  border:`2px solid ${COLORS.cream}`,
-                  boxShadow:"0 2px 8px rgba(0,0,0,.2)" }}>
+                  fontSize:12, fontWeight:700, fontFamily:FONT_BODY }}>
                   {(user.email||"?")[0].toUpperCase()}
                 </div>
               ) : (
-                <>
+                <div className="flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full text-xs tracked uppercase"
+                  style={{ border:`1px solid rgba(243,231,218,0.45)`, color:COLORS.cream, opacity:0.85 }}>
                   <User size={14} />
                   Connexion
-                </>
+                </div>
               )}
             </button>
           </nav>
