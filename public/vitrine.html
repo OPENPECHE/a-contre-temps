@@ -1,1 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>à contre-temps — Fournil vivant</title>
+<meta name="description" content="Box petit-déjeuner, brunch, apéritif et biscuiterie. Fournil vivant en circuit court.">
+<meta name="theme-color" content="#3E5A70">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.55);--ru:#A6713F;}
+body{font-family:'Outfit',sans-serif;background:var(--pp);color:var(--ink);min-height:100vh;}
+.fd{font-family:'Fraunces',serif;}
 
+/* HERO */
+.hero{background:var(--b);padding:2.5rem 1.5rem 2rem;text-align:center;position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:3px 3px;}
+.heart{width:36px;height:36px;margin:0 auto 1rem;}
+.hero h1{font-family:'Fraunces',serif;font-size:2.2rem;color:var(--cr);font-weight:400;letter-spacing:-.02em;}
+.hero-sub{font-size:.65rem;letter-spacing:.28em;color:rgba(243,231,218,.75);margin:.4rem 0 1rem;}
+.hero p{font-size:.875rem;color:rgba(243,231,218,.88);line-height:1.7;max-width:280px;margin:0 auto;font-weight:300;}
+
+/* PULSE */
+.pulse{padding:.75rem 1.5rem 0;}
+
+/* MANIFESTE */
+.manifeste{padding:1.25rem 1.5rem;text-align:center;}
+.manifeste p{font-family:'Fraunces',serif;font-style:italic;font-size:1rem;line-height:1.6;color:var(--bd);}
+
+/* GAMMES */
+.gammes{padding:.5rem 1.25rem 1.5rem;}
+.section-label{font-size:.6rem;letter-spacing:.2em;color:var(--ru);margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem;}
+.section-label::before,.section-label::after{content:'';flex:1;height:1px;background:var(--ru);opacity:.3;}
+h2{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:400;text-align:center;margin-bottom:1rem;}
+
+.card{background:var(--pp);border:1px solid var(--bs);border-radius:12px;padding:1.1rem;margin-bottom:.75rem;}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;}
+.card-tag{font-size:.6rem;letter-spacing:.14em;color:var(--ru);}
+.card-time{font-size:.65rem;color:var(--is);}
+.card h3{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:500;margin:.2rem 0 .15rem;}
+.card-sub{font-size:.75rem;font-style:italic;color:var(--is);font-family:'Fraunces',serif;margin-bottom:.5rem;}
+.card p{font-size:.8rem;color:var(--is);line-height:1.6;margin-bottom:.75rem;}
+.items{border-top:1px solid var(--bs);}
+.item{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--bs);font-size:.8rem;}
+.item:last-child{border-bottom:none;}
+.item-price{color:var(--is);flex-shrink:0;margin-left:.5rem;}
+
+/* BISCUITERIE */
+.biscuit{background:var(--cr);border-radius:12px;padding:1.25rem;margin:.5rem 0 1.5rem;}
+.biscuit-tag{font-size:.6rem;letter-spacing:.14em;color:var(--ru);margin-bottom:.4rem;}
+.biscuit h3{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:500;margin-bottom:.4rem;}
+.biscuit p{font-size:.8rem;color:var(--is);line-height:1.6;margin-bottom:.75rem;}
+.biscuit-items{display:flex;flex-direction:column;gap:.4rem;}
+.biscuit-item{display:flex;justify-content:space-between;font-size:.8rem;padding:.4rem 0;border-bottom:1px solid rgba(166,113,63,.2);}
+.biscuit-item:last-child{border-bottom:none;}
+.ship-note{display:flex;align-items:center;gap:.4rem;font-size:.7rem;color:var(--is);margin-top:.5rem;}
+
+/* CTA */
+.cta-section{padding:1.5rem 1.25rem;background:var(--bd);text-align:center;}
+.cta-section h2{font-family:'Fraunces',serif;color:var(--cr);font-size:1.4rem;font-weight:400;margin-bottom:.6rem;}
+.cta-section p{font-size:.8rem;color:rgba(243,231,218,.8);font-weight:300;line-height:1.7;margin-bottom:1.25rem;}
+.btn-row{display:flex;flex-direction:column;gap:.65rem;max-width:280px;margin:0 auto;}
+.btn{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.5rem;border-radius:999px;font-size:.7rem;letter-spacing:.14em;text-decoration:none;font-family:'Outfit',sans-serif;font-weight:500;}
+.btn-cream{background:var(--cr);color:var(--bd);}
+.btn-outline{background:transparent;border:1px solid rgba(243,231,218,.5);color:var(--cr);}
+.btn-whatsapp{background:#25D366;color:#fff;}
+
+/* MARCHÉS */
+.marches{padding:1.25rem 1.25rem 1.5rem;}
+.marche-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 0;border-bottom:1px solid var(--bs);}
+.marche-item:last-child{border-bottom:none;}
+.marche-dot{width:8px;height:8px;border-radius:50%;background:var(--ru);flex-shrink:0;}
+.marche-info h4{font-size:.85rem;font-weight:500;}
+.marche-info p{font-size:.72rem;color:var(--is);}
+
+/* CONTACT */
+.contact{padding:1rem 1.25rem 2rem;}
+.contact-item{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;font-size:.82rem;color:var(--is);}
+
+/* FOOTER */
+footer{background:var(--b);padding:1.25rem;text-align:center;}
+footer p{font-family:'Fraunces',serif;color:var(--cr);font-size:.9rem;}
+footer small{font-size:.55rem;letter-spacing:.2em;color:rgba(243,231,218,.5);display:block;margin-top:.25rem;}
+footer .legal{font-size:.65rem;color:rgba(243,231,218,.5);margin-top:.75rem;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <svg class="heart" viewBox="0 0 32 32" fill="none">
+    <path d="M16 11.5C13.8 6.8 6 7.6 5 13.5C4.1 18.8 11 23.6 16 27.5C21 23.6 27.9 18.8 27 13.5C26 7.6 18.2 6.8 16 11.5Z" stroke="#F3E7DA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <h1>à contre-temps</h1>
+  <p class="hero-sub">FOURNIL VIVANT</p>
+  <p>Le pain prend son temps. Nos fournées naissent la nuit pour arriver fraîches à contre-temps de vos journées pressées.</p>
+</div>
+
+<!-- PULSE LINE -->
+<div class="pulse">
+  <svg viewBox="0 0 400 32" style="width:100%;height:24px" preserveAspectRatio="none">
+    <path d="M0,16 L150,16 L165,3 L178,29 L191,9 L202,16 L400,16" fill="none" stroke="#A6713F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<!-- MANIFESTE -->
+<div class="manifeste">
+  <p>Farines locales, levain vivant, circuits courts — un fournil qui respire au rythme des producteurs, pas des horloges.</p>
+</div>
+
+<!-- GAMMES -->
+<div class="gammes">
+
+  <div class="section-label">NOS RYTHMES</div>
+  <h2>Trois moments, une seule fraîcheur</h2>
+
+  <!-- MATIN -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-tag">LE MATIN</span>
+      <span class="card-time">Livré avant 9h</span>
+    </div>
+    <h3>Box petit-déjeuner</h3>
+    <p class="card-sub">Pour les entreprises</p>
+    <p>Viennoiseries du fournil, pains spéciaux, confitures de producteurs et jus pressés.</p>
+    <div class="items">
+      <div class="item"><span>Box par personne</span><span class="item-price">6,50 €</span></div>
+      <div class="item"><span>Box formule premium</span><span class="item-price">9,00 €</span></div>
+      <div class="item"><span>Café & thé en supplément</span><span class="item-price">2,00 €</span></div>
+    </div>
+  </div>
+
+  <!-- MIDI -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-tag">LE MIDI</span>
+      <span class="card-time">Livré entre 12h et 13h</span>
+    </div>
+    <h3>Pain & traiteur léger</h3>
+    <p class="card-sub">Pour les bureaux</p>
+    <p>Sandwiches au levain, salades composées, pains à partager. Une pause déjeuner livrée sur place.</p>
+    <div class="items">
+      <div class="item"><span>Sandwich au levain + accompagnement</span><span class="item-price">9,50 €</span></div>
+      <div class="item"><span>Salade composée du jour</span><span class="item-price">8,50 €</span></div>
+      <div class="item"><span>Pain à partager — focaccia</span><span class="item-price">7,00 €</span></div>
+    </div>
+  </div>
+
+  <!-- SOIR -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-tag">SOIR & WEEK-END</span>
+      <span class="card-time">Sur réservation</span>
+    </div>
+    <h3>Box brunch & apéritif</h3>
+    <p class="card-sub">Pour recevoir</p>
+    <p>Planches à composer, mini-viennoiseries sucrées-salées, confitures et produits locaux.</p>
+    <div class="items">
+      <div class="item"><span>Box brunch — pour 2</span><span class="item-price">24,00 €</span></div>
+      <div class="item"><span>Box apéritif — planche 4 à 6</span><span class="item-price">32,00 €</span></div>
+      <div class="item"><span>Box apéritif — planche 8 à 10</span><span class="item-price">52,00 €</span></div>
+    </div>
+  </div>
+
+  <!-- BISCUITERIE -->
+  <div class="section-label">EXPÉDIÉ PARTOUT EN FRANCE</div>
+  <div class="biscuit">
+    <p class="biscuit-tag">LA BISCUITERIE</p>
+    <h3>Coffrets à offrir</h3>
+    <p>Sablés, biscuits du fournil et mendiants — emballés et expédiés en Chronopost 24/48h.</p>
+    <div class="biscuit-items">
+      <div class="biscuit-item"><span>Coffret biscuits — 250g</span><span>12,00 €</span></div>
+      <div class="biscuit-item"><span>Coffret biscuits — 500g</span><span>19,00 €</span></div>
+      <div class="biscuit-item"><span>Coffret cadeau biscuiterie</span><span>28,00 €</span></div>
+    </div>
+    <p class="ship-note">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      Frais de port calculés à la commande
+    </p>
+  </div>
+
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Une commande, une question ?</h2>
+  <p>Réservez en ligne ou contactez-nous directement — on revient vers vous rapidement.</p>
+  <div class="btn-row">
+    <a href="https://fournilvivant.fr" class="btn btn-cream">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      COMMANDER SUR LE SITE
+    </a>
+    <a href="https://wa.me/33XXXXXXXXX" class="btn btn-whatsapp" id="wa-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      NOUS CONTACTER SUR WHATSAPP
+    </a>
+    <a href="mailto:acontretemps@fournilvivant.fr" class="btn btn-outline">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+      acontretemps@fournilvivant.fr
+    </a>
+  </div>
+</div>
+
+<!-- MARCHÉS -->
+<div class="marches">
+  <div class="section-label">RETROUVEZ-NOUS</div>
+  <h2 style="font-size:1.25rem;margin-bottom:.75rem">Sur les marchés</h2>
+  <div class="marche-item">
+    <div class="marche-dot"></div>
+    <div class="marche-info"><h4>Marché à préciser</h4><p>Jour à préciser</p></div>
+  </div>
+  <div class="marche-item">
+    <div class="marche-dot"></div>
+    <div class="marche-info"><h4>Marché à préciser</h4><p>Jour à préciser</p></div>
+  </div>
+  <div class="marche-item">
+    <div class="marche-dot"></div>
+    <div class="marche-info"><h4>Marché de producteurs</h4><p>Jour à préciser</p></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>à contre-temps</p>
+  <small>FOURNIL VIVANT</small>
+  <p class="legal">fournilvivant.fr · acontretemps@fournilvivant.fr<br>Auto-entrepreneur — TVA non applicable, art. 293 B du CGI</p>
+</footer>
+
+<script>
+// Numéro WhatsApp à mettre à jour
+// Remplace 33XXXXXXXXX par ton numéro au format international sans le +
+// ex: 33612345678 pour 06 12 34 56 78
+document.getElementById('wa-btn').href = "https://wa.me/33XXXXXXXXX?text=Bonjour%2C%20je%20souhaite%20commander%20une%20box%20%C3%A0%20contre-temps%20!";
+</script>
+</body>
+</html>
