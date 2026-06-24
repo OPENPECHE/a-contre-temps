@@ -1,1 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code — à contre-temps</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Outfit:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:#FBF8F4;color:#2B2925;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;}
+.card{background:#fff;border:1px solid #D6DFE5;border-radius:16px;padding:2.5rem 2rem;text-align:center;max-width:340px;width:100%;}
+.heart{margin:0 auto .75rem;}
+h1{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:400;color:#3E5A70;margin-bottom:.25rem;}
+.sub{font-size:.6rem;letter-spacing:.22em;color:rgba(43,41,37,.45);margin-bottom:1.5rem;}
+#qr{margin:0 auto 1.5rem;width:200px;height:200px;}
+.url{font-size:.75rem;color:rgba(43,41,37,.55);margin-bottom:1.5rem;word-break:break-all;}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.5rem;background:#3E5A70;color:#F3E7DA;border:none;border-radius:999px;font-size:.7rem;letter-spacing:.12em;cursor:pointer;font-family:'Outfit',sans-serif;margin-bottom:.5rem;}
+.btn-outline{background:transparent;border:1px solid #D6DFE5;color:rgba(43,41,37,.6);}
+p.note{font-size:.7rem;color:rgba(43,41,37,.45);margin-top:1rem;line-height:1.6;}
 
+/* Version print A5 */
+@media print {
+  body{background:#fff;padding:0;}
+  .card{border:none;border-radius:0;max-width:100%;padding:3rem 2rem;}
+  .no-print{display:none!important;}
+  #qr{width:240px;height:240px;}
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <svg class="heart" width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <path d="M16 11.5C13.8 6.8 6 7.6 5 13.5C4.1 18.8 11 23.6 16 27.5C21 23.6 27.9 18.8 27 13.5C26 7.6 18.2 6.8 16 11.5Z" stroke="#7C97AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <h1>à contre-temps</h1>
+  <p class="sub">FOURNIL VIVANT</p>
+
+  <div id="qr"></div>
+  <p class="url" id="url-display">fournilvivant.fr/vitrine</p>
+
+  <div class="no-print" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem">
+    <button class="btn" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      IMPRIMER / TÉLÉCHARGER PDF
+    </button>
+    <button class="btn btn-outline" onclick="downloadPNG()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      TÉLÉCHARGER EN IMAGE
+    </button>
+  </div>
+
+  <p class="note">Scannez ce QR code pour découvrir nos box et commander en ligne.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const URL = "https://fournilvivant.fr/vitrine";
+document.getElementById('url-display').textContent = URL;
+
+const qr = new QRCode(document.getElementById("qr"), {
+  text: URL,
+  width: 200,
+  height: 200,
+  colorDark: "#3E5A70",
+  colorLight: "#FBF8F4",
+  correctLevel: QRCode.CorrectLevel.H
+});
+
+function downloadPNG() {
+  setTimeout(() => {
+    const canvas = document.querySelector('#qr canvas');
+    if (!canvas) return alert('Veuillez patienter et réessayer.');
+    const link = document.createElement('a');
+    link.download = 'qr-a-contre-temps.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, 200);
+}
+</script>
+</body>
+</html>
