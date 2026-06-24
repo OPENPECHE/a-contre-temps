@@ -190,6 +190,30 @@ const MARKETS = [
   { city: "Marché de producteurs", day: "Jour à préciser" },
 ];
 
+// ─── Système de notifications toast ──────────────────────────────────────────
+function ToastContainer({ toasts }) {
+  return (
+    <div style={{ position:"fixed", top:80, right:16, zIndex:100,
+      display:"flex", flexDirection:"column", gap:8, pointerEvents:"none" }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{
+          display:"flex", alignItems:"center", gap:10,
+          background: t.type==="success" ? COLORS.blueDeep : t.type==="error" ? "#A63333" : COLORS.blueDeep,
+          color: COLORS.cream, borderRadius:10, padding:".7rem 1.1rem",
+          fontSize:13, fontFamily:FONT_BODY, boxShadow:"0 4px 16px rgba(43,41,37,.18)",
+          animation:"toastIn .25s ease", maxWidth:280,
+          opacity: t.leaving ? 0 : 1, transition:"opacity .3s ease",
+        }}>
+          {t.type==="success" && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={COLORS.cream} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+          {t.type==="cart"    && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={COLORS.cream} strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>}
+          {t.type==="info"    && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={COLORS.cream} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
+          <span>{t.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Mini Calendrier ─────────────────────────────────────────────────────────
 const JOURS = ["Di","Lu","Ma","Me","Je","Ve","Sa"];
 const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
@@ -299,6 +323,13 @@ function MiniCalendar({ schedules, selectedDate, onSelect }) {
 export default function ContreTempsSite() {
   const { user } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
+  const [toasts, setToasts] = useState([]);
+
+  function toast(message, type="success") {
+    const id = Date.now();
+    setToasts(t => [...t, { id, message, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  }
   const [showAccount, setShowAccount] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -356,7 +387,11 @@ export default function ContreTempsSite() {
     Object.keys(cart).some(id => BISCUITERIE.items.find(i => i.id === id)),
   [cart]);
 
-  const addToCart = (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  const addToCart = (id) => {
+    setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
+    const item = [...RHYTHMS.flatMap(r => r.items), ...BISCUITERIE.items].find(i => i.id === id);
+    if (item) toast(`${item.name.split("—")[0].trim()} ajouté`, "cart");
+  };
   const removeOne = (id) =>
     setCart((c) => {
       const next = { ...c };
@@ -396,6 +431,7 @@ export default function ContreTempsSite() {
         .tracked-lg { letter-spacing: 0.32em; }
         input::placeholder, textarea::placeholder { color: rgba(43,41,37,0.35); }
         input, textarea { font-family: 'Outfit', sans-serif; }
+        @keyframes toastIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
       `}</style>
 
       {/* NAV */}
@@ -433,8 +469,19 @@ export default function ContreTempsSite() {
               className="flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full text-xs tracked uppercase"
               style={{ border: `1px solid rgba(243,231,218,0.45)`, color: COLORS.cream, opacity: 0.85 }}
             >
-              <User size={14} />
-              {user ? "Mon compte" : "Connexion"}
+              {user ? (
+                <div style={{ width:26, height:26, borderRadius:"50%",
+                  backgroundColor:COLORS.cream, color:COLORS.blueDeep,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:10, fontWeight:600, letterSpacing:".05em" }}>
+                  {(user.email||"?")[0].toUpperCase()}
+                </div>
+              ) : (
+                <>
+                  <User size={14} />
+                  Connexion
+                </>
+              )}
             </button>
           </nav>
 
@@ -745,9 +792,15 @@ export default function ContreTempsSite() {
         </p>
       </footer>
 
+      {/* TOASTS */}
+      <ToastContainer toasts={toasts} />
+
       {/* AUTH MODAL */}
       {showAuth && (
-        <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onSuccess={(msg) => { setShowAuth(false); toast(msg || "Connexion réussie !", "success"); }}
+        />
       )}
 
       {/* MON COMPTE */}
@@ -1056,6 +1109,7 @@ export default function ContreTempsSite() {
                         } catch (e) { console.warn("Email non envoyé:", e); }
                         setOrderStep("done");
                         setCart({});
+                        toast("Commande envoyée avec succès !", "success");
                       } catch (e) {
                         alert("Erreur lors de l'envoi, veuillez réessayer.");
                       } finally {
