@@ -1,462 +1,964 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>à contre-temps — Back office</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Outfit',sans-serif;background:#EDF0F3;color:#2B2925;min-height:100vh;}
-:root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.55);--ru:#A6713F;--gn:#4A7C59;--rd:#A63333;}
-.fd{font-family:'Fraunces',serif;}
-.app{display:flex;min-height:100vh;}
-aside{width:210px;background:var(--bd);display:flex;flex-direction:column;padding:1.5rem 0;flex-shrink:0;position:sticky;top:0;height:100vh;}
-.brand{padding:0 1.25rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.1);}
-.brand-name{font-family:'Fraunces',serif;font-size:16px;color:var(--cr);}
-.brand-sub{font-size:10px;letter-spacing:.2em;color:rgba(243,231,218,.45);margin-top:3px;}
-nav{flex:1;padding:.75rem 0;}
-.nb{display:flex;align-items:center;gap:9px;width:100%;padding:.6rem 1.25rem;background:transparent;color:rgba(243,231,218,.55);border:none;border-left:3px solid transparent;cursor:pointer;font-size:13px;font-family:'Outfit',sans-serif;text-align:left;}
-.nb.on{background:rgba(255,255,255,.12);color:var(--cr);border-left-color:var(--cr);}
-.logout{display:flex;align-items:center;gap:7px;margin:0 1.25rem;padding:.55rem .9rem;background:rgba(255,255,255,.07);border:none;border-radius:7px;color:rgba(243,231,218,.6);cursor:pointer;font-size:12px;font-family:'Outfit',sans-serif;}
-main{flex:1;padding:2rem 2.25rem;overflow-y:auto;}
-.page{display:none;} .page.on{display:block;}
-h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25rem;}
-.sub{color:var(--is);font-size:13px;margin-bottom:1.25rem;}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
-.stat{background:var(--cr);border-radius:10px;padding:.9rem 1.1rem;}
-.stat.acc{background:var(--bd);}
-.sl{font-size:10px;letter-spacing:.13em;color:var(--is);margin-bottom:3px;}
-.stat.acc .sl{color:rgba(243,231,218,.55);}
-.sv{font-family:'Fraunces',serif;font-size:24px;font-weight:500;}
-.stat.acc .sv{color:var(--cr);}
-.ss{font-size:11px;color:var(--is);margin-top:2px;}
-.stat.acc .ss{color:rgba(243,231,218,.6);}
-.card{background:var(--pp);border:1px solid var(--bs);border-radius:11px;padding:1.1rem;margin-bottom:1.1rem;}
-.card0{padding:0;overflow:hidden;}
-.badge{display:inline-block;font-size:10px;letter-spacing:.09em;font-weight:500;padding:2px 9px;border-radius:999px;}
-.orow{border-bottom:1px solid var(--bs);}
-.orow:last-child{border-bottom:none;}
-.ohead{display:flex;align-items:center;gap:10px;padding:.85rem 1.1rem;cursor:pointer;}
-.ohead:hover{background:rgba(0,0,0,.02);}
-.obody{background:#f7f9fa;padding:1rem 1.1rem;border-top:1px solid var(--bs);display:none;}
-.obody.on{display:block;}
-.sbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
-.sbtn{padding:.3rem .8rem;border-radius:999px;font-size:10px;letter-spacing:.08em;cursor:pointer;font-family:'Outfit',sans-serif;}
-.prow{display:flex;align-items:center;gap:9px;padding:.8rem 1.1rem;border-bottom:1px solid var(--bs);}
-.prow:last-child{border-bottom:none;}
-.tog{width:24px;height:24px;border-radius:50%;border:1px solid var(--bs);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.tog.on{background:var(--b);border-color:var(--b);}
-.einp{border:1px solid var(--b);border-radius:6px;padding:3px 7px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;border-radius:8px;font-size:11px;letter-spacing:.1em;cursor:pointer;font-family:'Outfit',sans-serif;border:none;}
-.bp{background:var(--bd);color:var(--cr);}
-.bg{background:transparent;border:1px solid var(--bs);color:var(--is);}
-.bsm{padding:.3rem .7rem;font-size:10px;}
-.alert{display:flex;align-items:center;gap:7px;padding:.65rem .9rem;border-radius:7px;font-size:12px;margin-bottom:1rem;}
-.aw{background:rgba(166,113,63,.12);border:1px solid var(--ru);color:var(--ru);}
-.fbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
-.fbtn{padding:.3rem .85rem;border-radius:999px;font-size:10px;letter-spacing:.1em;border:1px solid var(--bs);background:transparent;color:var(--ink);cursor:pointer;font-family:'Outfit',sans-serif;}
-.fbtn.on{background:var(--bd);border-color:var(--bd);color:var(--cr);}
-.drow{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem;font-size:12px;margin-bottom:.75rem;}
-.di{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
-.dt{display:flex;justify-content:space-between;font-family:'Fraunces',serif;font-size:15px;padding-top:7px;margin-top:5px;border-top:1px solid var(--bs);}
-.spin{width:18px;height:18px;border:2px solid var(--bs);border-top-color:var(--b);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;}
-@keyframes sp{to{transform:rotate(360deg)}}
-.ldr{display:flex;align-items:center;gap:10px;padding:2rem;color:var(--is);font-size:13px;}
-.nf{background:var(--cr);border-radius:10px;padding:1rem;margin-bottom:1.1rem;}
-.ng{display:grid;grid-template-columns:1fr 2fr 90px;gap:7px;margin-bottom:8px;}
-.fi{width:100%;padding:.45rem .7rem;border:1px solid var(--bs);border-radius:6px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;}
-.pin-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--b);}
-.pin-box{background:var(--pp);border-radius:14px;padding:2.5rem 2.25rem;width:300px;text-align:center;}
-.pin-ico{width:42px;height:42px;border-radius:50%;background:var(--bs);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;}
-.pin-inp{width:100%;padding:.7rem 1rem;border:1px solid var(--bs);border-radius:7px;font-size:18px;background:var(--cr);outline:none;text-align:center;letter-spacing:.35em;margin-bottom:10px;}
-.pin-inp.err{border-color:var(--rd);}
-.em{color:var(--rd);font-size:11px;margin-bottom:8px;}
-.sl-label{font-size:10px;letter-spacing:.13em;color:var(--ru);margin-bottom:.75rem;}
-</style>
-</head>
-<body>
+import { useState, useEffect, useCallback } from "react";
+import { ShoppingBag, Package, LayoutDashboard, Settings, LogOut, Check, X,
+  Edit2, Save, Lock, Truck, ChevronDown, ChevronUp, AlertCircle,
+  Plus, RefreshCw, Printer, Bell, MapPin, Clock } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
-<!-- LOGIN -->
-<div id="login" class="pin-wrap">
-  <div class="pin-box">
-    <div class="pin-ico">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E5A70" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-    </div>
-    <p class="fd" style="font-size:20px;margin-bottom:4px">Back office</p>
-    <p style="font-size:10px;letter-spacing:.2em;color:var(--is);margin-bottom:1.5rem">À CONTRE-TEMPS</p>
-    <input class="pin-inp" id="pin-inp" type="password" placeholder="Code PIN" />
-    <p class="em" id="pin-err" style="display:none">Code incorrect</p>
-    <button class="btn bp" style="width:100%;justify-content:center" onclick="tryLogin()">ENTRER</button>
-    <p style="font-size:11px;color:var(--is);margin-top:1.25rem">Code par défaut : 1234</p>
-  </div>
-</div>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIGURATION — remplace par tes vraies valeurs Supabase
+// Project Settings > API > Project URL et anon public key
+// ─────────────────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = "https://jxxgafyqfbnqieiqltcn.supabase.co";
+const SUPABASE_ANON = "sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
 
-<!-- APP -->
-<div id="app" class="app" style="display:none">
-  <aside>
-    <div class="brand">
-      <div class="brand-name">à contre-temps</div>
-      <div class="brand-sub">BACK OFFICE</div>
-    </div>
-    <nav>
-      <button class="nb on" onclick="goTab('dashboard',this)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        Tableau de bord
-      </button>
-      <button class="nb" onclick="goTab('orders',this)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-        Commandes
-      </button>
-      <button class="nb" onclick="goTab('products',this)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-        Articles & box
-      </button>
-      <button class="nb" onclick="goTab('settings',this)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        Paramètres
-      </button>
-    </nav>
-    <button class="logout" onclick="logout()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Déconnexion
-    </button>
-  </aside>
+// Sendcloud — optionnel, pour les étiquettes Chronopost
+// Paramètres > Sendcloud > API credentials
+const SENDCLOUD_PUBLIC = "";   // ex. "abc123def456"
+const SENDCLOUD_SECRET = "";   // ex. "xyz789uvw012"  ← à ne mettre que dans .env, pas dans le code final
 
-  <main>
-    <!-- DASHBOARD -->
-    <div id="page-dashboard" class="page on">
-      <h1>Tableau de bord</h1>
-      <p class="sub" id="today-date"></p>
-      <div class="stats" id="stats-grid"></div>
-      <div id="alert-pending" class="alert aw" style="display:none"></div>
-      <p class="fd" style="font-size:17px;margin-bottom:.65rem">Dernières commandes</p>
-      <div class="card card0" id="dash-orders"></div>
-    </div>
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    <!-- ORDERS -->
-    <div id="page-orders" class="page">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
-        <h1 style="margin-bottom:0">Commandes</h1>
-        <button class="btn bg bsm" onclick="loadOrders()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          Actualiser
-        </button>
-      </div>
-      <div class="fbar" id="filter-bar"></div>
-      <div id="orders-list"></div>
-    </div>
+// ─── Charte ──────────────────────────────────────────────────────────────────
+const C = {
+  blueDeep:"#3E5A70", blue:"#7C97AC", blueSoft:"#D6DFE5",
+  cream:"#F3E7DA", paper:"#FBF8F4", ink:"#2B2925",
+  inkSoft:"rgba(43,41,37,0.55)", rust:"#A6713F",
+  green:"#4A7C59", red:"#A63333",
+};
+const FD = "'Fraunces', serif";
+const FB = "'Outfit', sans-serif";
 
-    <!-- PRODUCTS -->
-    <div id="page-products" class="page">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-        <h1 style="margin-bottom:0">Articles & box</h1>
-        <button class="btn bp bsm" onclick="toggleNewForm()">+ NOUVEL ARTICLE</button>
-      </div>
-      <div id="new-form" style="display:none" class="nf">
-        <p class="sl-label">AJOUTER UN ARTICLE</p>
-        <div class="ng">
-          <input class="fi" id="new-cat" placeholder="Catégorie" />
-          <input class="fi" id="new-name" placeholder="Nom de l'article" />
-          <input class="fi" id="new-price" type="number" step="0.5" placeholder="Prix €" />
-        </div>
-        <div style="display:flex;gap:7px">
-          <button class="btn bp bsm" onclick="addProduct()">Ajouter</button>
-          <button class="btn bg bsm" onclick="toggleNewForm()">Annuler</button>
-        </div>
-      </div>
-      <div id="products-list"></div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div id="page-settings" class="page">
-      <h1>Paramètres</h1>
-      <p class="sub">Configuration du back office</p>
-      <div class="card settings-block" style="max-width:440px;margin-bottom:1.1rem">
-        <p class="sl-label">SÉCURITÉ — CODE PIN</p>
-        <div style="display:flex;gap:7px;margin-top:5px">
-          <input type="password" class="fi" id="new-pin" style="flex:1" placeholder="Nouveau code (min 4 chiffres)" />
-          <button class="btn bp" onclick="savePin()">Enregistrer</button>
-        </div>
-        <p id="pin-saved" style="display:none;color:var(--gn);font-size:12px;margin-top:6px">✓ Code enregistré</p>
-      </div>
-      <div class="card" style="max-width:440px">
-        <p class="sl-label">DONNÉES</p>
-        <p style="font-size:13px;color:var(--is);margin-bottom:1rem">Exporter toutes les commandes en CSV compatible Excel.</p>
-        <button class="btn bp" onclick="exportCSV()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          EXPORTER LES COMMANDES
-        </button>
-      </div>
-    </div>
-  </main>
-</div>
-
-<script>
-const SB = "https://jxxgafyqfbnqieiqltcn.supabase.co";
-const KEY = "sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
-let PIN = localStorage.getItem("act_pin")||"1234";
-let currentFilter = "all";
-let expandedOrder = null;
+const DEFAULT_PIN = "1234";
 
 const STATUSES = [
-  {key:"new",label:"Nouvelle",color:"#7C97AC"},
-  {key:"confirmed",label:"Confirmée",color:"#A6713F"},
-  {key:"ready",label:"Prête",color:"#4A7C59"},
-  {key:"delivered",label:"Livrée",color:"#7C97AC"},
-  {key:"cancelled",label:"Annulée",color:"#A63333"},
+  { key:"new",       label:"Nouvelle",  color:C.blue },
+  { key:"confirmed", label:"Confirmée", color:C.rust },
+  { key:"ready",     label:"Prête",     color:C.green },
+  { key:"delivered", label:"Livrée",    color:"#7C97AC" },
+  { key:"cancelled", label:"Annulée",   color:C.red },
 ];
-const sm = k => STATUSES.find(s=>s.key===k)||STATUSES[0];
+function sm(k) { return STATUSES.find(s => s.key === k) || STATUSES[0]; }
 
-async function sb(path, opts={}) {
-  const r = await fetch(SB+"/rest/v1/"+path, {
-    ...opts,
-    headers:{
-      "apikey":KEY,"Authorization":"Bearer "+KEY,
-      "Content-Type":"application/json",
-      "Prefer": (opts.method==="POST"||opts.method==="PATCH")?"return=representation":"",
-      ...(opts.headers||{})
-    }
-  });
-  const t = await r.text();
-  return t ? JSON.parse(t) : [];
+// ─── Utilitaires ─────────────────────────────────────────────────────────────
+const LS = {
+  get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+function Badge({ label, color }) {
+  return <span style={{ fontSize:11, letterSpacing:"0.1em", fontWeight:500,
+    backgroundColor:color+"22", color, padding:"2px 10px", borderRadius:999, whiteSpace:"nowrap" }}>{label}</span>;
+}
+function Card({ children, style }) {
+  return <div style={{ backgroundColor:C.paper, border:`1px solid ${C.blueSoft}`,
+    borderRadius:12, padding:"1.25rem", ...style }}>{children}</div>;
+}
+function Stat({ label, value, sub, accent }) {
+  return (
+    <div style={{ backgroundColor: accent ? C.blueDeep : C.cream, borderRadius:10, padding:"1rem 1.25rem" }}>
+      <p style={{ fontSize:11, letterSpacing:"0.14em", color: accent ? "rgba(243,231,218,0.6)" : C.inkSoft, marginBottom:4 }}>{label.toUpperCase()}</p>
+      <p style={{ fontSize:26, fontWeight:500, fontFamily:FD, color: accent ? C.cream : C.ink }}>{value}</p>
+      {sub && <p style={{ fontSize:12, color: accent ? "rgba(243,231,218,0.7)" : C.inkSoft, marginTop:2 }}>{sub}</p>}
+    </div>
+  );
+}
+function Spinner() {
+  return <div style={{ width:20, height:20, border:`2px solid ${C.blueSoft}`,
+    borderTop:`2px solid ${C.blue}`, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />;
 }
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
-document.getElementById("pin-inp").addEventListener("keydown", e => { if(e.key==="Enter") tryLogin(); });
+// ─── App ─────────────────────────────────────────────────────────────────────
+export default function AdminApp() {
+  const [pin, setPin]         = useState("");
+  const [authed, setAuthed]   = useState(false);
+  const [pinError, setPinErr] = useState(false);
+  const [tab, setTab]         = useState("dashboard");
+  const [settings, setSettings] = useState(() => LS.get("act_settings", { pin:DEFAULT_PIN }));
 
-function tryLogin() {
-  const v = document.getElementById("pin-inp").value;
-  if(v===PIN) {
-    document.getElementById("login").style.display="none";
-    document.getElementById("app").style.display="flex";
-    document.getElementById("pin-err").style.display="none";
-    loadDashboard();
-  } else {
-    document.getElementById("pin-inp").classList.add("err");
-    document.getElementById("pin-err").style.display="block";
-    document.getElementById("pin-inp").value="";
+  useEffect(() => { LS.set("act_settings", settings); }, [settings]);
+
+  function tryLogin() {
+    if (pin === settings.pin) { setAuthed(true); setPinErr(false); setPin(""); }
+    else { setPinErr(true); setPin(""); }
   }
-}
-function logout() {
-  document.getElementById("app").style.display="none";
-  document.getElementById("login").style.display="flex";
-  document.getElementById("pin-inp").value="";
+
+  if (!authed) return <LoginScreen pin={pin} setPin={setPin} onLogin={tryLogin} error={pinError} />;
+
+  return (
+    <div style={{ fontFamily:FB, color:C.ink, backgroundColor:"#EDF0F3", minHeight:"100vh", display:"flex" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+        * { box-sizing: border-box; margin:0; padding:0; }
+        input, textarea, select { font-family: 'Outfit', sans-serif; }
+      `}</style>
+
+      {/* Sidebar */}
+      <aside style={{ width:220, backgroundColor:C.blueDeep, display:"flex", flexDirection:"column",
+        padding:"2rem 0", position:"sticky", top:0, height:"100vh", flexShrink:0 }}>
+        <div style={{ padding:"0 1.5rem 1.5rem", borderBottom:`1px solid rgba(255,255,255,0.1)` }}>
+          <p style={{ fontFamily:FD, fontSize:17, color:C.cream }}>à contre-temps</p>
+          <p style={{ fontSize:10, letterSpacing:"0.22em", color:"rgba(243,231,218,0.5)", marginTop:4 }}>BACK OFFICE</p>
+        </div>
+        <nav style={{ flex:1, padding:"1rem 0" }}>
+          {[
+            { key:"dashboard", icon:<LayoutDashboard size={15}/>, label:"Tableau de bord" },
+            { key:"orders",    icon:<ShoppingBag size={15}/>,    label:"Commandes" },
+            { key:"products",  icon:<Package size={15}/>,        label:"Articles & box" },
+            { key:"pickup",    icon:<MapPin size={15}/>,         label:"Points relais" },
+            { key:"settings",  icon:<Settings size={15}/>,       label:"Paramètres" },
+          ].map(({ key, icon, label }) => (
+            <button key={key} onClick={() => setTab(key)}
+              style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"0.65rem 1.5rem",
+                backgroundColor: tab===key ? "rgba(255,255,255,0.12)" : "transparent",
+                color: tab===key ? C.cream : "rgba(243,231,218,0.55)",
+                border:"none", borderLeft: tab===key ? `3px solid ${C.cream}` : "3px solid transparent",
+                cursor:"pointer", fontSize:13, textAlign:"left" }}>
+              {icon} {label}
+            </button>
+          ))}
+        </nav>
+        <button onClick={() => setAuthed(false)}
+          style={{ display:"flex", alignItems:"center", gap:8, margin:"0 1.5rem",
+            padding:"0.6rem 1rem", backgroundColor:"rgba(255,255,255,0.07)",
+            border:"none", borderRadius:8, color:"rgba(243,231,218,0.6)", cursor:"pointer", fontSize:12 }}>
+          <LogOut size={13}/> Déconnexion
+        </button>
+      </aside>
+
+      {/* Contenu */}
+      <main style={{ flex:1, padding:"2rem 2.5rem", overflowY:"auto", animation:"fadeIn 0.2s ease" }}>
+        {tab==="dashboard" && <Dashboard />}
+        {tab==="orders"    && <Orders />}
+        {tab==="products"  && <Products />}
+        {tab==="pickup"    && <PickupPoints />}
+        {tab==="settings"  && <SettingsPanel settings={settings} setSettings={setSettings} />}
+      </main>
+    </div>
+  );
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
-function goTab(name, btn) {
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
-  document.querySelectorAll(".nb").forEach(b=>b.classList.remove("on"));
-  document.getElementById("page-"+name).classList.add("on");
-  btn.classList.add("on");
-  if(name==="dashboard") loadDashboard();
-  if(name==="orders") loadOrders();
-  if(name==="products") loadProducts();
+// ─── Connexion ────────────────────────────────────────────────────────────────
+function LoginScreen({ pin, setPin, onLogin, error }) {
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
+      backgroundColor:C.blue, fontFamily:FB }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Outfit:wght@400;500&display=swap'); * { box-sizing:border-box; }`}</style>
+      <div style={{ backgroundColor:C.paper, borderRadius:16, padding:"3rem 2.5rem", width:320, textAlign:"center" }}>
+        <div style={{ width:44, height:44, borderRadius:"50%", backgroundColor:C.blueSoft,
+          display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 1.5rem" }}>
+          <Lock size={20} color={C.blueDeep} />
+        </div>
+        <p style={{ fontFamily:FD, fontSize:22 }}>Back office</p>
+        <p style={{ fontSize:11, letterSpacing:"0.2em", color:C.inkSoft, marginTop:4, marginBottom:"2rem" }}>À CONTRE-TEMPS</p>
+        <input type="password" value={pin} onChange={e => setPin(e.target.value)}
+          onKeyDown={e => e.key==="Enter" && onLogin()}
+          placeholder="Code PIN"
+          style={{ width:"100%", padding:"0.75rem 1rem", border:`1px solid ${error ? C.red : C.blueSoft}`,
+            borderRadius:8, fontSize:16, backgroundColor:C.cream, outline:"none",
+            textAlign:"center", letterSpacing:"0.4em" }} />
+        {error && <p style={{ color:C.red, fontSize:12, marginTop:6 }}>Code incorrect</p>}
+        <button onClick={onLogin}
+          style={{ marginTop:"1rem", width:"100%", padding:"0.8rem", backgroundColor:C.blueDeep,
+            color:C.cream, border:"none", borderRadius:8, fontSize:12, letterSpacing:"0.14em", cursor:"pointer" }}>
+          ENTRER
+        </button>
+        <p style={{ fontSize:11, color:C.inkSoft, marginTop:"1.5rem" }}>Code par défaut : 1234</p>
+      </div>
+    </div>
+  );
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
-async function loadDashboard() {
-  document.getElementById("today-date").textContent = new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-  const [orders, products] = await Promise.all([
-    sb("orders?order=created_at.desc&limit=20"),
-    sb("products?select=active")
-  ]);
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function Dashboard() {
+  const [orders, setOrders]     = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [{ data:o }, { data:p }] = await Promise.all([
+        sb.from("orders").select("*").order("created_at", { ascending:false }).limit(20),
+        sb.from("products").select("*"),
+      ]);
+      setOrders(o || []);
+      setProducts(p || []);
+      setLoading(false);
+    }
+    load();
+
+    // Temps réel — nouvelle commande
+    const sub = sb.channel("orders-dashboard")
+      .on("postgres_changes", { event:"INSERT", schema:"public", table:"orders" }, payload => {
+        setOrders(prev => [payload.new, ...prev]);
+      })
+      .subscribe();
+    return () => sb.removeChannel(sub);
+  }, []);
+
+  if (loading) return <div style={{ display:"flex", gap:12, alignItems:"center", padding:"2rem" }}><Spinner /><span style={{ color:C.inkSoft }}>Chargement…</span></div>;
+
   const today = new Date().toDateString();
-  const todayO = orders.filter(o=>new Date(o.created_at).toDateString()===today);
-  const pending = orders.filter(o=>o.status==="new"||o.status==="confirmed");
-  const total = todayO.reduce((s,o)=>s+Number(o.total),0);
-  const inactive = products.filter(p=>!p.active);
+  const todayOrders  = orders.filter(o => new Date(o.created_at).toDateString() === today);
+  const pending      = orders.filter(o => o.status==="new" || o.status==="confirmed");
+  const totalToday   = todayOrders.reduce((s, o) => s + Number(o.total), 0);
+  const inactive     = products.filter(p => !p.active);
 
-  document.getElementById("stats-grid").innerHTML = `
-    <div class="stat"><div class="sl">AUJOURD'HUI</div><div class="sv">${todayO.length}</div><div class="ss">commandes</div></div>
-    <div class="stat"><div class="sl">CHIFFRE DU JOUR</div><div class="sv">${total.toFixed(2)} €</div></div>
-    <div class="stat${pending.length>0?" acc":""}"><div class="sl">EN ATTENTE</div><div class="sv">${pending.length}</div><div class="ss">à traiter</div></div>
-    <div class="stat"><div class="sl">DÉSACTIVÉS</div><div class="sv">${inactive.length}</div><div class="ss">articles masqués</div></div>
-  `;
-  const ap = document.getElementById("alert-pending");
-  if(pending.length>0){ ap.style.display="flex"; ap.textContent=`⚡ ${pending.length} commande${pending.length>1?"s":""} en attente de traitement.`; }
-  else ap.style.display="none";
+  return (
+    <div style={{ animation:"fadeIn 0.2s ease" }}>
+      <h1 style={{ fontFamily:FD, fontWeight:400, fontSize:28, marginBottom:4 }}>Tableau de bord</h1>
+      <p style={{ color:C.inkSoft, fontSize:13, marginBottom:"1.5rem" }}>
+        {new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}
+      </p>
 
-  document.getElementById("dash-orders").innerHTML = orders.slice(0,6).map(o=>`
-    <div class="orow">
-      <div class="ohead" style="cursor:default">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap">
-            <span style="font-weight:500;font-size:14px">${o.name}</span>
-            <span class="badge" style="background:${sm(o.status).color}22;color:${sm(o.status).color}">${sm(o.status).label}</span>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(155px, 1fr))", gap:10, marginBottom:"1.5rem" }}>
+        <Stat label="Commandes aujourd'hui" value={todayOrders.length} />
+        <Stat label="Chiffre du jour"       value={`${totalToday.toFixed(2)} €`} />
+        <Stat label="En attente"            value={pending.length} sub="à confirmer" accent={pending.length > 0} />
+        <Stat label="Articles désactivés"   value={inactive.length} />
+      </div>
+
+      {pending.length > 0 && (
+        <div style={{ display:"flex", gap:8, alignItems:"center", padding:"0.75rem 1rem",
+          backgroundColor:C.rust+"18", border:`1px solid ${C.rust}`, borderRadius:8,
+          marginBottom:"1.25rem", fontSize:13, color:C.rust }}>
+          <Bell size={14}/> {pending.length} commande{pending.length>1?"s":""} en attente de traitement.
+        </div>
+      )}
+
+      <h2 style={{ fontFamily:FD, fontWeight:400, fontSize:18, marginBottom:"0.75rem" }}>Dernières commandes</h2>
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        {orders.slice(0,6).map(o => <OrderCard key={o.id} order={o} compact />)}
+        {orders.length === 0 && <p style={{ color:C.inkSoft, fontSize:13 }}>Aucune commande pour le moment.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Commandes ────────────────────────────────────────────────────────────────
+function Orders() {
+  const [orders, setOrders]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter]   = useState("all");
+  const [expanded, setExpanded] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await sb.from("orders").select("*").order("created_at", { ascending:false });
+    setOrders(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const sub = sb.channel("orders-live")
+      .on("postgres_changes", { event:"*", schema:"public", table:"orders" }, load)
+      .subscribe();
+    return () => sb.removeChannel(sub);
+  }, [load]);
+
+  async function updateStatus(id, status) {
+    await sb.from("orders").update({ status }).eq("id", id);
+    setOrders(os => os.map(o => o.id===id ? { ...o, status } : o));
+  }
+
+  const filtered = filter==="all" ? orders : orders.filter(o => o.status===filter);
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.25rem" }}>
+        <h1 style={{ fontFamily:FD, fontWeight:400, fontSize:28 }}>Commandes</h1>
+        <button onClick={load} style={{ display:"flex", alignItems:"center", gap:6, padding:"0.5rem 0.9rem",
+          border:`1px solid ${C.blueSoft}`, borderRadius:8, backgroundColor:"transparent",
+          cursor:"pointer", fontSize:12, color:C.inkSoft }}>
+          <RefreshCw size={13}/> Actualiser
+        </button>
+      </div>
+
+      <div style={{ display:"flex", gap:8, marginBottom:"1.25rem", flexWrap:"wrap" }}>
+        {[{ key:"all", label:"Toutes", color:C.ink }, ...STATUSES].map(s => (
+          <button key={s.key} onClick={() => setFilter(s.key)}
+            style={{ padding:"0.35rem 0.9rem", borderRadius:999, fontSize:11, letterSpacing:"0.1em",
+              border:`1px solid ${filter===s.key ? C.blueDeep : C.blueSoft}`,
+              backgroundColor: filter===s.key ? C.blueDeep : "transparent",
+              color: filter===s.key ? C.cream : C.ink, cursor:"pointer" }}>
+            {s.label.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ display:"flex", gap:10, padding:"2rem", color:C.inkSoft }}><Spinner /> Chargement…</div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {filtered.map(o => (
+            <Card key={o.id} style={{ padding:0, overflow:"hidden" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"1rem 1.25rem",
+                cursor:"pointer" }} onClick={() => setExpanded(expanded===o.id ? null : o.id)}>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
+                    <span style={{ fontFamily:FD, fontWeight:500, fontSize:16 }}>{o.name}</span>
+                    <Badge label={sm(o.status).label} color={sm(o.status).color} />
+                    {o.shipping==="chronopost" && <Badge label="Chronopost" color={C.blueDeep} />}
+                  </div>
+                  <p style={{ fontSize:12, color:C.inkSoft }}>
+                    {new Date(o.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
+                    {" · "}{Array.isArray(o.items) ? o.items.length : 0} article{Array.isArray(o.items) && o.items.length>1?"s":""}
+                    {" · "}{Number(o.total).toFixed(2)} €
+                  </p>
+                </div>
+                {expanded===o.id ? <ChevronUp size={15} color={C.inkSoft}/> : <ChevronDown size={15} color={C.inkSoft}/>}
+              </div>
+
+              {expanded===o.id && (
+                <div style={{ borderTop:`1px solid ${C.blueSoft}`, padding:"1rem 1.25rem",
+                  backgroundColor:"#F7F9FA", animation:"fadeIn 0.15s ease" }}>
+
+                  {/* Infos contact */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.5rem 2rem",
+                    marginBottom:"1rem", fontSize:13 }}>
+                    <div><span style={{ color:C.inkSoft }}>Email : </span>{o.email}</div>
+                    <div><span style={{ color:C.inkSoft }}>Tél : </span>{o.phone || "—"}</div>
+                    {o.note && <div style={{ gridColumn:"1/-1" }}><span style={{ color:C.inkSoft }}>Note : </span>{o.note}</div>}
+                  </div>
+
+                  {/* Articles */}
+                  <div style={{ borderTop:`1px solid ${C.blueSoft}`, padding:"0.75rem 0", marginBottom:"0.75rem" }}>
+                    {(Array.isArray(o.items) ? o.items : []).map((it, i) => (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:13, padding:"3px 0" }}>
+                        <span>{it.name} × {it.qty}</span>
+                        <span style={{ color:C.inkSoft }}>{(it.price * it.qty).toFixed(2)} €</span>
+                      </div>
+                    ))}
+                    <div style={{ display:"flex", justifyContent:"space-between", fontFamily:FD,
+                      fontSize:16, marginTop:8, paddingTop:8, borderTop:`1px solid ${C.blueSoft}` }}>
+                      <span>Total</span><span>{Number(o.total).toFixed(2)} €</span>
+                    </div>
+                  </div>
+
+                  {/* Changer statut */}
+                  <div style={{ marginBottom:"0.75rem" }}>
+                    <p style={{ fontSize:11, letterSpacing:"0.12em", color:C.inkSoft, marginBottom:8 }}>STATUT</p>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {STATUSES.map(s => (
+                        <button key={s.key} onClick={() => updateStatus(o.id, s.key)}
+                          style={{ padding:"0.35rem 0.85rem", borderRadius:999, fontSize:11,
+                            border:`1px solid ${s.color}`,
+                            backgroundColor: o.status===s.key ? s.color : "transparent",
+                            color: o.status===s.key ? C.paper : s.color, cursor:"pointer" }}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Étiquette Chronopost */}
+                  {o.shipping==="chronopost" && (
+                    <ShippingLabel order={o} />
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
+          {filtered.length===0 && <p style={{ color:C.inkSoft, fontSize:13 }}>Aucune commande dans cette catégorie.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Génération étiquette Sendcloud ──────────────────────────────────────────
+function ShippingLabel({ order }) {
+  const [status, setStatus] = useState("idle"); // idle | loading | done | error | unconfigured
+  const [labelUrl, setLabelUrl] = useState(null);
+
+  async function generate() {
+    if (!SENDCLOUD_PUBLIC || !SENDCLOUD_SECRET) { setStatus("unconfigured"); return; }
+    setStatus("loading");
+    try {
+      // Sendcloud API v2 — création colis + récupération étiquette
+      const creds = btoa(`${SENDCLOUD_PUBLIC}:${SENDCLOUD_SECRET}`);
+      const res = await fetch("https://panel.sendcloud.sc/api/v2/parcels", {
+        method:"POST",
+        headers: { "Authorization":`Basic ${creds}`, "Content-Type":"application/json" },
+        body: JSON.stringify({ parcel: {
+          name:          order.name,
+          email:         order.email,
+          telephone:     order.phone || "",
+          address:       order.address || "Adresse à compléter",
+          city:          order.city   || "",
+          postal_code:   order.zip    || "",
+          country:       { iso_2:"FR" },
+          shipment:      { id:8 },  // 8 = Chronopost 1 jour
+          weight:        "1.000",
+          order_number:  order.id,
+          request_label: true,
+        }})
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const label = data?.parcel?.label?.label_printer;
+      if (label) { setLabelUrl(label); setStatus("done"); }
+      else throw new Error("Pas d'URL d'étiquette");
+    } catch (e) {
+      console.error(e);
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div style={{ marginTop:"0.5rem", padding:"0.75rem 1rem", backgroundColor:C.blueSoft+"55",
+      borderRadius:8, border:`1px solid ${C.blueSoft}` }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+        <Truck size={14} color={C.blueDeep} />
+        <span style={{ fontSize:12, fontWeight:500, color:C.blueDeep }}>Expédition Chronopost</span>
+      </div>
+
+      {status==="idle" && (
+        <button onClick={generate}
+          style={{ display:"flex", alignItems:"center", gap:6, padding:"0.5rem 1rem",
+            backgroundColor:C.blueDeep, color:C.cream, border:"none", borderRadius:6,
+            fontSize:11, letterSpacing:"0.1em", cursor:"pointer" }}>
+          <Printer size={13}/> GÉNÉRER L'ÉTIQUETTE
+        </button>
+      )}
+      {status==="loading" && <div style={{ display:"flex", gap:8, alignItems:"center", fontSize:12, color:C.inkSoft }}><Spinner /> Génération en cours…</div>}
+      {status==="done" && (
+        <a href={labelUrl} target="_blank" rel="noopener noreferrer"
+          style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"0.5rem 1rem",
+            backgroundColor:C.green, color:C.cream, borderRadius:6, fontSize:11,
+            letterSpacing:"0.1em", textDecoration:"none" }}>
+          <Printer size={13}/> IMPRIMER L'ÉTIQUETTE
+        </a>
+      )}
+      {status==="error" && <p style={{ fontSize:12, color:C.red }}>Erreur Sendcloud — vérifiez les identifiants dans les paramètres.</p>}
+      {status==="unconfigured" && (
+        <p style={{ fontSize:12, color:C.rust }}>
+          Sendcloud non configuré. Ajoutez vos clés API dans les paramètres du back office.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Articles & box ───────────────────────────────────────────────────────────
+function Products() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [editId, setEditId]     = useState(null);
+  const [editVal, setEditVal]   = useState({});
+  const [saving, setSaving]     = useState(false);
+  const [newRow, setNewRow]     = useState(false);
+  const [newVal, setNewVal]     = useState({ cat:"", name:"", price:"" });
+
+  async function load() {
+    const { data } = await sb.from("products").select("*").order("position");
+    setProducts(data || []);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function toggle(p) {
+    await sb.from("products").update({ active:!p.active }).eq("id", p.id);
+    setProducts(ps => ps.map(x => x.id===p.id ? { ...x, active:!p.active } : x));
+  }
+
+  async function saveEdit(id) {
+    setSaving(true);
+    const upd = { name:editVal.name, price:parseFloat(editVal.price)||0 };
+    await sb.from("products").update(upd).eq("id", id);
+    setProducts(ps => ps.map(p => p.id===id ? { ...p, ...upd } : p));
+    setEditId(null); setSaving(false);
+  }
+
+  async function addProduct() {
+    if (!newVal.name || !newVal.cat || !newVal.price) return;
+    const id = "p" + Date.now().toString(36);
+    const pos = Math.max(0, ...products.map(p => p.position||0)) + 1;
+    const row = { id, cat:newVal.cat, name:newVal.name, price:parseFloat(newVal.price), active:true, position:pos };
+    await sb.from("products").insert(row);
+    setProducts(ps => [...ps, row]);
+    setNewRow(false); setNewVal({ cat:"", name:"", price:"" });
+  }
+
+  async function deleteProduct(id) {
+    if (!window.confirm("Supprimer cet article ?")) return;
+    await sb.from("products").delete().eq("id", id);
+    setProducts(ps => ps.filter(p => p.id!==id));
+  }
+
+  const cats = [...new Set(products.map(p => p.cat))];
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.5rem" }}>
+        <h1 style={{ fontFamily:FD, fontWeight:400, fontSize:28 }}>Articles & box</h1>
+        <button onClick={() => setNewRow(r => !r)}
+          style={{ display:"flex", alignItems:"center", gap:6, padding:"0.5rem 1rem",
+            backgroundColor:C.blueDeep, color:C.cream, border:"none", borderRadius:8,
+            fontSize:12, letterSpacing:"0.1em", cursor:"pointer" }}>
+          <Plus size={13}/> NOUVEL ARTICLE
+        </button>
+      </div>
+
+      {newRow && (
+        <Card style={{ marginBottom:"1.25rem", backgroundColor:C.cream }}>
+          <p style={{ fontSize:11, letterSpacing:"0.14em", color:C.rust, marginBottom:"0.75rem" }}>AJOUTER UN ARTICLE</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr 100px", gap:8, marginBottom:10 }}>
+            <input placeholder="Catégorie" value={newVal.cat} onChange={e => setNewVal({ ...newVal, cat:e.target.value })}
+              style={{ padding:"0.5rem 0.75rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
+            <input placeholder="Nom de l'article" value={newVal.name} onChange={e => setNewVal({ ...newVal, name:e.target.value })}
+              style={{ padding:"0.5rem 0.75rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
+            <input placeholder="Prix €" type="number" step="0.5" value={newVal.price} onChange={e => setNewVal({ ...newVal, price:e.target.value })}
+              style={{ padding:"0.5rem 0.75rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
           </div>
-          <p style="font-size:11px;color:var(--is)">${new Date(o.created_at).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${Number(o.total).toFixed(2)} €</p>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={addProduct}
+              style={{ padding:"0.5rem 1.25rem", backgroundColor:C.blueDeep, color:C.cream,
+                border:"none", borderRadius:6, fontSize:12, cursor:"pointer" }}>Ajouter</button>
+            <button onClick={() => setNewRow(false)}
+              style={{ padding:"0.5rem 0.75rem", backgroundColor:"transparent",
+                border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, cursor:"pointer", color:C.inkSoft }}>Annuler</button>
+          </div>
+        </Card>
+      )}
+
+      {loading ? (
+        <div style={{ display:"flex", gap:10, padding:"2rem", color:C.inkSoft }}><Spinner /> Chargement…</div>
+      ) : cats.map(cat => (
+        <div key={cat} style={{ marginBottom:"1.5rem" }}>
+          <p style={{ fontSize:11, letterSpacing:"0.16em", color:C.rust, marginBottom:"0.6rem" }}>{cat.toUpperCase()}</p>
+          <Card style={{ padding:0 }}>
+            {products.filter(p => p.cat===cat).map((p, i, arr) => (
+              <div key={p.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"0.9rem 1.25rem",
+                borderBottom: i<arr.length-1 ? `1px solid ${C.blueSoft}` : "none",
+                opacity: p.active ? 1 : 0.45 }}>
+
+                {/* Toggle actif */}
+                <button onClick={() => toggle(p)}
+                  title={p.active ? "Désactiver (masquer du site)" : "Activer"}
+                  style={{ width:26, height:26, borderRadius:"50%", flexShrink:0, cursor:"pointer",
+                    border:`1px solid ${p.active ? C.blue : C.blueSoft}`,
+                    backgroundColor: p.active ? C.blue : "transparent",
+                    display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {p.active && <Check size={12} color={C.cream}/>}
+                </button>
+
+                {/* Nom */}
+                <div style={{ flex:1 }}>
+                  {editId===p.id ? (
+                    <input value={editVal.name} onChange={e => setEditVal({ ...editVal, name:e.target.value })}
+                      style={{ width:"100%", border:`1px solid ${C.blue}`, borderRadius:6,
+                        padding:"4px 8px", fontSize:14, outline:"none" }} />
+                  ) : (
+                    <p style={{ fontSize:14 }}>{p.name}</p>
+                  )}
+                </div>
+
+                {/* Prix + actions */}
+                <div style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6 }}>
+                  {editId===p.id ? (
+                    <>
+                      <input value={editVal.price} onChange={e => setEditVal({ ...editVal, price:e.target.value })}
+                        type="number" step="0.5" min="0"
+                        style={{ width:70, border:`1px solid ${C.blue}`, borderRadius:6,
+                          padding:"4px 8px", fontSize:13, textAlign:"right", outline:"none" }} />
+                      <span style={{ fontSize:12, color:C.inkSoft }}>€</span>
+                      <button onClick={() => saveEdit(p.id)} disabled={saving}
+                        style={{ padding:"4px 10px", backgroundColor:C.blueDeep, color:C.cream,
+                          border:"none", borderRadius:6, fontSize:11, cursor:"pointer" }}>
+                        {saving ? <Spinner/> : <Save size={12}/>}
+                      </button>
+                      <button onClick={() => setEditId(null)}
+                        style={{ padding:4, border:"none", backgroundColor:"transparent", cursor:"pointer" }}>
+                        <X size={12} color={C.inkSoft}/>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize:14, color:C.inkSoft, minWidth:52, textAlign:"right" }}>
+                        {Number(p.price).toFixed(2)} €
+                      </span>
+                      <button onClick={() => { setEditId(p.id); setEditVal({ name:p.name, price:p.price }); }}
+                        style={{ padding:"3px 7px", border:`1px solid ${C.blueSoft}`,
+                          borderRadius:5, cursor:"pointer", backgroundColor:"transparent" }}>
+                        <Edit2 size={11} color={C.inkSoft}/>
+                      </button>
+                      <button onClick={() => deleteProduct(p.id)}
+                        style={{ padding:"3px 7px", border:`1px solid ${C.red}22`,
+                          borderRadius:5, cursor:"pointer", backgroundColor:"transparent" }}>
+                        <X size={11} color={C.red}/>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </Card>
         </div>
-      </div>
+      ))}
+      <p style={{ fontSize:12, color:C.inkSoft }}>
+        Un article décoché est masqué sur le site client. Les modifications de prix ou de nom sont instantanées.
+      </p>
     </div>
-  `).join("")||`<p style="padding:1rem;font-size:13px;color:var(--is)">Aucune commande pour le moment.</p>`;
+  );
 }
 
-// ── Orders ────────────────────────────────────────────────────────────────────
-let allOrders = [];
-async function loadOrders() {
-  document.getElementById("orders-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
-  allOrders = await sb("orders?order=created_at.desc");
-  renderFilterBar();
-  renderOrders();
+// ─── Points relais ────────────────────────────────────────────────────────────
+function PickupPoints() {
+  const [points, setPoints]       = useState([]);
+  const [slots, setSlots]         = useState({});
+  const [loading, setLoading]     = useState(true);
+  const [expanded, setExpanded]   = useState(null);
+  const [showNew, setShowNew]     = useState(false);
+  const [newPoint, setNewPoint]   = useState({ name:"", address:"", type:"fixed", day:"", notes:"" });
+  const [newSlot, setNewSlot]     = useState({});
+  const [editId, setEditId]       = useState(null);
+  const [editVal, setEditVal]     = useState({});
+
+  async function load() {
+    setLoading(true);
+    const { data: pts } = await sb("pickup_points?order=position.asc");
+    setPoints(pts || []);
+    if (pts?.length) {
+      const ids = pts.map(p => p.id);
+      const { data: sl } = await sb(`time_slots?pickup_point_id=in.(${ids.join(",")})&order=position.asc`);
+      const grouped = {};
+      (sl || []).forEach(s => {
+        if (!grouped[s.pickup_point_id]) grouped[s.pickup_point_id] = [];
+        grouped[s.pickup_point_id].push(s);
+      });
+      setSlots(grouped);
+    }
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function addPoint() {
+    if (!newPoint.name) return;
+    const pos = Math.max(0, ...points.map(p => p.position||0)) + 1;
+    const row = { ...newPoint, active:true, position:pos };
+    const data = await sb("pickup_points", { method:"POST", body:JSON.stringify(row) });
+    setPoints(ps => [...ps, Array.isArray(data) ? data[0] : data]);
+    setNewPoint({ name:"", address:"", type:"fixed", day:"", notes:"" });
+    setShowNew(false);
+  }
+
+  async function togglePoint(p) {
+    await sb(`pickup_points?id=eq.${p.id}`, { method:"PATCH", body:JSON.stringify({ active:!p.active }) });
+    setPoints(ps => ps.map(x => x.id===p.id ? { ...x, active:!p.active } : x));
+  }
+
+  async function deletePoint(id) {
+    if (!confirm("Supprimer ce point relais et tous ses créneaux ?")) return;
+    await sb(`pickup_points?id=eq.${id}`, { method:"DELETE", headers:{"Prefer":""} });
+    setPoints(ps => ps.filter(p => p.id!==id));
+    setSlots(sl => { const n={...sl}; delete n[id]; return n; });
+  }
+
+  async function addSlot(pointId) {
+    const label = newSlot[pointId];
+    if (!label) return;
+    const pos = (slots[pointId]?.length || 0) + 1;
+    const row = { pickup_point_id:pointId, label, active:true, position:pos };
+    const data = await sb("time_slots", { method:"POST", body:JSON.stringify(row) });
+    const created = Array.isArray(data) ? data[0] : data;
+    setSlots(sl => ({ ...sl, [pointId]: [...(sl[pointId]||[]), created] }));
+    setNewSlot(ns => ({ ...ns, [pointId]:"" }));
+  }
+
+  async function deleteSlot(pointId, slotId) {
+    await sb(`time_slots?id=eq.${slotId}`, { method:"DELETE", headers:{"Prefer":""} });
+    setSlots(sl => ({ ...sl, [pointId]: sl[pointId].filter(s => s.id!==slotId) }));
+  }
+
+  async function saveEdit(id) {
+    await sb(`pickup_points?id=eq.${id}`, { method:"PATCH", body:JSON.stringify(editVal) });
+    setPoints(ps => ps.map(p => p.id===id ? { ...p, ...editVal } : p));
+    setEditId(null);
+  }
+
+  const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.5rem" }}>
+        <h1 style={{ fontFamily:FD, fontWeight:400, fontSize:28 }}>Points relais</h1>
+        <button onClick={() => setShowNew(n => !n)}
+          style={{ display:"flex", alignItems:"center", gap:6, padding:".5rem 1rem",
+            backgroundColor:C.blueDeep, color:C.cream, border:"none", borderRadius:8,
+            fontSize:12, letterSpacing:".1em", cursor:"pointer" }}>
+          <Plus size={13}/> NOUVEAU POINT
+        </button>
+      </div>
+
+      {showNew && (
+        <Card style={{ marginBottom:"1.25rem", backgroundColor:C.cream }}>
+          <p style={{ fontSize:11, letterSpacing:".14em", color:C.rust, marginBottom:"0.75rem" }}>AJOUTER UN POINT RELAIS</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+            <div>
+              <label style={{ fontSize:11, color:C.inkSoft }}>Nom *</label>
+              <input className="form-input" value={newPoint.name} placeholder="Marché du Samedi"
+                onChange={e => setNewPoint({...newPoint, name:e.target.value})}
+                style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
+            </div>
+            <div>
+              <label style={{ fontSize:11, color:C.inkSoft }}>Type</label>
+              <select value={newPoint.type} onChange={e => setNewPoint({...newPoint, type:e.target.value})}
+                style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13, fontFamily:"'Outfit',sans-serif" }}>
+                <option value="fixed">Adresse fixe</option>
+                <option value="market">Marché</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize:11, color:C.inkSoft }}>Adresse</label>
+              <input value={newPoint.address} placeholder="12 rue du Fournil, Clermont-Fd"
+                onChange={e => setNewPoint({...newPoint, address:e.target.value})}
+                style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
+            </div>
+            {newPoint.type === "market" && (
+              <div>
+                <label style={{ fontSize:11, color:C.inkSoft }}>Jour</label>
+                <select value={newPoint.day} onChange={e => setNewPoint({...newPoint, day:e.target.value})}
+                  style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13, fontFamily:"'Outfit',sans-serif" }}>
+                  <option value="">— Choisir —</option>
+                  {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            )}
+            <div style={{ gridColumn:"1/-1" }}>
+              <label style={{ fontSize:11, color:C.inkSoft }}>Note (optionnel)</label>
+              <input value={newPoint.notes} placeholder="Stand allée B, côté légumes…"
+                onChange={e => setNewPoint({...newPoint, notes:e.target.value})}
+                style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={addPoint}
+              style={{ padding:".5rem 1.25rem", backgroundColor:C.blueDeep, color:C.cream,
+                border:"none", borderRadius:6, fontSize:12, cursor:"pointer" }}>Ajouter</button>
+            <button onClick={() => setShowNew(false)}
+              style={{ padding:".5rem .75rem", backgroundColor:"transparent",
+                border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, cursor:"pointer", color:C.inkSoft }}>Annuler</button>
+          </div>
+        </Card>
+      )}
+
+      {loading ? (
+        <div style={{ display:"flex", gap:10, padding:"2rem", color:C.inkSoft }}><Spinner /> Chargement…</div>
+      ) : points.length === 0 ? (
+        <p style={{ color:C.inkSoft, fontSize:13 }}>Aucun point relais. Crée ton premier point ci-dessus.</p>
+      ) : points.map(p => (
+        <Card key={p.id} style={{ marginBottom:"1rem", padding:0, overflow:"hidden", opacity:p.active?1:.5 }}>
+          {/* En-tête du point */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:".9rem 1.25rem",
+            cursor:"pointer", backgroundColor: expanded===p.id ? C.blueSoft+"44" : "transparent" }}
+            onClick={() => setExpanded(expanded===p.id ? null : p.id)}>
+            <div style={{ width:28, height:28, borderRadius:"50%",
+              backgroundColor: p.type==="market" ? C.rust+"22" : C.blue+"22",
+              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              {p.type==="market"
+                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.rust} strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                : <MapPin size={13} color={C.blue} />}
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontWeight:500, fontSize:14 }}>{p.name}</span>
+                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:999,
+                  background: p.type==="market" ? C.rust+"22" : C.blue+"22",
+                  color: p.type==="market" ? C.rust : C.blue }}>
+                  {p.type==="market" ? "Marché" : "Adresse fixe"}
+                </span>
+                {p.day && <span style={{ fontSize:11, color:C.inkSoft }}>{p.day}</span>}
+              </div>
+              <p style={{ fontSize:12, color:C.inkSoft, marginTop:2 }}>
+                {p.address || "Adresse non renseignée"}
+                {(slots[p.id]?.length || 0) > 0 && ` · ${slots[p.id].length} créneau${slots[p.id].length>1?"x":""}`}
+              </p>
+            </div>
+            <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+              <button onClick={e => { e.stopPropagation(); togglePoint(p); }}
+                title={p.active?"Désactiver":"Activer"}
+                style={{ width:26, height:26, borderRadius:"50%", cursor:"pointer",
+                  border:`1px solid ${p.active ? C.blue : C.blueSoft}`,
+                  backgroundColor: p.active ? C.blue : "transparent",
+                  display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {p.active && <Check size={12} color={C.cream}/>}
+              </button>
+              {expanded===p.id ? <ChevronUp size={14} color={C.inkSoft}/> : <ChevronDown size={14} color={C.inkSoft}/>}
+            </div>
+          </div>
+
+          {/* Détail — créneaux */}
+          {expanded===p.id && (
+            <div style={{ borderTop:`1px solid ${C.blueSoft}`, padding:"1rem 1.25rem", backgroundColor:"#f7f9fa" }}>
+              <p style={{ fontSize:11, letterSpacing:".12em", color:C.inkSoft, marginBottom:".75rem" }}>CRÉNEAUX HORAIRES</p>
+
+              {(slots[p.id]||[]).length === 0 ? (
+                <p style={{ fontSize:12, color:C.inkSoft, marginBottom:".75rem" }}>Aucun créneau — ajoute-en ci-dessous.</p>
+              ) : (
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:".75rem" }}>
+                  {(slots[p.id]||[]).map(s => (
+                    <div key={s.id} style={{ display:"flex", alignItems:"center", gap:5,
+                      padding:"4px 10px", backgroundColor:C.paper,
+                      border:`1px solid ${C.blueSoft}`, borderRadius:999, fontSize:12 }}>
+                      <Clock size={11} color={C.blue} />
+                      {s.label}
+                      <button onClick={() => deleteSlot(p.id, s.id)}
+                        style={{ border:"none", background:"transparent", cursor:"pointer", padding:0, lineHeight:1 }}>
+                        <X size={11} color={C.inkSoft} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem" }}>
+                <input value={newSlot[p.id]||""} placeholder="ex: 9h00 – 9h30"
+                  onChange={e => setNewSlot(ns => ({...ns, [p.id]:e.target.value}))}
+                  onKeyDown={e => e.key==="Enter" && addSlot(p.id)}
+                  style={{ flex:1, padding:".4rem .75rem", border:`1px solid ${C.blueSoft}`,
+                    borderRadius:6, fontSize:13, outline:"none" }} />
+                <button onClick={() => addSlot(p.id)}
+                  style={{ padding:".4rem .9rem", backgroundColor:C.blueDeep, color:C.cream,
+                    border:"none", borderRadius:6, fontSize:11, cursor:"pointer" }}>
+                  + Ajouter
+                </button>
+              </div>
+
+              <button onClick={() => deletePoint(p.id)}
+                style={{ fontSize:11, color:C.red, border:`1px solid ${C.red}33`,
+                  background:"transparent", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}>
+                Supprimer ce point relais
+              </button>
+            </div>
+          )}
+        </Card>
+      ))}
+
+      <p style={{ fontSize:12, color:C.inkSoft, marginTop:".5rem" }}>
+        Un point désactivé n'apparaît plus dans les options de retrait sur le site.
+      </p>
+    </div>
+  );
 }
-function renderFilterBar() {
-  document.getElementById("filter-bar").innerHTML =
-    [{key:"all",label:"TOUTES"},...STATUSES].map(s=>
-      `<button class="fbtn${currentFilter===s.key?" on":""}" onclick="setFilter('${s.key}')">${s.label}</button>`
-    ).join("");
-}
-function setFilter(f){ currentFilter=f; renderFilterBar(); renderOrders(); }
-function renderOrders() {
-  const list = currentFilter==="all"?allOrders:allOrders.filter(o=>o.status===currentFilter);
-  if(!list.length){ document.getElementById("orders-list").innerHTML=`<p style="font-size:13px;color:var(--is);padding:.5rem 0">Aucune commande dans cette catégorie.</p>`; return; }
-  document.getElementById("orders-list").innerHTML=`<div class="card card0">${list.map(o=>orderRow(o)).join("")}</div>`;
-}
-function orderRow(o) {
-  const items = Array.isArray(o.items)?o.items:[];
-  const open = expandedOrder===o.id;
-  return `<div class="orow" id="orow-${o.id}">
-    <div class="ohead" onclick="toggleOrder('${o.id}')">
-      <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap">
-          <span style="font-weight:500;font-size:14px">${o.name}</span>
-          <span class="badge" style="background:${sm(o.status).color}22;color:${sm(o.status).color}">${sm(o.status).label}</span>
-          ${o.shipping==="chronopost"?`<span class="badge" style="background:#3E5A7022;color:#3E5A70">Chronopost</span>`:""}
+
+// ─── Paramètres ───────────────────────────────────────────────────────────────
+function SettingsPanel({ settings, setSettings }) {
+  const [newPin, setNewPin]         = useState("");
+  const [scPublic, setScPublic]     = useState(SENDCLOUD_PUBLIC);
+  const [scSecret, setScSecret]     = useState(SENDCLOUD_SECRET);
+  const [saved, setSaved]           = useState("");
+
+  function savePin() {
+    if (newPin.length < 4) return;
+    setSettings(s => ({ ...s, pin:newPin }));
+    setNewPin(""); setSaved("pin"); setTimeout(() => setSaved(""), 2500);
+  }
+
+  async function exportCSV() {
+    const { data:orders } = await sb.from("orders").select("*").order("created_at", { ascending:false });
+    if (!orders?.length) return;
+    const rows = [
+      ["ID","Date","Nom","Email","Téléphone","Articles","Total","Statut","Livraison"],
+      ...orders.map(o => [
+        o.id,
+        new Date(o.created_at).toLocaleDateString("fr-FR"),
+        o.name, o.email, o.phone||"",
+        (o.items||[]).map(i => `${i.name} x${i.qty}`).join(" | "),
+        Number(o.total).toFixed(2),
+        sm(o.status).label,
+        o.shipping||"—"
+      ])
+    ].map(r => r.join(";")).join("\n");
+    const blob = new Blob(["\uFEFF"+rows], { type:"text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `commandes-a-contre-temps-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+  }
+
+  return (
+    <div style={{ maxWidth:480 }}>
+      <h1 style={{ fontFamily:FD, fontWeight:400, fontSize:28, marginBottom:"1.5rem" }}>Paramètres</h1>
+
+      {/* PIN */}
+      <Card style={{ marginBottom:"1.25rem" }}>
+        <p style={{ fontSize:11, letterSpacing:"0.14em", color:C.rust, marginBottom:"1rem" }}>SÉCURITÉ — CODE PIN</p>
+        <div style={{ display:"flex", gap:8 }}>
+          <input type="password" value={newPin} onChange={e => setNewPin(e.target.value)}
+            placeholder="Nouveau code (min 4 chiffres)"
+            style={{ flex:1, padding:"0.6rem 0.75rem", border:`1px solid ${C.blueSoft}`,
+              borderRadius:8, fontSize:14, outline:"none", backgroundColor:C.cream }} />
+          <button onClick={savePin}
+            style={{ padding:"0.6rem 1rem", backgroundColor: saved==="pin" ? C.green : C.blueDeep,
+              color:C.cream, border:"none", borderRadius:8, fontSize:12, cursor:"pointer",
+              display:"flex", alignItems:"center", gap:6 }}>
+            {saved==="pin" ? <><Check size={13}/> OK</> : "Enregistrer"}
+          </button>
         </div>
-        <p style="font-size:11px;color:var(--is)">${new Date(o.created_at).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${items.length} article${items.length>1?"s":""} · ${Number(o.total).toFixed(2)} €</p>
-      </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="${open?"18 15 12 9 6 15":"6 9 12 15 18 9"}"/></svg>
+      </Card>
+
+      {/* Sendcloud */}
+      <Card style={{ marginBottom:"1.25rem" }}>
+        <p style={{ fontSize:11, letterSpacing:"0.14em", color:C.rust, marginBottom:"0.5rem" }}>SENDCLOUD — ÉTIQUETTES CHRONOPOST</p>
+        <p style={{ fontSize:12, color:C.inkSoft, marginBottom:"1rem" }}>
+          Crée un compte sur sendcloud.com, puis récupère tes clés dans <em>Paramètres → Accès API</em>.
+        </p>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <div>
+            <label style={{ fontSize:11, color:C.inkSoft }}>Clé publique</label>
+            <input value={scPublic} onChange={e => setScPublic(e.target.value)}
+              placeholder="ex. abc123def456"
+              style={{ width:"100%", marginTop:4, padding:"0.55rem 0.75rem", border:`1px solid ${C.blueSoft}`,
+                borderRadius:7, fontSize:13, outline:"none", backgroundColor:C.cream }} />
+          </div>
+          <div>
+            <label style={{ fontSize:11, color:C.inkSoft }}>Clé secrète (à stocker dans .env en production)</label>
+            <input type="password" value={scSecret} onChange={e => setScSecret(e.target.value)}
+              placeholder="ex. xyz789uvw012"
+              style={{ width:"100%", marginTop:4, padding:"0.55rem 0.75rem", border:`1px solid ${C.blueSoft}`,
+                borderRadius:7, fontSize:13, outline:"none", backgroundColor:C.cream }} />
+          </div>
+          <p style={{ fontSize:11, color:C.rust }}>
+            ⚠️ En production, n'inscris jamais la clé secrète dans le code — utilise une variable d'environnement .env.
+          </p>
+        </div>
+      </Card>
+
+      {/* Export */}
+      <Card>
+        <p style={{ fontSize:11, letterSpacing:"0.14em", color:C.rust, marginBottom:"0.75rem" }}>DONNÉES</p>
+        <p style={{ fontSize:13, color:C.inkSoft, marginBottom:"1rem" }}>
+          Exporter toutes les commandes en CSV compatible Excel.
+        </p>
+        <button onClick={exportCSV}
+          style={{ display:"flex", alignItems:"center", gap:8, padding:"0.6rem 1.25rem",
+            backgroundColor:C.blueDeep, color:C.cream, border:"none", borderRadius:8,
+            fontSize:12, letterSpacing:"0.1em", cursor:"pointer" }}>
+          <Truck size={13}/> EXPORTER LES COMMANDES
+        </button>
+      </Card>
     </div>
-    <div class="obody${open?" on":""}" id="obody-${o.id}">
-      <div class="drow">
-        <div><span style="color:var(--is)">Email : </span>${o.email}</div>
-        <div><span style="color:var(--is)">Tél : </span>${o.phone||"—"}</div>
-        ${o.note?`<div style="grid-column:1/-1"><span style="color:var(--is)">Note : </span>${o.note}</div>`:""}
-      </div>
-      <div style="border-top:1px solid var(--bs);padding:.6rem 0;margin-bottom:.6rem">
-        ${items.map(it=>`<div class="di"><span>${it.name} × ${it.qty}</span><span style="color:var(--is)">${(it.price*it.qty).toFixed(2)} €</span></div>`).join("")}
-        <div class="dt"><span>Total</span><span>${Number(o.total).toFixed(2)} €</span></div>
-      </div>
-      <p style="font-size:10px;letter-spacing:.12em;color:var(--is);margin-bottom:5px">STATUT</p>
-      <div class="sbtns">
-        ${STATUSES.map(s=>`<button class="sbtn" style="border:1px solid ${s.color};background:${o.status===s.key?s.color:"transparent"};color:${o.status===s.key?"#FBF8F4":s.color}" onclick="updateStatus('${o.id}','${s.key}')">${s.label}</button>`).join("")}
-      </div>
-    </div>
-  </div>`;
-}
-function toggleOrder(id){
-  expandedOrder = expandedOrder===id?null:id;
-  renderOrders();
-}
-async function updateStatus(id, status){
-  await sb(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({status})});
-  allOrders = allOrders.map(o=>o.id===id?{...o,status}:o);
-  renderOrders();
+  );
 }
 
-// ── Products ──────────────────────────────────────────────────────────────────
-let allProducts = [];
-let editingId = null;
-async function loadProducts() {
-  document.getElementById("products-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
-  allProducts = await sb("products?order=position.asc");
-  renderProducts();
-}
-function renderProducts() {
-  const cats = [...new Set(allProducts.map(p=>p.cat))];
-  document.getElementById("products-list").innerHTML = cats.map(cat=>`
-    <div style="margin-bottom:1.25rem">
-      <p class="sl-label">${cat.toUpperCase()}</p>
-      <div class="card card0">
-        ${allProducts.filter(p=>p.cat===cat).map(p=>productRow(p)).join("")}
+// ─── Carte commande compacte ──────────────────────────────────────────────────
+function OrderCard({ order }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:12, backgroundColor:C.paper,
+      border:`1px solid ${C.blueSoft}`, borderRadius:10, padding:"0.8rem 1rem" }}>
+      <div style={{ flex:1 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+          <span style={{ fontSize:14, fontWeight:500 }}>{order.name}</span>
+          <Badge label={sm(order.status).label} color={sm(order.status).color} />
+        </div>
+        <p style={{ fontSize:12, color:C.inkSoft }}>
+          {new Date(order.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}
+          {" · "}{Number(order.total).toFixed(2)} €
+        </p>
       </div>
     </div>
-  `).join("")+`<p style="font-size:11px;color:var(--is)">Un article décoché est masqué sur le site client. Modifications instantanées.</p>`;
+  );
 }
-function productRow(p) {
-  const editing = editingId===p.id;
-  return `<div class="prow" style="opacity:${p.active?1:.45}" id="prow-${p.id}">
-    <button class="tog${p.active?" on":""}" onclick="toggleProduct('${p.id}')" title="${p.active?"Désactiver":"Activer"}">
-      ${p.active?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:""}
-    </button>
-    <div style="flex:1">
-      ${editing
-        ?`<input class="einp" id="ename-${p.id}" style="width:100%" value="${p.name.replace(/"/g,'&quot;')}" />`
-        :`<p style="font-size:13px">${p.name}</p>`}
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      ${editing?`
-        <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:65px;text-align:right" value="${p.price}" />
-        <span style="font-size:11px;color:var(--is)">€</span>
-        <button class="btn bp bsm" style="padding:3px 8px" onclick="saveProduct('${p.id}')">✓</button>
-        <button class="btn bg bsm" style="padding:3px 6px" onclick="cancelEdit()">✕</button>
-      `:`
-        <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
-        <button class="btn bg bsm" style="padding:3px 6px" onclick="startEdit('${p.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="btn bsm" style="padding:3px 6px;border:1px solid #A6333322;background:transparent;color:var(--rd)" onclick="deleteProduct('${p.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-        </button>
-      `}
-    </div>
-  </div>`;
-}
-function startEdit(id){ editingId=id; renderProducts(); }
-function cancelEdit(){ editingId=null; renderProducts(); }
-async function saveProduct(id){
-  const name = document.getElementById("ename-"+id).value;
-  const price = parseFloat(document.getElementById("eprice-"+id).value)||0;
-  await sb(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({name,price})});
-  allProducts = allProducts.map(p=>p.id===id?{...p,name,price}:p);
-  editingId=null; renderProducts();
-}
-async function toggleProduct(id){
-  const p = allProducts.find(x=>x.id===id);
-  await sb(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({active:!p.active})});
-  allProducts = allProducts.map(x=>x.id===id?{...x,active:!p.active}:x);
-  renderProducts();
-}
-async function deleteProduct(id){
-  if(!confirm("Supprimer cet article ?")) return;
-  await sb(`products?id=eq.${id}`,{method:"DELETE",headers:{"Prefer":""}});
-  allProducts = allProducts.filter(p=>p.id!==id);
-  renderProducts();
-}
-function toggleNewForm(){ const f=document.getElementById("new-form"); f.style.display=f.style.display==="none"?"block":"none"; }
-async function addProduct(){
-  const cat=document.getElementById("new-cat").value.trim();
-  const name=document.getElementById("new-name").value.trim();
-  const price=parseFloat(document.getElementById("new-price").value)||0;
-  if(!cat||!name||!price) return alert("Remplis tous les champs.");
-  const id="p"+Date.now().toString(36);
-  const pos=Math.max(0,...allProducts.map(p=>p.position||0))+1;
-  const row={id,cat,name,price,active:true,position:pos};
-  await sb("products",{method:"POST",body:JSON.stringify(row)});
-  allProducts.push(row);
-  document.getElementById("new-cat").value=""; document.getElementById("new-name").value=""; document.getElementById("new-price").value="";
-  toggleNewForm(); renderProducts();
-}
-
-// ── Settings ──────────────────────────────────────────────────────────────────
-function savePin(){
-  const v=document.getElementById("new-pin").value;
-  if(v.length<4) return alert("Code trop court (minimum 4 caractères)");
-  PIN=v; localStorage.setItem("act_pin",v);
-  document.getElementById("new-pin").value="";
-  const ok=document.getElementById("pin-saved"); ok.style.display="block"; setTimeout(()=>ok.style.display="none",2500);
-}
-async function exportCSV(){
-  const orders=await sb("orders?order=created_at.desc");
-  if(!orders?.length) return alert("Aucune commande à exporter.");
-  const rows=[["ID","Date","Nom","Email","Téléphone","Articles","Total","Statut","Livraison"],
-    ...orders.map(o=>[o.id,new Date(o.created_at).toLocaleDateString("fr-FR"),o.name,o.email,o.phone||"",(o.items||[]).map(i=>`${i.name} x${i.qty}`).join("|"),Number(o.total).toFixed(2),sm(o.status).label,o.shipping||"—"])
-  ].map(r=>r.join(";")).join("\n");
-  const a=document.createElement("a");
-  a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(rows);
-  a.download=`commandes-${new Date().toISOString().split("T")[0]}.csv`; a.click();
-}
-</script>
-</body>
-</html>
