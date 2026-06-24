@@ -19,7 +19,7 @@ async function sbFetch(path, opts = {}) {
   const t = await r.text();
   return t ? JSON.parse(t) : [];
 }
-import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck, User } from "lucide-react";
+import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck, User, ChevronLeft, ChevronRight, CreditCard, Banknote, Smartphone } from "lucide-react";
 
 const COLORS = {
   blueDeep: "#3E5A70",
@@ -190,6 +190,112 @@ const MARKETS = [
   { city: "Marché de producteurs", day: "Jour à préciser" },
 ];
 
+// ─── Mini Calendrier ─────────────────────────────────────────────────────────
+const JOURS = ["Di","Lu","Ma","Me","Je","Ve","Sa"];
+const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+function MiniCalendar({ schedules, selectedDate, onSelect }) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date(); d.setDate(1); return d;
+  });
+
+  // Calculer les dates disponibles selon les plannings
+  const availableDates = useMemo(() => {
+    const set = new Set();
+    const end = new Date(today); end.setMonth(end.getMonth() + 4);
+    schedules.forEach(s => {
+      if (!s.active) return;
+      if (s.type === "recurring" && s.day_of_week !== null) {
+        let d = new Date(today); d.setDate(d.getDate() + 1);
+        while (d <= end) {
+          if (d.getDay() === s.day_of_week) set.add(d.toISOString().split("T")[0]);
+          d.setDate(d.getDate() + 1);
+        }
+      } else if (s.type === "specific" && s.specific_date) {
+        const sd = new Date(s.specific_date);
+        if (sd > today) set.add(s.specific_date);
+      }
+    });
+    return set;
+  }, [schedules]);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  function prevMonth() { const d = new Date(viewDate); d.setMonth(d.getMonth()-1); setViewDate(d); }
+  function nextMonth() { const d = new Date(viewDate); d.setMonth(d.getMonth()+1); setViewDate(d); }
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div style={{ backgroundColor: COLORS.paper, border: `1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"1rem", userSelect:"none" }}>
+      {/* Navigation mois */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:".75rem" }}>
+        <button onClick={prevMonth} style={{ border:"none", background:"transparent", cursor:"pointer", padding:"4px" }}>
+          <ChevronLeft size={16} color={COLORS.inkSoft} />
+        </button>
+        <p style={{ fontFamily:FONT_DISPLAY, fontSize:14, fontWeight:500 }}>
+          {MOIS[month]} {year}
+        </p>
+        <button onClick={nextMonth} style={{ border:"none", background:"transparent", cursor:"pointer", padding:"4px" }}>
+          <ChevronRight size={16} color={COLORS.inkSoft} />
+        </button>
+      </div>
+
+      {/* En-têtes jours */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
+        {JOURS.map(j => (
+          <div key={j} style={{ textAlign:"center", fontSize:10, letterSpacing:".08em",
+            color: COLORS.inkSoft, padding:"2px 0" }}>{j}</div>
+        ))}
+      </div>
+
+      {/* Grille dates */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+        {cells.map((d, i) => {
+          if (!d) return <div key={`empty-${i}`} />;
+          const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+          const isAvailable = availableDates.has(dateStr);
+          const isSelected = selectedDate === dateStr;
+          const isPast = new Date(dateStr) <= today;
+          return (
+            <button key={dateStr} onClick={() => isAvailable && !isPast && onSelect(dateStr)}
+              style={{
+                width:"100%", aspectRatio:"1", borderRadius:6, border:"none",
+                cursor: isAvailable && !isPast ? "pointer" : "default",
+                fontSize:12, fontFamily:FONT_BODY,
+                backgroundColor: isSelected ? COLORS.blueDeep : isAvailable && !isPast ? COLORS.cream : "transparent",
+                color: isSelected ? COLORS.cream : isAvailable && !isPast ? COLORS.blueDeep : COLORS.inkSoft,
+                fontWeight: isSelected || (isAvailable && !isPast) ? 500 : 400,
+                opacity: isPast ? 0.3 : 1,
+                outline: isAvailable && !isPast && !isSelected ? `1px solid ${COLORS.blueSoft}` : "none",
+              }}>
+              {d}
+            </button>
+          );
+        })}
+      </div>
+
+      {availableDates.size === 0 && (
+        <p style={{ textAlign:"center", fontSize:12, color:COLORS.inkSoft, marginTop:".5rem" }}>
+          Aucune date configurée pour ce point.
+        </p>
+      )}
+
+      {selectedDate && (
+        <p style={{ textAlign:"center", fontSize:12, marginTop:".75rem", color:COLORS.blueDeep }}>
+          ✓ {new Date(selectedDate).toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long" })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function ContreTempsSite() {
   const { user } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
@@ -216,10 +322,13 @@ export default function ContreTempsSite() {
     address: "", city: "", zip: "",
     deliveryMode: "pickup", // "pickup" | "home" | "chronopost"
     pickupPointId: "", timeSlotId: "", timeSlotLabel: "",
+    pickupDate: null, paymentMethod: "onsite_cb",
   });
   const [orderLoading, setOrderLoading] = useState(false);
   const [pickupPoints, setPickupPoints] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
     sbFetch("pickup_points?active=eq.true&order=position.asc")
@@ -772,10 +881,15 @@ export default function ContreTempsSite() {
                       onChange={async e => {
                         const id = e.target.value;
                         setOrderForm(f => ({ ...f, pickupPointId: id, timeSlotId:"", timeSlotLabel:"" }));
+                        setSelectedDate(null);
                         if (id) {
-                          const sl = await sbFetch(`time_slots?pickup_point_id=eq.${id}&active=eq.true&order=position.asc`);
+                          const [sl, sc] = await Promise.all([
+                            sbFetch(`time_slots?pickup_point_id=eq.${id}&active=eq.true&order=position.asc`),
+                            sbFetch(`market_schedules?pickup_point_id=eq.${id}&active=eq.true`),
+                          ]);
                           setTimeSlots(sl || []);
-                        } else { setTimeSlots([]); }
+                          setSchedules(sc || []);
+                        } else { setTimeSlots([]); setSchedules([]); }
                       }}
                       className="w-full mt-2 bg-transparent outline-none text-sm"
                       style={{ border:"none", borderBottom:`1px solid ${COLORS.blue}`, fontFamily:"inherit", fontSize:14, padding:".5rem 0" }}>
@@ -805,6 +919,48 @@ export default function ContreTempsSite() {
                         <option key={s.id} value={s.id}>{s.label}</option>
                       ))}
                     </select>
+                  </div>
+                )}
+
+                {/* Calendrier des marchés */}
+                {orderForm.pickupPointId && schedules.length > 0 && (
+                  <div>
+                    <label className="text-[10px] tracked uppercase mb-3 block" style={{ color: COLORS.inkSoft }}>
+                      Choisir une date
+                    </label>
+                    <MiniCalendar
+                      schedules={schedules}
+                      selectedDate={selectedDate}
+                      onSelect={d => { setSelectedDate(d); setOrderForm(f => ({ ...f, pickupDate: d })); }}
+                    />
+                  </div>
+                )}
+
+                {/* Options de paiement */}
+                {orderForm.deliveryMode === "pickup" && !hasBiscuiterie && (
+                  <div className="pt-2">
+                    <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>
+                      Mode de paiement
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {[
+                        { value:"onsite_cb",   icon:<CreditCard size={14}/>,  label:"CB sur place" },
+                        { value:"onsite_cash", icon:<Banknote size={14}/>,    label:"Espèces sur place" },
+                        { value:"online",      icon:<Smartphone size={14}/>,  label:"Paiement en ligne (Revolut)" },
+                      ].map(opt => (
+                        <label key={opt.value} style={{ display:"flex", alignItems:"center", gap:10,
+                          padding:".65rem .9rem", border:`1px solid ${orderForm.paymentMethod===opt.value ? COLORS.blueDeep : COLORS.blueSoft}`,
+                          borderRadius:8, cursor:"pointer", fontSize:13,
+                          backgroundColor: orderForm.paymentMethod===opt.value ? COLORS.blueDeep+"11" : "transparent" }}>
+                          <input type="radio" name="paymentMethod" value={opt.value}
+                            checked={orderForm.paymentMethod===opt.value}
+                            onChange={() => setOrderForm(f => ({ ...f, paymentMethod:opt.value }))}
+                            style={{ accentColor: COLORS.blueDeep }} />
+                          <span style={{ color: COLORS.blueDeep }}>{opt.icon}</span>
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -880,6 +1036,8 @@ export default function ContreTempsSite() {
                           shipping: hasBiscuiterie ? "chronopost" : orderForm.deliveryMode,
                           total: parseFloat(total.toFixed(2)),
                           items,
+                          pickup_date: orderForm.pickupDate || null,
+                          payment_method: orderForm.paymentMethod,
                         };
                         await sbFetch("orders", { method: "POST", body: JSON.stringify(order) });
                         try {
@@ -915,7 +1073,7 @@ export default function ContreTempsSite() {
                 <p className="text-sm mt-3 leading-relaxed" style={{ color: COLORS.inkSoft }}>
                   Merci {orderForm.nom.split(" ")[0]} — nous revenons vers vous très vite pour confirmer et organiser la livraison.
                 </p>
-                <button onClick={() => { setCartOpen(false); setOrderStep("cart"); setOrderForm({ nom:"",email:"",phone:"",note:"",address:"",city:"",zip:"" }); }}
+                <button onClick={() => { setCartOpen(false); setOrderStep("cart"); setOrderForm({ nom:"",email:"",phone:"",note:"",address:"",city:"",zip:"",deliveryMode:"pickup",pickupPointId:"",timeSlotId:"",timeSlotLabel:"",pickupDate:null,paymentMethod:"onsite_cb" }); }}
                   className="mt-8 px-6 py-3 rounded-full text-xs tracked uppercase"
                   style={{ backgroundColor: COLORS.blueDeep, color: COLORS.cream }}>
                   Fermer
