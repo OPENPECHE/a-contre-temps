@@ -609,13 +609,15 @@ function Products() {
 function PickupPoints() {
   const [points, setPoints]       = useState([]);
   const [slots, setSlots]         = useState({});
+  const [schedules, setSchedules] = useState({});
   const [loading, setLoading]     = useState(true);
   const [expanded, setExpanded]   = useState(null);
   const [showNew, setShowNew]     = useState(false);
   const [newPoint, setNewPoint]   = useState({ name:"", address:"", type:"fixed", day:"", notes:"" });
   const [newSlot, setNewSlot]     = useState({});
-  const [editId, setEditId]       = useState(null);
-  const [editVal, setEditVal]     = useState({});
+  const [newSchedule, setNewSchedule] = useState({});
+
+  const DAYS_FR = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
 
   async function load() {
     setLoading(true);
@@ -623,13 +625,22 @@ function PickupPoints() {
     setPoints(pts || []);
     if (pts?.length) {
       const ids = pts.map(p => p.id);
-      const { data: sl } = await sb(`time_slots?pickup_point_id=in.(${ids.join(",")})&order=position.asc`);
-      const grouped = {};
+      const [{ data: sl }, { data: sc }] = await Promise.all([
+        sb(`time_slots?pickup_point_id=in.(${ids.join(",")})&order=position.asc`),
+        sb(`market_schedules?pickup_point_id=in.(${ids.join(",")})&order=created_at.asc`),
+      ]);
+      const groupedSlots = {};
       (sl || []).forEach(s => {
-        if (!grouped[s.pickup_point_id]) grouped[s.pickup_point_id] = [];
-        grouped[s.pickup_point_id].push(s);
+        if (!groupedSlots[s.pickup_point_id]) groupedSlots[s.pickup_point_id] = [];
+        groupedSlots[s.pickup_point_id].push(s);
       });
-      setSlots(grouped);
+      const groupedSched = {};
+      (sc || []).forEach(s => {
+        if (!groupedSched[s.pickup_point_id]) groupedSched[s.pickup_point_id] = [];
+        groupedSched[s.pickup_point_id].push(s);
+      });
+      setSlots(groupedSlots);
+      setSchedules(groupedSched);
     }
     setLoading(false);
   }
@@ -655,6 +666,7 @@ function PickupPoints() {
     await sb(`pickup_points?id=eq.${id}`, { method:"DELETE", headers:{"Prefer":""} });
     setPoints(ps => ps.filter(p => p.id!==id));
     setSlots(sl => { const n={...sl}; delete n[id]; return n; });
+    setSchedules(sc => { const n={...sc}; delete n[id]; return n; });
   }
 
   async function addSlot(pointId) {
@@ -673,13 +685,28 @@ function PickupPoints() {
     setSlots(sl => ({ ...sl, [pointId]: sl[pointId].filter(s => s.id!==slotId) }));
   }
 
-  async function saveEdit(id) {
-    await sb(`pickup_points?id=eq.${id}`, { method:"PATCH", body:JSON.stringify(editVal) });
-    setPoints(ps => ps.map(p => p.id===id ? { ...p, ...editVal } : p));
-    setEditId(null);
+  async function addSchedule(pointId) {
+    const ns = newSchedule[pointId] || {};
+    if (!ns.type) return;
+    const row = {
+      pickup_point_id: pointId,
+      type: ns.type,
+      day_of_week: ns.type==="recurring" ? parseInt(ns.day_of_week||0) : null,
+      specific_date: ns.type==="specific" ? ns.specific_date : null,
+      active: true,
+    };
+    const data = await sb("market_schedules", { method:"POST", body:JSON.stringify(row) });
+    const created = Array.isArray(data) ? data[0] : data;
+    setSchedules(sc => ({ ...sc, [pointId]: [...(sc[pointId]||[]), created] }));
+    setNewSchedule(ns2 => ({ ...ns2, [pointId]: {} }));
   }
 
-  const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+  async function deleteSchedule(pointId, schedId) {
+    await sb(`market_schedules?id=eq.${schedId}`, { method:"DELETE", headers:{"Prefer":""} });
+    setSchedules(sc => ({ ...sc, [pointId]: sc[pointId].filter(s => s.id!==schedId) }));
+  }
+
+  const DAYS_SELECT = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
 
   return (
     <div>
@@ -699,7 +726,7 @@ function PickupPoints() {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
             <div>
               <label style={{ fontSize:11, color:C.inkSoft }}>Nom *</label>
-              <input className="form-input" value={newPoint.name} placeholder="Marché du Samedi"
+              <input value={newPoint.name} placeholder="Marché du Samedi"
                 onChange={e => setNewPoint({...newPoint, name:e.target.value})}
                 style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
             </div>
@@ -713,34 +740,22 @@ function PickupPoints() {
             </div>
             <div>
               <label style={{ fontSize:11, color:C.inkSoft }}>Adresse</label>
-              <input value={newPoint.address} placeholder="12 rue du Fournil, Clermont-Fd"
+              <input value={newPoint.address} placeholder="12 rue du Fournil"
                 onChange={e => setNewPoint({...newPoint, address:e.target.value})}
                 style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
             </div>
-            {newPoint.type === "market" && (
-              <div>
-                <label style={{ fontSize:11, color:C.inkSoft }}>Jour</label>
-                <select value={newPoint.day} onChange={e => setNewPoint({...newPoint, day:e.target.value})}
-                  style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13, fontFamily:"'Outfit',sans-serif" }}>
-                  <option value="">— Choisir —</option>
-                  {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-            )}
             <div style={{ gridColumn:"1/-1" }}>
               <label style={{ fontSize:11, color:C.inkSoft }}>Note (optionnel)</label>
-              <input value={newPoint.notes} placeholder="Stand allée B, côté légumes…"
+              <input value={newPoint.notes} placeholder="Stand allée B…"
                 onChange={e => setNewPoint({...newPoint, notes:e.target.value})}
                 style={{ width:"100%", marginTop:4, padding:".45rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13 }} />
             </div>
           </div>
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={addPoint}
-              style={{ padding:".5rem 1.25rem", backgroundColor:C.blueDeep, color:C.cream,
-                border:"none", borderRadius:6, fontSize:12, cursor:"pointer" }}>Ajouter</button>
+              style={{ padding:".5rem 1.25rem", backgroundColor:C.blueDeep, color:C.cream, border:"none", borderRadius:6, fontSize:12, cursor:"pointer" }}>Ajouter</button>
             <button onClick={() => setShowNew(false)}
-              style={{ padding:".5rem .75rem", backgroundColor:"transparent",
-                border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, cursor:"pointer", color:C.inkSoft }}>Annuler</button>
+              style={{ padding:".5rem .75rem", backgroundColor:"transparent", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, cursor:"pointer", color:C.inkSoft }}>Annuler</button>
           </div>
         </Card>
       )}
@@ -751,9 +766,8 @@ function PickupPoints() {
         <p style={{ color:C.inkSoft, fontSize:13 }}>Aucun point relais. Crée ton premier point ci-dessus.</p>
       ) : points.map(p => (
         <Card key={p.id} style={{ marginBottom:"1rem", padding:0, overflow:"hidden", opacity:p.active?1:.5 }}>
-          {/* En-tête du point */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, padding:".9rem 1.25rem",
-            cursor:"pointer", backgroundColor: expanded===p.id ? C.blueSoft+"44" : "transparent" }}
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:".9rem 1.25rem", cursor:"pointer",
+            backgroundColor: expanded===p.id ? C.blueSoft+"44" : "transparent" }}
             onClick={() => setExpanded(expanded===p.id ? null : p.id)}>
             <div style={{ width:28, height:28, borderRadius:"50%",
               backgroundColor: p.type==="market" ? C.rust+"22" : C.blue+"22",
@@ -770,16 +784,14 @@ function PickupPoints() {
                   color: p.type==="market" ? C.rust : C.blue }}>
                   {p.type==="market" ? "Marché" : "Adresse fixe"}
                 </span>
-                {p.day && <span style={{ fontSize:11, color:C.inkSoft }}>{p.day}</span>}
               </div>
               <p style={{ fontSize:12, color:C.inkSoft, marginTop:2 }}>
                 {p.address || "Adresse non renseignée"}
-                {(slots[p.id]?.length || 0) > 0 && ` · ${slots[p.id].length} créneau${slots[p.id].length>1?"x":""}`}
+                {(schedules[p.id]?.length||0) > 0 && ` · ${schedules[p.id].length} planning${schedules[p.id].length>1?"s":""}`}
               </p>
             </div>
             <div style={{ display:"flex", gap:6, alignItems:"center" }}>
               <button onClick={e => { e.stopPropagation(); togglePoint(p); }}
-                title={p.active?"Désactiver":"Activer"}
                 style={{ width:26, height:26, borderRadius:"50%", cursor:"pointer",
                   border:`1px solid ${p.active ? C.blue : C.blueSoft}`,
                   backgroundColor: p.active ? C.blue : "transparent",
@@ -790,39 +802,82 @@ function PickupPoints() {
             </div>
           </div>
 
-          {/* Détail — créneaux */}
           {expanded===p.id && (
             <div style={{ borderTop:`1px solid ${C.blueSoft}`, padding:"1rem 1.25rem", backgroundColor:"#f7f9fa" }}>
-              <p style={{ fontSize:11, letterSpacing:".12em", color:C.inkSoft, marginBottom:".75rem" }}>CRÉNEAUX HORAIRES</p>
 
-              {(slots[p.id]||[]).length === 0 ? (
-                <p style={{ fontSize:12, color:C.inkSoft, marginBottom:".75rem" }}>Aucun créneau — ajoute-en ci-dessous.</p>
-              ) : (
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:".75rem" }}>
-                  {(slots[p.id]||[]).map(s => (
-                    <div key={s.id} style={{ display:"flex", alignItems:"center", gap:5,
-                      padding:"4px 10px", backgroundColor:C.paper,
-                      border:`1px solid ${C.blueSoft}`, borderRadius:999, fontSize:12 }}>
-                      <Clock size={11} color={C.blue} />
-                      {s.label}
-                      <button onClick={() => deleteSlot(p.id, s.id)}
-                        style={{ border:"none", background:"transparent", cursor:"pointer", padding:0, lineHeight:1 }}>
-                        <X size={11} color={C.inkSoft} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Plannings / récurrences */}
+              <p style={{ fontSize:11, letterSpacing:".12em", color:C.rust, marginBottom:".6rem" }}>CALENDRIER — RÉCURRENCES & DATES</p>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:".75rem" }}>
+                {(schedules[p.id]||[]).map(s => (
+                  <div key={s.id} style={{ display:"flex", alignItems:"center", gap:5,
+                    padding:"4px 10px", backgroundColor:C.cream,
+                    border:`1px solid ${C.rust}44`, borderRadius:999, fontSize:12 }}>
+                    <Clock size={11} color={C.rust} />
+                    {s.type==="recurring"
+                      ? `Tous les ${DAYS_FR[s.day_of_week]}s`
+                      : new Date(s.specific_date).toLocaleDateString("fr-FR", { day:"numeric", month:"long" })}
+                    <button onClick={() => deleteSchedule(p.id, s.id)}
+                      style={{ border:"none", background:"transparent", cursor:"pointer", padding:0 }}>
+                      <X size={11} color={C.inkSoft} />
+                    </button>
+                  </div>
+                ))}
+                {(schedules[p.id]||[]).length === 0 && (
+                  <p style={{ fontSize:12, color:C.inkSoft }}>Aucun planning — ajoute une récurrence ou une date ci-dessous.</p>
+                )}
+              </div>
 
+              {/* Ajouter planning */}
+              <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem", flexWrap:"wrap" }}>
+                <select value={(newSchedule[p.id]||{}).type||""}
+                  onChange={e => setNewSchedule(ns => ({...ns, [p.id]: {...(ns[p.id]||{}), type:e.target.value}}))}
+                  style={{ padding:".4rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, fontFamily:"'Outfit',sans-serif" }}>
+                  <option value="">Type de planning</option>
+                  <option value="recurring">Récurrence (hebdo)</option>
+                  <option value="specific">Date spécifique</option>
+                </select>
+                {(newSchedule[p.id]||{}).type === "recurring" && (
+                  <select value={(newSchedule[p.id]||{}).day_of_week||"0"}
+                    onChange={e => setNewSchedule(ns => ({...ns, [p.id]: {...(ns[p.id]||{}), day_of_week:e.target.value}}))}
+                    style={{ padding:".4rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, fontFamily:"'Outfit',sans-serif" }}>
+                    {DAYS_SELECT.map((d,i) => <option key={i} value={i}>{d}</option>)}
+                  </select>
+                )}
+                {(newSchedule[p.id]||{}).type === "specific" && (
+                  <input type="date" value={(newSchedule[p.id]||{}).specific_date||""}
+                    onChange={e => setNewSchedule(ns => ({...ns, [p.id]: {...(ns[p.id]||{}), specific_date:e.target.value}}))}
+                    style={{ padding:".4rem .7rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:12, fontFamily:"'Outfit',sans-serif" }} />
+                )}
+                <button onClick={() => addSchedule(p.id)}
+                  style={{ padding:".4rem .9rem", backgroundColor:C.rust, color:C.cream, border:"none", borderRadius:6, fontSize:11, cursor:"pointer" }}>
+                  + Ajouter
+                </button>
+              </div>
+
+              {/* Créneaux horaires */}
+              <p style={{ fontSize:11, letterSpacing:".12em", color:C.inkSoft, marginBottom:".6rem" }}>CRÉNEAUX HORAIRES</p>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:".75rem" }}>
+                {(slots[p.id]||[]).map(s => (
+                  <div key={s.id} style={{ display:"flex", alignItems:"center", gap:5,
+                    padding:"4px 10px", backgroundColor:C.paper,
+                    border:`1px solid ${C.blueSoft}`, borderRadius:999, fontSize:12 }}>
+                    <Clock size={11} color={C.blue} />
+                    {s.label}
+                    <button onClick={() => deleteSlot(p.id, s.id)}
+                      style={{ border:"none", background:"transparent", cursor:"pointer", padding:0 }}>
+                      <X size={11} color={C.inkSoft} />
+                    </button>
+                  </div>
+                ))}
+                {(slots[p.id]||[]).length === 0 && <p style={{ fontSize:12, color:C.inkSoft }}>Aucun créneau.</p>}
+              </div>
               <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:"1rem" }}>
                 <input value={newSlot[p.id]||""} placeholder="ex: 9h00 – 9h30"
                   onChange={e => setNewSlot(ns => ({...ns, [p.id]:e.target.value}))}
                   onKeyDown={e => e.key==="Enter" && addSlot(p.id)}
-                  style={{ flex:1, padding:".4rem .75rem", border:`1px solid ${C.blueSoft}`,
-                    borderRadius:6, fontSize:13, outline:"none" }} />
+                  style={{ flex:1, padding:".4rem .75rem", border:`1px solid ${C.blueSoft}`, borderRadius:6, fontSize:13, outline:"none" }} />
                 <button onClick={() => addSlot(p.id)}
-                  style={{ padding:".4rem .9rem", backgroundColor:C.blueDeep, color:C.cream,
-                    border:"none", borderRadius:6, fontSize:11, cursor:"pointer" }}>
+                  style={{ padding:".4rem .9rem", backgroundColor:C.blueDeep, color:C.cream, border:"none", borderRadius:6, fontSize:11, cursor:"pointer" }}>
                   + Ajouter
                 </button>
               </div>
@@ -836,9 +891,8 @@ function PickupPoints() {
           )}
         </Card>
       ))}
-
       <p style={{ fontSize:12, color:C.inkSoft, marginTop:".5rem" }}>
-        Un point désactivé n'apparaît plus dans les options de retrait sur le site.
+        Un point désactivé n'apparaît plus sur le site.
       </p>
     </div>
   );
