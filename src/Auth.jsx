@@ -66,7 +66,7 @@ export function AuthModal({ onClose, onSuccess }) {
           });
         }
       }
-      onSuccess?.();
+      onSuccess?.(mode === "login" ? "Connexion réussie !" : "Compte créé — bienvenue !");
       onClose();
     } catch (e) {
       setError(e.message === "Invalid login credentials"
