@@ -743,6 +743,14 @@ export default function ContreTempsSite() {
                           items,
                         };
                         await sbFetch("orders", { method: "POST", body: JSON.stringify(order) });
+                        // Envoyer email de confirmation
+                        try {
+                          await fetch("/api/send-email", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ order }),
+                          });
+                        } catch (e) { console.warn("Email non envoyé:", e); }
                         setOrderStep("done");
                         setCart({});
                       } catch (e) {
