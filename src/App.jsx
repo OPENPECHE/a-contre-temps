@@ -463,6 +463,13 @@ export default function ContreTempsSite() {
                 {l.label}
               </a>
             ))}
+            <button
+              onClick={() => { setMenuOpen(false); user ? setShowAccount(true) : setShowAuth(true); }}
+              className="tracked text-xs uppercase text-left flex items-center gap-2"
+              style={{ color: COLORS.cream, background:"transparent", border:"none", cursor:"pointer", padding:0 }}>
+              <User size={14} />
+              {user ? "Mon compte" : "Connexion"}
+            </button>
           </div>
         )}
       </header>
