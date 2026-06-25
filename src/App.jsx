@@ -667,7 +667,7 @@ export default function ContreTempsSite() {
                 {meta.text && <p className="max-w-md mx-auto mt-4 text-[14px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>}
                 {deliveryRule && (
                   <p className="text-xs mt-3" style={{ color:COLORS.rust }}>
-                    {deliveryRule.time_label} · {deliveryRule.notes}
+                    {deliveryRule.notes}
                     {deliveryRule.delivery_fee > 0 && ` · Frais de port : ${deliveryRule.delivery_fee.toFixed(2)} €`}
                     {deliveryRule.franco_amount && ` (offerts à partir de ${deliveryRule.franco_amount} €)`}
                   </p>
