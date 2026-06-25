@@ -411,6 +411,7 @@ function productRow(p){
         <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
         <button class="btn bg bsm" style="padding:3px 6px" onclick="startEditProd('${p.id}','${p.name.replace(/'/g,"\\'")}',${p.price})">✏</button>
         <button class="btn bsm" style="padding:3px 6px;border:1px solid var(--rd)22;background:transparent;color:var(--rd)" onclick="deleteProd('${p.id}')">✕</button>
+        <button class="btn bg bsm" style="padding:3px 6px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu & options">📋</button>
       `}
     </div>
   </div>`;
@@ -593,6 +594,82 @@ async function deleteSchedule(pid,sid){
   expandedPickup=pid;renderPickups();
 }
 
+// ── Box Detail Modal ─────────────────────────────────────────────────────────
+let currentBoxId = null;
+let boxContentsData = {};
+let boxOptionsData = {};
+
+async function openBoxDetail(id, name) {
+  currentBoxId = id;
+  document.getElementById("box-modal-title").textContent = name;
+  document.getElementById("box-modal").style.display = "flex";
+  // Charger contenu et options
+  const [contents, options] = await Promise.all([
+    sbFetch(`box_contents?product_id=eq.${id}&order=position.asc`),
+    sbFetch(`box_options?product_id=eq.${id}&order=position.asc`)
+  ]);
+  boxContentsData[id] = contents || [];
+  boxOptionsData[id] = options || [];
+  renderBoxContents(); renderBoxOptions();
+}
+function closeBoxModal() {
+  document.getElementById("box-modal").style.display = "none";
+  currentBoxId = null;
+}
+function renderBoxContents() {
+  const items = boxContentsData[currentBoxId] || [];
+  document.getElementById("box-contents-list").innerHTML = items.length === 0
+    ? `<p style="font-size:12px;color:var(--is)">Aucun contenu — ajoute des éléments ci-dessous.</p>`
+    : items.map(c => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
+        <span style="flex:1">· ${c.item}</span>
+        <button onclick="deleteContent('${c.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--is)">×</button>
+      </div>`).join("");
+}
+function renderBoxOptions() {
+  const opts = boxOptionsData[currentBoxId] || [];
+  document.getElementById("box-options-list").innerHTML = opts.length === 0
+    ? `<p style="font-size:12px;color:var(--is)">Aucune option.</p>`
+    : opts.map(o => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
+        <span style="flex:1">${o.name}</span>
+        <span style="color:var(--is)">+${Number(o.price).toFixed(2)} €</span>
+        <button onclick="deleteOption('${o.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--is)">×</button>
+      </div>`).join("");
+}
+async function addContent() {
+  const item = document.getElementById("new-content-inp").value.trim();
+  if (!item) return;
+  const pos = (boxContentsData[currentBoxId]?.length || 0) + 1;
+  const data = await sbFetch("box_contents", {method:"POST", body:JSON.stringify({product_id:currentBoxId, item, position:pos})});
+  const created = Array.isArray(data) ? data[0] : data;
+  if (!boxContentsData[currentBoxId]) boxContentsData[currentBoxId] = [];
+  boxContentsData[currentBoxId].push(created);
+  document.getElementById("new-content-inp").value = "";
+  renderBoxContents();
+}
+async function deleteContent(id) {
+  await sbFetch(`box_contents?id=eq.${id}`, {method:"DELETE", headers:{"Prefer":""}});
+  boxContentsData[currentBoxId] = boxContentsData[currentBoxId].filter(c => c.id !== id);
+  renderBoxContents();
+}
+async function addOption() {
+  const name = document.getElementById("new-opt-name").value.trim();
+  const price = parseFloat(document.getElementById("new-opt-price").value) || 0;
+  if (!name) return;
+  const pos = (boxOptionsData[currentBoxId]?.length || 0) + 1;
+  const data = await sbFetch("box_options", {method:"POST", body:JSON.stringify({product_id:currentBoxId, name, price, active:true, position:pos})});
+  const created = Array.isArray(data) ? data[0] : data;
+  if (!boxOptionsData[currentBoxId]) boxOptionsData[currentBoxId] = [];
+  boxOptionsData[currentBoxId].push(created);
+  document.getElementById("new-opt-name").value = "";
+  document.getElementById("new-opt-price").value = "";
+  renderBoxOptions();
+}
+async function deleteOption(id) {
+  await sbFetch(`box_options?id=eq.${id}`, {method:"DELETE", headers:{"Prefer":""}});
+  boxOptionsData[currentBoxId] = boxOptionsData[currentBoxId].filter(o => o.id !== id);
+  renderBoxOptions();
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 function savePin(){
   const v=document.getElementById("new-pin").value;
@@ -612,5 +689,33 @@ async function exportCSV(){
   a.download=`commandes-${new Date().toISOString().split("T")[0]}.csv`;a.click();
 }
 </script>
+<!-- BOX DETAIL MODAL -->
+<div id="box-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(43,41,37,.45)">
+  <div style="background:var(--pp);border-radius:14px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;padding:2rem;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <h2 class="fd" id="box-modal-title" style="font-size:20px;font-weight:400"></h2>
+      <button onclick="closeBoxModal()" style="border:none;background:transparent;cursor:pointer;font-size:20px;color:var(--is)">×</button>
+    </div>
+
+    <!-- Contenu -->
+    <p class="sl-label">CONTENU DE LA BOX</p>
+    <div id="box-contents-list" style="margin-bottom:.75rem"></div>
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+      <input class="fi" id="new-content-inp" placeholder="ex: Croissant beurre du fournil" style="flex:1" onkeydown="if(event.key==='Enter')addContent()" />
+      <button class="btn bp bsm" onclick="addContent()">+ Ajouter</button>
+    </div>
+
+    <!-- Options -->
+    <p class="sl-label">OPTIONS EN SUPPLÉMENT</p>
+    <div id="box-options-list" style="margin-bottom:.75rem"></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="fi" id="new-opt-name" placeholder="Nom de l'option" style="flex:2" onkeydown="if(event.key==='Enter')addOption()" />
+      <input class="fi" id="new-opt-price" type="number" step="0.5" placeholder="Prix €" style="width:80px" />
+      <button class="btn bp bsm" onclick="addOption()">+ Ajouter</button>
+    </div>
+    <p style="font-size:11px;color:var(--is);margin-top:.75rem">Prix 0 € = option gratuite incluse dans la box</p>
+  </div>
+</div>
+
 </body>
 </html>
