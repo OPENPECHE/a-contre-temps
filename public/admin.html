@@ -494,8 +494,33 @@ async function addProduct(){
   const id="p"+Date.now().toString(36);
   const pos=Math.max(0,...allProducts.map(p=>p.position||0))+1;
   const row={id,cat,name,price,active:true,position:pos};
-  await sbFetch("products",{method:"POST",body:JSON.stringify(row)});
-  allProducts.push(row);
+  try {
+    const data=await sbFetch("products",{method:"POST",body:JSON.stringify(row)});
+    if(!data||(!Array.isArray(data)&&!data.id)){
+      alert("Erreur de sauvegarde — vérifie les politiques RLS dans Supabase.");return;
+    }
+    const created=Array.isArray(data)?data[0]:data;
+    allProducts.push(created||row);
+
+    // Si nouvelle catégorie → proposer création règle livraison
+    const isNewCat = selVal==="__new__";
+    const ruleExists = allRules.some(r=>r.category===cat);
+    if(isNewCat && !ruleExists){
+      if(confirm(`Nouvelle catégorie "${cat}" créée !
+
+Voulez-vous créer une règle de livraison pour cette catégorie ?`)){
+        const ruleData=await sbFetch("delivery_rules",{method:"POST",body:JSON.stringify({
+          category:cat, mode:"delivery", available_days:[1,2,3,4,5],
+          advance_hours:24, delivery_fee:0, active:true,
+          notes:"Règle à configurer dans Livraison & Créneaux"
+        })});
+        const rule=Array.isArray(ruleData)?ruleData[0]:ruleData;
+        if(rule) { allRules.push(rule); alert("Règle créée ! Configure-la dans l'onglet Livraison & Créneaux."); }
+      }
+    }
+  } catch(e) {
+    alert("Erreur : "+e.message);return;
+  }
   document.getElementById("new-cat-select").value="";
   document.getElementById("new-cat-custom").value="";
   document.getElementById("new-cat-custom").style.display="none";
