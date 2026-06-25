@@ -666,35 +666,33 @@ export default function ContreTempsSite() {
                             {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)} €)</span>}
                           </p>
                         </div>
-                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
-                          {/* Bouton Ajouter */}
+                        <div style={{ display:"flex", alignItems:"center", gap:0, flexShrink:0,
+                          border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, overflow:"hidden" }}>
+                          <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
+                            style={{ border:"none", background:"transparent", cursor:"pointer",
+                              fontSize:15, color:COLORS.inkSoft, width:26, height:32,
+                              display:"flex", alignItems:"center", justifyContent:"center",
+                              borderRight:`1px solid ${COLORS.blueSoft}` }}>−</button>
+                          <span style={{ fontSize:12, minWidth:18, textAlign:"center", padding:"0 2px" }}>
+                            {itemQty[item.id] || 1}
+                          </span>
+                          <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
+                            style={{ border:"none", background:"transparent", cursor:"pointer",
+                              fontSize:15, color:COLORS.inkSoft, width:26, height:32,
+                              display:"flex", alignItems:"center", justifyContent:"center",
+                              borderLeft:`1px solid ${COLORS.blueSoft}`,
+                              borderRight:`1px solid ${COLORS.blueSoft}` }}>+</button>
                           <button
                             onClick={() => {
                               const qty = itemQty[item.id] || 1;
-                              for (let i = 0; i < qty; i++) {
-                                addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
-                              }
+                              for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
                             }}
-                            className="shrink-0 text-[10px] tracked uppercase px-3 py-2 rounded-full"
-                            style={{ border: `1px solid ${COLORS.ink}`, color: COLORS.ink }}>
-                            Ajouter
+                            style={{ border:"none", background:COLORS.ink, cursor:"pointer",
+                              fontSize:10, letterSpacing:".1em", color:COLORS.paper,
+                              padding:"0 12px", height:32, fontFamily:"inherit" }}>
+                            AJOUTER
                           </button>
-                          {/* Sélecteur de quantité */}
-                          <div style={{ display:"flex", alignItems:"center", gap:4,
-                            border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:"2px 6px" }}>
-                            <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) }))}
-                              style={{ border:"none", background:"transparent", cursor:"pointer",
-                                fontSize:14, color:COLORS.inkSoft, width:18, height:18,
-                                display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
-                            <span style={{ fontSize:12, minWidth:16, textAlign:"center" }}>
-                              {itemQty[item.id] || 1}
-                            </span>
-                            <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 }))}
-                              style={{ border:"none", background:"transparent", cursor:"pointer",
-                                fontSize:14, color:COLORS.inkSoft, width:18, height:18,
-                                display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
-                          </div>
                         </div>
                       </div>
 
