@@ -670,7 +670,7 @@ export default function ContreTempsSite() {
                         </div>
                         {/* Bouton quantité + ajouter pleine largeur */}
                         <div style={{ display:"flex", alignItems:"center", border:`1px solid ${COLORS.blueSoft}`,
-                          borderRadius:999, overflow:"hidden", width:"100%" }}>
+                          borderRadius:999, overflow:"hidden", width:"fit-content" }}>
                           <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
                             style={{ border:"none", borderRight:`1px solid ${COLORS.blueSoft}`,
                               background:"transparent", cursor:"pointer", fontSize:16,
