@@ -1207,8 +1207,8 @@ export default function ContreTempsSite() {
                   </div>
                 )}
 
-                {/* Calendrier des marchés */}
-                {orderForm.pickupPointId && schedules.length > 0 && (
+                {/* Calendrier des marchés — uniquement si pas de règle livraison */}
+                {orderForm.pickupPointId && schedules.length > 0 && deliveryRules.length === 0 && (
                   <div>
                     <label className="text-[10px] tracked uppercase mb-3 block" style={{ color: COLORS.inkSoft }}>
                       Choisir une date
