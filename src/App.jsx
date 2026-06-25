@@ -149,10 +149,10 @@ const CATEGORY_META = {
 
 // Métadonnées par défaut pour les nouvelles catégories
 const DEFAULT_CAT_META = {
-  photo: PHOTOS.hero,
+  photo: null,  // pas de photo → bandeau coloré avec juste le nom
   label: "Nos créations",
   time: "Sur réservation",
-  title: "",
+  title: "",    // sera remplacé par le nom de la catégorie
   sub: "",
   text: "",
 };
@@ -642,17 +642,22 @@ export default function ContreTempsSite() {
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
             <div>
-              {/* Photo de catégorie */}
-              {meta.photo && (
-                <div style={{ height:240, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
+              {/* Photo ou bandeau coloré */}
+              {meta.photo ? (
+                <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.6) 0%, transparent 65%)" }} />
-                  <div style={{ position:"absolute", bottom:24, left:28 }}>
-                    <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>{(meta.label||cat).toUpperCase()}</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:28, fontWeight:500, color:COLORS.cream, marginTop:4 }}>{meta.title||cat}</p>
-                    {deliveryRule && (
-                      <p style={{ fontSize:12, color:COLORS.cream, opacity:.85, marginTop:4 }}>{deliveryRule.time_label}</p>
-                    )}
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
+                  <div style={{ position:"absolute", bottom:12, left:16 }}>
+                    <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{(meta.label||cat).toUpperCase()}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ height:80, background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
+                  display:"flex", alignItems:"center", padding:"0 1.25rem" }}>
+                  <div>
+                    <p style={{ fontSize:9, letterSpacing:".18em", color:COLORS.cream, opacity:.7 }}>{(meta.label||"NOS CRÉATIONS").toUpperCase()}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
                   </div>
                 </div>
               )}
