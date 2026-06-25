@@ -650,8 +650,10 @@ export default function ContreTempsSite() {
                       onMouseEnter={() => setHoveredItem(item.id)}
                       onMouseLeave={() => setHoveredItem(null)}>
                       {/* Ligne principale */}
-                      <div className="flex items-center justify-between gap-3 py-3.5">
-                        <div style={{ flex:1, cursor: contents.length > 0 ? "pointer" : "default" }}
+                      <div className="py-3.5">
+                        {/* Nom et prix */}
+                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8,
+                          cursor: contents.length > 0 ? "pointer" : "default", marginBottom:"0.6rem" }}
                           onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
                           <p className="text-[14px]" style={{ display:"flex", alignItems:"center", gap:6 }}>
                             {item.name}
@@ -661,36 +663,37 @@ export default function ContreTempsSite() {
                               </span>
                             )}
                           </p>
-                          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>
+                          <p className="text-xs" style={{ color: COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
                             {(item.price + extraPrice).toFixed(2)} €
                             {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)} €)</span>}
                           </p>
                         </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:0, flexShrink:0,
-                          border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, overflow:"hidden" }}>
+                        {/* Bouton quantité + ajouter pleine largeur */}
+                        <div style={{ display:"flex", alignItems:"center", border:`1px solid ${COLORS.blueSoft}`,
+                          borderRadius:999, overflow:"hidden", width:"100%" }}>
                           <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
-                            style={{ border:"none", background:"transparent", cursor:"pointer",
-                              fontSize:15, color:COLORS.inkSoft, width:26, height:32,
-                              display:"flex", alignItems:"center", justifyContent:"center",
-                              borderRight:`1px solid ${COLORS.blueSoft}` }}>−</button>
-                          <span style={{ fontSize:12, minWidth:18, textAlign:"center", padding:"0 2px" }}>
+                            style={{ border:"none", borderRight:`1px solid ${COLORS.blueSoft}`,
+                              background:"transparent", cursor:"pointer", fontSize:16,
+                              color:COLORS.inkSoft, width:36, height:32, flexShrink:0,
+                              display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
+                          <span style={{ fontSize:13, minWidth:24, textAlign:"center", padding:"0 4px" }}>
                             {itemQty[item.id] || 1}
                           </span>
                           <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
-                            style={{ border:"none", background:"transparent", cursor:"pointer",
-                              fontSize:15, color:COLORS.inkSoft, width:26, height:32,
-                              display:"flex", alignItems:"center", justifyContent:"center",
-                              borderLeft:`1px solid ${COLORS.blueSoft}`,
-                              borderRight:`1px solid ${COLORS.blueSoft}` }}>+</button>
+                            style={{ border:"none", borderLeft:`1px solid ${COLORS.blueSoft}`,
+                              background:"transparent", cursor:"pointer", fontSize:16,
+                              color:COLORS.inkSoft, width:36, height:32, flexShrink:0,
+                              display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
                           <button
                             onClick={() => {
                               const qty = itemQty[item.id] || 1;
                               for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
                             }}
-                            style={{ border:"none", background:COLORS.ink, cursor:"pointer",
-                              fontSize:10, letterSpacing:".1em", color:COLORS.paper,
-                              padding:"0 12px", height:32, fontFamily:"inherit" }}>
+                            style={{ border:"none", borderLeft:`1px solid ${COLORS.blueSoft}`,
+                              background:COLORS.blueDeep, cursor:"pointer", flex:1,
+                              fontSize:10, letterSpacing:".12em", color:COLORS.cream,
+                              height:32, fontFamily:"inherit" }}>
                             AJOUTER
                           </button>
                         </div>
