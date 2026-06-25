@@ -655,7 +655,7 @@ export default function ContreTempsSite() {
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                           gap:8, cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
                           onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
-                          <p style={{ fontSize:13, lineHeight:1.35 }}>
+                          <p style={{ fontSize:12, lineHeight:1.35 }}>
                             {item.name}
                             {contents.length > 0 && (
                               <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust,
@@ -668,7 +668,7 @@ export default function ContreTempsSite() {
                           </p>
                         </div>
                         {/* Stepper + Ajouter sur ligne séparée */}
-                        <div style={{ display:"flex", alignItems:"center", gap:8, justifyContent:"center" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, justifyContent:"flex-start" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8,
                             border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
                             <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
