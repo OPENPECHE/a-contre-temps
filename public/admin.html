@@ -158,10 +158,22 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       </div>
       <div id="new-prod-form" style="display:none" class="nf">
         <p class="sl-label">AJOUTER UN ARTICLE</p>
-        <div class="ng">
-          <input class="fi" id="new-cat" placeholder="Catégorie" />
-          <input class="fi" id="new-name" placeholder="Nom de l'article" />
-          <input class="fi" id="new-price" type="number" step="0.5" placeholder="Prix €" />
+        <div style="display:grid;grid-template-columns:1fr 2fr 90px;gap:7px;margin-bottom:8px">
+          <div>
+            <label style="font-size:11px;color:var(--is)">Catégorie</label>
+            <select class="fi sel" id="new-cat-select" style="margin-top:4px" onchange="onCatSelect(this.value)">
+              <option value="">-- Choisir --</option>
+            </select>
+            <input class="fi" id="new-cat-custom" placeholder="Ou nouvelle catégorie..." style="margin-top:4px;display:none" />
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--is)">Nom de l'article</label>
+            <input class="fi" id="new-name" placeholder="Nom de l'article" style="margin-top:4px" />
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--is)">Prix €</label>
+            <input class="fi" id="new-price" type="number" step="0.5" placeholder="Prix" style="margin-top:4px" />
+          </div>
         </div>
         <div style="display:flex;gap:7px">
           <button class="btn bp bsm" onclick="addProduct()">Ajouter</button>
@@ -384,13 +396,40 @@ async function loadProducts(){
 }
 function renderProducts(){
   const cats=[...new Set(allProducts.map(p=>p.cat))];
+  // Mettre à jour la liste déroulante des catégories
+  const sel=document.getElementById("new-cat-select");
+  if(sel){
+    const cur=sel.value;
+    sel.innerHTML=`<option value="">-- Choisir --</option>${cats.map(c=>`<option value="${c}">${c}</option>`).join("")}<option value="__new__">+ Nouvelle catégorie...</option>`;
+    sel.value=cur;
+  }
   document.getElementById("products-list").innerHTML=cats.map(cat=>`
     <div style="margin-bottom:1.25rem">
-      <p style="font-size:10px;letter-spacing:.15em;color:var(--ru);margin-bottom:.6rem">${cat.toUpperCase()}</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.6rem">
+        <p style="font-size:10px;letter-spacing:.15em;color:var(--ru)">${cat.toUpperCase()}</p>
+        <button onclick="renameCategory('${cat.replace(/'/g,"\'")}')}"
+          style="font-size:10px;color:var(--is);border:1px solid var(--bs);background:transparent;border-radius:5px;padding:2px 7px;cursor:pointer">✏ Renommer</button>
+      </div>
       <div class="card card0">
         ${allProducts.filter(p=>p.cat===cat).map(p=>productRow(p)).join("")}
       </div>
     </div>`).join("")+`<p style="font-size:11px;color:var(--is)">Un article décoché est masqué sur le site. Modifications instantanées.</p>`;
+}
+
+function onCatSelect(val){
+  const custom=document.getElementById("new-cat-custom");
+  custom.style.display=val==="__new__"?"block":"none";
+  if(val==="__new__") custom.focus();
+}
+
+async function renameCategory(oldCat){
+  const newCat=prompt(`Nouveau nom pour la catégorie "${oldCat}" :`, oldCat);
+  if(!newCat||newCat===oldCat) return;
+  // Mettre à jour tous les produits de cette catégorie
+  const ids=allProducts.filter(p=>p.cat===oldCat).map(p=>p.id);
+  await Promise.all(ids.map(id=>sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({cat:newCat})})));
+  allProducts=allProducts.map(p=>p.cat===oldCat?{...p,cat:newCat}:p);
+  renderProducts();
 }
 function productRow(p){
   const editing=editingProdId===p.id;
@@ -433,7 +472,10 @@ async function toggleProd(id){
   renderProducts();
 }
 async function addProduct(){
-  const cat=document.getElementById("new-cat").value.trim();
+  const selVal=document.getElementById("new-cat-select").value;
+  const cat=selVal==="__new__"
+    ? document.getElementById("new-cat-custom").value.trim()
+    : selVal;
   const name=document.getElementById("new-name").value.trim();
   const price=parseFloat(document.getElementById("new-price").value)||0;
   if(!cat||!name||!price){alert("Remplis tous les champs.");return;}
@@ -442,7 +484,11 @@ async function addProduct(){
   const row={id,cat,name,price,active:true,position:pos};
   await sbFetch("products",{method:"POST",body:JSON.stringify(row)});
   allProducts.push(row);
-  document.getElementById("new-cat").value="";document.getElementById("new-name").value="";document.getElementById("new-price").value="";
+  document.getElementById("new-cat-select").value="";
+  document.getElementById("new-cat-custom").value="";
+  document.getElementById("new-cat-custom").style.display="none";
+  document.getElementById("new-name").value="";
+  document.getElementById("new-price").value="";
   toggleNewProd();renderProducts();
 }
 async function deleteProd(id){
