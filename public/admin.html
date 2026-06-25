@@ -663,33 +663,35 @@ function closeBoxModal() {
   currentBoxId = null;
 }
 function renderBoxContents() {
-  const items = boxContentsData[currentBoxId] || [];
+  const items = (boxContentsData[currentBoxId] || []).filter(c => c && c.id && c.item);
   document.getElementById("box-contents-list").innerHTML = items.length === 0
     ? `<p style="font-size:12px;color:var(--is)">Aucun contenu — ajoute des éléments ci-dessous.</p>`
     : items.map(c => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
         <span style="flex:1">· ${c.item}</span>
-        <button onclick="deleteContent('${c.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--is)">×</button>
+        <button onclick="deleteContent('${c.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--is);font-size:16px">×</button>
       </div>`).join("");
 }
 function renderBoxOptions() {
-  const opts = boxOptionsData[currentBoxId] || [];
+  const opts = (boxOptionsData[currentBoxId] || []).filter(o => o && o.id && o.name);
   document.getElementById("box-options-list").innerHTML = opts.length === 0
     ? `<p style="font-size:12px;color:var(--is)">Aucune option.</p>`
     : opts.map(o => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
         <span style="flex:1">${o.name}</span>
         <span style="color:var(--is)">+${Number(o.price).toFixed(2)} €</span>
-        <button onclick="deleteOption('${o.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--is)">×</button>
+        <button onclick="deleteOption('${o.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--is);font-size:16px">×</button>
       </div>`).join("");
 }
 async function addContent() {
-  const item = document.getElementById("new-content-inp").value.trim();
-  if (!item) return;
+  const inp = document.getElementById("new-content-inp");
+  const item = inp ? inp.value.trim() : "";
+  if (!item || !currentBoxId) { alert("Saisis un élément."); return; }
   const pos = (boxContentsData[currentBoxId]?.length || 0) + 1;
   const data = await sbFetch("box_contents", {method:"POST", body:JSON.stringify({product_id:currentBoxId, item, position:pos})});
   const created = Array.isArray(data) ? data[0] : data;
+  if (!created || !created.id) { alert("Erreur lors de la sauvegarde."); return; }
   if (!boxContentsData[currentBoxId]) boxContentsData[currentBoxId] = [];
   boxContentsData[currentBoxId].push(created);
-  document.getElementById("new-content-inp").value = "";
+  inp.value = "";
   renderBoxContents();
 }
 async function deleteContent(id) {
@@ -698,16 +700,19 @@ async function deleteContent(id) {
   renderBoxContents();
 }
 async function addOption() {
-  const name = document.getElementById("new-opt-name").value.trim();
-  const price = parseFloat(document.getElementById("new-opt-price").value) || 0;
-  if (!name) return;
+  const nameInp = document.getElementById("new-opt-name");
+  const priceInp = document.getElementById("new-opt-price");
+  const name = nameInp ? nameInp.value.trim() : "";
+  const price = parseFloat(priceInp ? priceInp.value : "0") || 0;
+  if (!name || !currentBoxId) { alert("Saisis un nom d'option."); return; }
   const pos = (boxOptionsData[currentBoxId]?.length || 0) + 1;
   const data = await sbFetch("box_options", {method:"POST", body:JSON.stringify({product_id:currentBoxId, name, price, active:true, position:pos})});
   const created = Array.isArray(data) ? data[0] : data;
+  if (!created || !created.id) { alert("Erreur lors de la sauvegarde."); return; }
   if (!boxOptionsData[currentBoxId]) boxOptionsData[currentBoxId] = [];
   boxOptionsData[currentBoxId].push(created);
-  document.getElementById("new-opt-name").value = "";
-  document.getElementById("new-opt-price").value = "";
+  nameInp.value = "";
+  priceInp.value = "";
   renderBoxOptions();
 }
 async function deleteOption(id) {
