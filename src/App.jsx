@@ -35,8 +35,8 @@ const COLORS = {
 const FONT_DISPLAY = "'Fraunces', serif";
 const FONT_BODY = "'Outfit', sans-serif";
 
-const HEART_CREAM = "data:image/png;base64,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";
-const HEART_RUST = "data:image/png;base64,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";
+const HEART_CREAM = "data:image/png;base64,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";
+const HEART_RUST = "data:image/png;base64,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";
 const HEART_ASPECT = 107 / 126; // width / height of the traced mark
 
 function HeartMark({ size = 28, tone = "cream", className = "" }) {
@@ -101,13 +101,13 @@ const PHOTOS = {
   biscuiterie: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80",
 };
 
-// Métadonnées visuelles par catégorie — les produits viennent de Supabase
-// Ajoutez une entrée ici quand vous créez une nouvelle catégorie dans le back office
+// Métadonnées visuelles par catégorie — REPLI pour les 5 catégories historiques.
+// La source de vérité est désormais la table delivery_rules (colonnes photo/label/
+// title/subtitle/description), éditable depuis le back-office.
 const CATEGORY_META = {
   "Petit-déjeuner entreprises": {
     photo: PHOTOS.matin,
     label: "Le matin",
-    time: "Livré avant 9h30",
     title: "Box petit-déjeuner",
     sub: "Pour les entreprises",
     text: "Viennoiseries du fournil, pains spéciaux, confitures de producteurs et jus pressés.",
@@ -115,7 +115,6 @@ const CATEGORY_META = {
   "Traiteur midi": {
     photo: PHOTOS.midi,
     label: "Le midi",
-    time: "Livré entre 11h30 et 12h30",
     title: "Pain & traiteur léger",
     sub: "Pour les bureaux",
     text: "Sandwiches au levain, salades composées, pains à partager. Une pause déjeuner sans file d'attente.",
@@ -123,7 +122,6 @@ const CATEGORY_META = {
   "Brunch & apéritif": {
     photo: PHOTOS.soir,
     label: "Soir & week-end",
-    time: "Sur réservation",
     title: "Box apéritif",
     sub: "Pour recevoir",
     text: "Planches à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
@@ -131,7 +129,6 @@ const CATEGORY_META = {
   "Brunch week-end": {
     photo: PHOTOS.soir,
     label: "Week-end",
-    time: "Samedi et dimanche matin",
     title: "Box brunch",
     sub: "Pour recevoir",
     text: "Mini-viennoiseries sucrées-salées, confitures et accompagnements de producteurs locaux.",
@@ -139,7 +136,6 @@ const CATEGORY_META = {
   "Biscuiterie (expédition)": {
     photo: PHOTOS.biscuiterie,
     label: "Expédiée partout en France",
-    time: "Chronopost 24/48h",
     title: "La biscuiterie",
     sub: "Coffrets à offrir",
     text: "Sablés au beurre, biscuits du fournil et mendiants — emballés et expédiés en Chronopost.",
@@ -150,12 +146,25 @@ const CATEGORY_META = {
 // Métadonnées par défaut pour les nouvelles catégories
 const DEFAULT_CAT_META = {
   photo: null,  // pas de photo → bandeau coloré avec juste le nom
-  label: "Nos créations",
-  time: "Sur réservation",
-  title: "",    // sera remplacé par le nom de la catégorie
+  label: "",    // sera remplacé par le nom de la catégorie
+  title: "",    // idem
   sub: "",
   text: "",
 };
+
+// Résout les métadonnées d'affichage d'une catégorie.
+// Priorité : colonnes delivery_rules (back-office) > CATEGORY_META (repli) > nom.
+function metaFromRule(cat, rule) {
+  const base = CATEGORY_META[cat] || {};
+  return {
+    photo: (rule && rule.photo) || base.photo || null,
+    label: (rule && rule.label) || base.label || cat,
+    title: (rule && rule.title) || base.title || cat,
+    sub:   (rule && rule.subtitle) || base.sub || "",
+    text:  (rule && rule.description) || base.text || "",
+    isChronopost: base.isChronopost || (rule && rule.display_section === "Biscuiterie") || false,
+  };
+}
 
 // ──────────────────────────────────────────────────────────────────────────
 // LIENS DE PAIEMENT REVOLUT
@@ -418,13 +427,15 @@ export default function ContreTempsSite() {
     return cats;
   }, [sbProducts]);
 
-  // Détecter si le panier contient des articles Chronopost
+  // Détecter si le panier contient des articles Chronopost (via la règle de catégorie)
   const hasBiscuiterie = useMemo(() =>
     Object.keys(cart).some(id => {
       const p = sbProducts.find(p => p.id === id);
-      return p?.cat === "Biscuiterie (expédition)";
+      if (!p) return false;
+      const rule = deliveryRules.find(r => r.category === p.cat);
+      return metaFromRule(p.cat, rule).isChronopost;
     }),
-  [cart, sbProducts]);
+  [cart, sbProducts, deliveryRules]);
 
   const addToCart = (id, extraPrice = 0, optionLabels = []) => {
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
@@ -609,16 +620,15 @@ export default function ContreTempsSite() {
         </p>
       </section>
 
-      {/* CATALOGUE DYNAMIQUE — depuis Supabase */}
       {/* SECTIONS DYNAMIQUES — groupées par display_section depuis Supabase */}
       {(() => {
-        // Grouper les catégories par section
+        // Grouper les catégories par section (display_section de delivery_rules)
         const sections = {};
         Object.entries(categorizedProducts).forEach(([cat, items]) => {
           const rule = deliveryRules.find(r => r.category === cat);
+          const meta = metaFromRule(cat, rule);
+          if (meta.isChronopost) return; // biscuiterie gérée séparément plus bas
           const section = rule?.display_section || "Nos box";
-          const isChronopost = CATEGORY_META[cat]?.isChronopost;
-          if (isChronopost) return; // biscuiterie gérée séparément
           if (!sections[section]) sections[section] = [];
           sections[section].push({ cat, items, rule, order: rule?.display_order || 99 });
         });
@@ -630,14 +640,13 @@ export default function ContreTempsSite() {
             style={{ backgroundColor: COLORS.paper }}>
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
-                <Eyebrow>NOS CRÉATIONS</Eyebrow>
-                <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
+                <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl tracking-tight">
                   {sectionName}
                 </h2>
               </div>
               <div className={`grid gap-8 ${catItems.length === 1 ? "max-w-md mx-auto" : catItems.length === 2 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3"}`}>
       {catItems.map(({ cat, items, rule }) => {
-        const meta = CATEGORY_META[cat] || { ...DEFAULT_CAT_META, title: cat };
+        const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
@@ -656,7 +665,7 @@ export default function ContreTempsSite() {
                 <div style={{ height:80, background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
                   display:"flex", alignItems:"center", padding:"0 1.25rem" }}>
                   <div>
-                    <p style={{ fontSize:9, letterSpacing:".18em", color:COLORS.cream, opacity:.7 }}>{(meta.label||"NOS CRÉATIONS").toUpperCase()}</p>
+                    <p style={{ fontSize:9, letterSpacing:".18em", color:COLORS.cream, opacity:.7 }}>{(meta.label||cat).toUpperCase()}</p>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
                   </div>
                 </div>
@@ -770,15 +779,19 @@ export default function ContreTempsSite() {
           </div>
         );
       })}
+              </div>
             </div>
           </section>
         ));
       })()}
 
       {/* BISCUITERIE — section séparée fond crème */}
-      {Object.entries(categorizedProducts).filter(([cat]) => CATEGORY_META[cat]?.isChronopost).map(([cat, items]) => {
-        const meta = CATEGORY_META[cat];
+      {Object.entries(categorizedProducts).filter(([cat]) => {
+        const rule = deliveryRules.find(r => r.category === cat);
+        return metaFromRule(cat, rule).isChronopost;
+      }).map(([cat, items]) => {
         const deliveryRule = deliveryRules.find(r => r.category === cat);
+        const meta = metaFromRule(cat, deliveryRule);
         return (
           <section key={cat} id="biscuiterie" className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
             <div className="max-w-5xl mx-auto">
@@ -788,14 +801,14 @@ export default function ContreTempsSite() {
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
                   <div style={{ position:"absolute", bottom:28, left:32 }}>
                     <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>EXPÉDIÉ PARTOUT EN FRANCE</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:30, fontWeight:500, color:COLORS.cream, marginTop:6 }}>{meta.title}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:30, fontWeight:500, color:COLORS.cream, marginTop:6 }}>{meta.title||cat}</p>
                     <p style={{ fontSize:13, color:COLORS.cream, opacity:.85, marginTop:6, maxWidth:340, lineHeight:1.65 }}>{meta.text}</p>
                   </div>
                 </div>
               )}
               <div className="text-center mb-8">
-                <Eyebrow>{meta.label.toUpperCase()}</Eyebrow>
-                <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">{meta.title}</h2>
+                <Eyebrow>{(meta.label||cat).toUpperCase()}</Eyebrow>
+                <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">{meta.title||cat}</h2>
                 <p className="max-w-md mx-auto mt-5 text-[15px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>
               </div>
               <div className="grid sm:grid-cols-3 gap-6 mt-12">
@@ -1094,18 +1107,14 @@ export default function ContreTempsSite() {
 
                 {/* Calendrier de livraison selon la catégorie */}
                 {(() => {
-                  // Trouver la règle applicable au panier
+                  // Trouver la règle applicable au panier (match exact par nom de catégorie)
                   const cartCats = [...new Set(
                     Object.keys(cart).map(id => {
                       const item = allItems.find(i => i.id === id);
                       return item ? (item.cat || null) : null;
                     }).filter(Boolean)
                   )];
-                  const rule = deliveryRules.find(r =>
-                    cartCats.some(c =>
-                      r.category.toLowerCase().includes(c === "matin" ? "petit" : c === "midi" ? "traiteur" : c === "soir" ? "brunch" : "biscuit")
-                    )
-                  ) || deliveryRules[0];
+                  const rule = deliveryRules.find(r => cartCats.includes(r.category)) || deliveryRules[0];
                   if (!rule) return null;
                   const minDate = new Date();
                   minDate.setHours(minDate.getHours() + rule.advance_hours);
