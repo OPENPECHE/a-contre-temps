@@ -735,95 +735,170 @@ async function deleteOption(id) {
 
 // ── Delivery Rules ───────────────────────────────────────────────────────────
 const DAYS_NAMES = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
-const DAYS_FULL  = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+let allRules = [];
+let expandedRule = null;
 
 async function loadDelivery(){
   document.getElementById("delivery-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
-  const rules = await sbFetch("delivery_rules?order=created_at.asc");
-  renderDelivery(rules);
+  allRules = await sbFetch("delivery_rules?order=created_at.asc") || [];
+  renderDelivery();
 }
 
-function renderDelivery(rules){
-  if(!rules||rules.length===0){
-    document.getElementById("delivery-list").innerHTML=`<p style="font-size:13px;color:var(--is)">Aucune règle. Exécute le schema v6 dans Supabase.</p>`;
+function renderDelivery(){
+  const el = document.getElementById("delivery-list");
+  if(!allRules.length){
+    el.innerHTML=`<div class="alert aw">Aucune règle trouvée. Exécute le schéma SQL v6 dans Supabase.</div>`;
     return;
   }
-  document.getElementById("delivery-list").innerHTML = rules.map(r => `
-    <div class="card" style="margin-bottom:1rem" id="drule-${r.id}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <div>
-          <p style="font-weight:500;font-size:15px">${r.category}</p>
-          <p style="font-size:11px;color:var(--is);margin-top:2px">${r.mode==="delivery"?"🚚 Livraison":"📍 Point relais"}</p>
+  el.innerHTML = allRules.map(r => deliveryCard(r)).join("") +
+    `<div class="nf" id="new-rule-form" style="display:none">
+      <p class="sl-label">NOUVELLE RÈGLE</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:11px;color:var(--is)">Catégorie *</label>
+          <input class="fi" id="nr-cat" placeholder="ex: Box cadeau" style="margin-top:4px"></div>
+        <div><label style="font-size:11px;color:var(--is)">Mode</label>
+          <select class="fi sel" id="nr-mode" style="margin-top:4px">
+            <option value="delivery">🚚 Livraison</option>
+            <option value="pickup">📍 Point relais</option>
+          </select></div>
+      </div>
+      <div style="display:flex;gap:7px">
+        <button class="btn bp bsm" onclick="addRule()">Créer</button>
+        <button class="btn bg bsm" onclick="document.getElementById('new-rule-form').style.display='none'">Annuler</button>
+      </div>
+    </div>
+    <button class="btn bp bsm" onclick="document.getElementById('new-rule-form').style.display='block'" style="margin-top:.5rem">+ NOUVELLE RÈGLE</button>`;
+}
+
+function deliveryCard(r){
+  const open = expandedRule === r.id;
+  const modeLabel = r.mode==="delivery" ? "🚚 Livraison" : "📍 Point relais";
+  const daysLabel = (r.available_days||[]).map(d=>DAYS_NAMES[d]).join(", ") || "Aucun jour";
+  return `<div class="pickup-card" id="drule-${r.id}">
+    <div class="pickup-head" onclick="toggleRule('${r.id}')">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="font-weight:500;font-size:14px">${r.category}</span>
+          <span class="badge" style="background:var(--bs);color:var(--ink)">${modeLabel}</span>
         </div>
-        <button onclick="saveRule('${r.id}')" class="btn bp bsm">Enregistrer</button>
+        <p style="font-size:12px;color:var(--is)">${daysLabel} · ${r.time_label||"Créneau non défini"}</p>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2">
+        <polyline points="${open?"18 15 12 9 6 15":"6 9 12 15 18 9"}"/>
+      </svg>
+    </div>
+    <div class="pickup-body${open?" on":""}">
+
+      <p style="font-size:10px;letter-spacing:.12em;color:var(--ru);margin-bottom:.75rem">JOURS DISPONIBLES</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem">
+        ${DAYS_NAMES.map((d,i)=>`
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:4px 10px;border-radius:999px;border:1px solid ${(r.available_days||[]).includes(i)?"var(--bd)":"var(--bs)"};background:${(r.available_days||[]).includes(i)?"var(--bd)":"transparent"};color:${(r.available_days||[]).includes(i)?"var(--cr)":"var(--ink)"}">
+            <input type="checkbox" id="day-${r.id}-${i}" ${(r.available_days||[]).includes(i)?"checked":""}
+              style="display:none" onchange="updateDayLabel(this,'${r.id}',${i})">
+            ${d}
+          </label>`).join("")}
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
         <div>
-          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">JOURS DISPONIBLES</label>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-            ${DAYS_NAMES.map((d,i)=>`
-              <label style="display:flex;align-items:center;gap:3px;font-size:11px;cursor:pointer">
-                <input type="checkbox" id="day-${r.id}-${i}" ${r.available_days.includes(i)?"checked":""} />
-                ${d}
-              </label>`).join("")}
-          </div>
-        </div>
-        <div>
-          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">MODE</label>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">MODE DE LIVRAISON</label>
           <select class="fi sel" id="mode-${r.id}" style="margin-top:6px;width:100%">
             <option value="delivery" ${r.mode==="delivery"?"selected":""}>🚚 Livraison à domicile</option>
             <option value="pickup" ${r.mode==="pickup"?"selected":""}>📍 Retrait point relais</option>
           </select>
         </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1rem">
         <div>
           <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">CRÉNEAU HORAIRE</label>
-          <input class="fi" id="time-${r.id}" value="${r.time_label||""}" placeholder="ex: Avant 9h30" style="margin-top:6px" />
+          <input class="fi" id="time-${r.id}" value="${r.time_label||""}" placeholder="ex: Avant 9h30" style="margin-top:6px;width:100%">
         </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
         <div>
           <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">FRAIS DE PORT (€)</label>
-          <input class="fi" id="fee-${r.id}" type="number" step="0.1" value="${r.delivery_fee||0}" style="margin-top:6px" />
+          <input class="fi" id="fee-${r.id}" type="number" step="0.1" value="${r.delivery_fee||0}" style="margin-top:6px;width:100%">
         </div>
         <div>
           <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">FRANCO À PARTIR DE (€)</label>
-          <input class="fi" id="franco-${r.id}" type="number" step="1" value="${r.franco_amount||""}" placeholder="ex: 19" style="margin-top:6px" />
+          <input class="fi" id="franco-${r.id}" type="number" step="1" value="${r.franco_amount||""}" placeholder="ex: 19" style="margin-top:6px;width:100%">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">DÉLAI MINI (heures)</label>
+          <input class="fi" id="advance-${r.id}" type="number" step="1" value="${r.advance_hours||24}" style="margin-top:6px;width:100%">
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 2fr;gap:.75rem">
-        <div>
-          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">RÉSERVATION MINIMUM (heures)</label>
-          <input class="fi" id="advance-${r.id}" type="number" step="1" value="${r.advance_hours||24}" style="margin-top:6px" />
-        </div>
-        <div>
-          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">NOTE AFFICHÉE AU CLIENT</label>
-          <input class="fi" id="notes-${r.id}" value="${(r.notes||"").replace(/"/g,"&quot;")}" placeholder="Info visible dans le tunnel de commande" style="margin-top:6px" />
-        </div>
+      <div style="margin-bottom:1rem">
+        <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">NOTE AFFICHÉE AU CLIENT</label>
+        <textarea class="fi" id="notes-${r.id}" rows="2"
+          style="margin-top:6px;width:100%;resize:vertical;padding:.5rem .7rem"
+          placeholder="Information visible dans le tunnel de commande">${(r.notes||"")}</textarea>
       </div>
-    </div>`).join("");
+
+      <div style="display:flex;gap:8px">
+        <button onclick="saveRule('${r.id}')" id="save-btn-${r.id}" class="btn bp">Enregistrer</button>
+        <button onclick="deleteRule('${r.id}')"
+          style="font-size:11px;color:var(--rd);border:1px solid var(--rd)33;background:transparent;border-radius:6px;padding:4px 10px;cursor:pointer">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleRule(id){ expandedRule = expandedRule===id?null:id; renderDelivery(); }
+
+function updateDayLabel(cb, ruleId, dayIdx){
+  const lbl = cb.closest("label");
+  if(cb.checked){
+    lbl.style.background="var(--bd)"; lbl.style.color="var(--cr)"; lbl.style.borderColor="var(--bd)";
+  } else {
+    lbl.style.background="transparent"; lbl.style.color="var(--ink)"; lbl.style.borderColor="var(--bs)";
+  }
 }
 
 async function saveRule(id){
   const days=[];
   for(let i=0;i<7;i++){
-    const cb=document.getElementById(`day-${id}-${i}`);
+    const cb=document.getElementById("day-"+id+"-"+i);
     if(cb&&cb.checked) days.push(i);
   }
   const upd={
     available_days: days,
-    mode: document.getElementById(`mode-${id}`).value,
-    time_label: document.getElementById(`time-${id}`).value,
-    delivery_fee: parseFloat(document.getElementById(`fee-${id}`).value)||0,
-    franco_amount: parseFloat(document.getElementById(`franco-${id}`).value)||null,
-    advance_hours: parseInt(document.getElementById(`advance-${id}`).value)||24,
-    notes: document.getElementById(`notes-${id}`).value,
+    mode: document.getElementById("mode-"+id).value,
+    time_label: document.getElementById("time-"+id).value,
+    delivery_fee: parseFloat(document.getElementById("fee-"+id).value)||0,
+    franco_amount: parseFloat(document.getElementById("franco-"+id).value)||null,
+    advance_hours: parseInt(document.getElementById("advance-"+id).value)||24,
+    notes: document.getElementById("notes-"+id).value,
   };
-  await sbFetch(`delivery_rules?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(upd)});
-  const btn=document.querySelector(`#drule-${id} button`);
-  if(btn){btn.textContent="✓ Enregistré";setTimeout(()=>btn.textContent="Enregistrer",2000);}
+  const btn=document.getElementById("save-btn-"+id);
+  if(btn){btn.textContent="Sauvegarde…";btn.disabled=true;}
+  await sbFetch("delivery_rules?id=eq."+id,{method:"PATCH",body:JSON.stringify(upd)});
+  allRules=allRules.map(r=>r.id===id?{...r,...upd}:r);
+  if(btn){btn.textContent="✓ Enregistré";btn.disabled=false;setTimeout(()=>{btn.textContent="Enregistrer";},2000);}
+}
+
+async function addRule(){
+  const cat=document.getElementById("nr-cat").value.trim();
+  const mode=document.getElementById("nr-mode").value;
+  if(!cat){alert("Nom de catégorie obligatoire");return;}
+  const data=await sbFetch("delivery_rules",{method:"POST",body:JSON.stringify({
+    category:cat, mode, available_days:[], advance_hours:24, delivery_fee:0, active:true
+  })});
+  const created=Array.isArray(data)?data[0]:data;
+  allRules.push(created);
+  expandedRule=created.id;
+  document.getElementById("new-rule-form").style.display="none";
+  renderDelivery();
+}
+
+async function deleteRule(id){
+  if(!confirm("Supprimer cette règle de livraison ?"))return;
+  await sbFetch("delivery_rules?id=eq."+id,{method:"DELETE",headers:{"Prefer":""}});
+  allRules=allRules.filter(r=>r.id!==id);
+  expandedRule=null;
+  renderDelivery();
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
