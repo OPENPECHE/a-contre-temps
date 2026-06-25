@@ -610,21 +610,38 @@ export default function ContreTempsSite() {
       </section>
 
       {/* CATALOGUE DYNAMIQUE — depuis Supabase */}
-      <section id="rythmes" className="px-6 md:px-10 py-20 md:py-28">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <Eyebrow>NOS RYTHMES</Eyebrow>
-            <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
-              Nos box, à votre rythme
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-      {Object.entries(categorizedProducts).filter(([cat]) => !CATEGORY_META[cat]?.isChronopost).map(([cat, items]) => {
+      {/* SECTIONS DYNAMIQUES — groupées par display_section depuis Supabase */}
+      {(() => {
+        // Grouper les catégories par section
+        const sections = {};
+        Object.entries(categorizedProducts).forEach(([cat, items]) => {
+          const rule = deliveryRules.find(r => r.category === cat);
+          const section = rule?.display_section || "Nos box";
+          const isChronopost = CATEGORY_META[cat]?.isChronopost;
+          if (isChronopost) return; // biscuiterie gérée séparément
+          if (!sections[section]) sections[section] = [];
+          sections[section].push({ cat, items, rule, order: rule?.display_order || 99 });
+        });
+        // Trier par display_order dans chaque section
+        Object.values(sections).forEach(arr => arr.sort((a,b) => a.order - b.order));
+        return Object.entries(sections).map(([sectionName, catItems]) => (
+          <section key={sectionName} id={sectionName.toLowerCase().replace(/\s+/g,"-")}
+            className="px-6 md:px-10 py-20 md:py-28"
+            style={{ backgroundColor: COLORS.paper }}>
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-16">
+                <Eyebrow>NOS CRÉATIONS</Eyebrow>
+                <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
+                  {sectionName}
+                </h2>
+              </div>
+              <div className={`grid gap-8 ${catItems.length === 1 ? "max-w-md mx-auto" : catItems.length === 2 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3"}`}>
+      {catItems.map(({ cat, items, rule }) => {
         const meta = CATEGORY_META[cat] || { ...DEFAULT_CAT_META, title: cat };
-        const deliveryRule = deliveryRules.find(r => r.category === cat);
+        const deliveryRule = rule;
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
-            <div className="max-w-5xl mx-auto">
+            <div>
               {/* Photo de catégorie */}
               {meta.photo && (
                 <div style={{ height:240, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
@@ -758,9 +775,11 @@ export default function ContreTempsSite() {
           </div>
         );
       })}
-          </div>
-        </div>
-      </section>
+              </div>
+            </div>
+          </section>
+        ));
+      })()}
 
       {/* BISCUITERIE — section séparée fond crème */}
       {Object.entries(categorizedProducts).filter(([cat]) => CATEGORY_META[cat]?.isChronopost).map(([cat, items]) => {
