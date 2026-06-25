@@ -610,14 +610,20 @@ export default function ContreTempsSite() {
       </section>
 
       {/* CATALOGUE DYNAMIQUE — depuis Supabase */}
-      {Object.entries(categorizedProducts).map(([cat, items]) => {
+      <section id="rythmes" className="px-6 md:px-10 py-20 md:py-28">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <Eyebrow>NOS RYTHMES</Eyebrow>
+            <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
+              Nos box, à votre rythme
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+      {Object.entries(categorizedProducts).filter(([cat]) => !CATEGORY_META[cat]?.isChronopost).map(([cat, items]) => {
         const meta = CATEGORY_META[cat] || { ...DEFAULT_CAT_META, title: cat };
-        const isChronopost = meta.isChronopost;
         const deliveryRule = deliveryRules.find(r => r.category === cat);
         return (
-          <section key={cat} id={cat.toLowerCase().replace(/\s+/g,"-")}
-            className="px-6 md:px-10 py-16 md:py-20"
-            style={{ backgroundColor: isChronopost ? COLORS.cream : COLORS.paper }}>
+          <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
             <div className="max-w-5xl mx-auto">
               {/* Photo de catégorie */}
               {meta.photo && (
@@ -651,9 +657,9 @@ export default function ContreTempsSite() {
                 )}
               </div>
 
-              {/* Grille produits */}
-              <div className={`grid gap-4 ${items.length > 2 ? "md:grid-cols-3" : "md:grid-cols-2 max-w-2xl mx-auto"}`}>
-                {items.map((item) => {
+              {/* Carte catégorie avec produits dedans — layout original */}
+              <div style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
+                {items.map((item, idx) => {
                   const contents = boxContents[item.id] || [];
                   const options = boxOptions[item.id] || [];
                   const isOpen = hoveredItem === item.id || expandedItem === item.id;
@@ -662,10 +668,10 @@ export default function ContreTempsSite() {
                   const extraPrice = checkedOpts.reduce((s, o) => s + Number(o.price), 0);
                   return (
                     <div key={item.id}
-                      style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, overflow:"hidden" }}
+                      style={{ borderBottom: idx < items.length-1 ? `1px solid ${COLORS.blueSoft}` : "none" }}
                       onMouseEnter={() => setHoveredItem(item.id)}
                       onMouseLeave={() => setHoveredItem(null)}>
-                      <div className="p-5">
+                      <div className="py-3.5 px-6">
                         {/* Nom + prix */}
                         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8,
                           cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
@@ -685,7 +691,7 @@ export default function ContreTempsSite() {
                         </div>
 
                         {/* Stepper + Ajouter */}
-                        <div style={{ display:"flex", alignItems:"center", gap:8, justifyContent:"flex-start" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8,
                             border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
                             <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
@@ -747,6 +753,58 @@ export default function ContreTempsSite() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+          </div>
+        </div>
+      </section>
+
+      {/* BISCUITERIE — section séparée fond crème */}
+      {Object.entries(categorizedProducts).filter(([cat]) => CATEGORY_META[cat]?.isChronopost).map(([cat, items]) => {
+        const meta = CATEGORY_META[cat];
+        const deliveryRule = deliveryRules.find(r => r.category === cat);
+        return (
+          <section key={cat} id="biscuiterie" className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
+            <div className="max-w-5xl mx-auto">
+              {meta.photo && (
+                <div style={{ height:280, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
+                  <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
+                  <div style={{ position:"absolute", bottom:28, left:32 }}>
+                    <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>EXPÉDIÉ PARTOUT EN FRANCE</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:30, fontWeight:500, color:COLORS.cream, marginTop:6 }}>{meta.title}</p>
+                    <p style={{ fontSize:13, color:COLORS.cream, opacity:.85, marginTop:6, maxWidth:340, lineHeight:1.65 }}>{meta.text}</p>
+                  </div>
+                </div>
+              )}
+              <div className="text-center mb-8">
+                <Eyebrow>{meta.label.toUpperCase()}</Eyebrow>
+                <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">{meta.title}</h2>
+                <p className="max-w-md mx-auto mt-5 text-[15px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-6 mt-12">
+                {items.map(item => (
+                  <div key={item.id} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"1.5rem" }}>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:17, marginBottom:4 }}>{item.name}</p>
+                    <p style={{ color:COLORS.inkSoft, fontSize:13, marginBottom:"1rem" }}>{Number(item.price).toFixed(2)} €</p>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
+                        <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1,(q[item.id]||1)-1) }))}
+                          style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>−</button>
+                        <span style={{ fontSize:13, fontWeight:500, minWidth:16, textAlign:"center" }}>{itemQty[item.id]||1}</span>
+                        <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1)+1 }))}
+                          style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
+                      </div>
+                      <button onClick={() => { const qty=itemQty[item.id]||1; for(let i=0;i<qty;i++) addToCart(item.id); setItemQty(q=>({...q,[item.id]:1})); }}
+                        style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream, borderRadius:7, padding:"6px 0", fontSize:10, letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
+                        AJOUTER
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
