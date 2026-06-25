@@ -782,9 +782,42 @@ export default function ContreTempsSite() {
           </div>
 
           <div className="flex flex-col gap-2.5 text-sm" style={{ color: COLORS.cream, opacity: 0.9 }}>
-            <div className="flex items-center gap-2.5"><MapPin size={13} strokeWidth={1.6} /> [Votre adresse]</div>
+            <div className="flex items-center gap-2.5"><MapPin size={13} strokeWidth={1.6} /> Gerzat (63360)</div>
             <div className="flex items-center gap-2.5"><Phone size={13} strokeWidth={1.6} /> [Votre téléphone]</div>
-            <div className="flex items-center gap-2.5"><Mail size={13} strokeWidth={1.6} /> [votre@email.fr]</div>
+            <div className="flex items-center gap-2.5"><Mail size={13} strokeWidth={1.6} /> acontretemps@fournilvivant.fr</div>
+          </div>
+
+          {/* Réseaux sociaux */}
+          <div>
+            <p className="text-[10px] tracked mb-4" style={{ color: COLORS.cream, opacity: 0.55 }}>SUIVEZ-NOUS</p>
+            <div className="flex gap-3">
+              {[
+                { name: "Facebook",  url: "", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill={COLORS.cream}><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg> },
+                { name: "Instagram", url: "", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COLORS.cream} strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill={COLORS.cream} stroke="none"/></svg> },
+                { name: "TikTok",    url: "", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill={COLORS.cream}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.16 8.16 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg> },
+              ].map(({ name, url, icon }) => (
+                url ? (
+                  <a key={name} href={url} target="_blank" rel="noopener noreferrer"
+                    title={name}
+                    style={{ width:38, height:38, borderRadius:"50%",
+                      backgroundColor:"rgba(255,255,255,.12)",
+                      border:"1px solid rgba(255,255,255,.2)",
+                      display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {icon}
+                  </a>
+                ) : (
+                  <div key={name} title={`${name} — bientôt`}
+                    style={{ width:38, height:38, borderRadius:"50%",
+                      backgroundColor:"rgba(255,255,255,.07)",
+                      border:"1px dashed rgba(255,255,255,.2)",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      opacity:0.5, cursor:"default" }}>
+                    {icon}
+                  </div>
+                )
+              ))}
+            </div>
+            <p className="text-[10px] mt-3" style={{ color: COLORS.cream, opacity: 0.4 }}>Comptes en cours de création</p>
           </div>
         </div>
         <p className="text-center text-[11px] mt-14 opacity-55" style={{ color: COLORS.cream }}>
