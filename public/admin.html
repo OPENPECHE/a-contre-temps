@@ -448,9 +448,9 @@ function productRow(p){
         <button class="btn bg bsm" style="padding:3px 6px" onclick="cancelEditProd()">✕</button>
       `:`
         <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
+        <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu & options">📋 Détail</button>
         <button class="btn bg bsm" style="padding:3px 6px" onclick="startEditProd('${p.id}','${p.name.replace(/'/g,"\\'")}',${p.price})">✏</button>
         <button class="btn bsm" style="padding:3px 6px;border:1px solid var(--rd)22;background:transparent;color:var(--rd)" onclick="deleteProd('${p.id}')">✕</button>
-        <button class="btn bg bsm" style="padding:3px 6px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu & options">📋</button>
       `}
     </div>
   </div>`;
