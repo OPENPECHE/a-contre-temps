@@ -668,32 +668,27 @@ export default function ContreTempsSite() {
                             {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)} €)</span>}
                           </p>
                         </div>
-                        {/* Bouton quantité + ajouter pleine largeur */}
-                        <div style={{ display:"flex", alignItems:"center", border:`1px solid ${COLORS.blueSoft}`,
-                          borderRadius:999, overflow:"hidden", width:"fit-content" }}>
+                        {/* Option D — stepper rectangulaire */}
+                        <div style={{ display:"inline-flex", alignItems:"center", gap:10,
+                          border:`1px solid ${COLORS.blueSoft}`, borderRadius:8, padding:"5px 12px", flexShrink:0 }}>
                           <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
-                            style={{ border:"none", borderRight:`1px solid ${COLORS.blueSoft}`,
-                              background:"transparent", cursor:"pointer", fontSize:16,
-                              color:COLORS.inkSoft, width:36, height:32, flexShrink:0,
-                              display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
-                          <span style={{ fontSize:13, minWidth:24, textAlign:"center", padding:"0 4px" }}>
+                            style={{ border:"none", background:"transparent", cursor:"pointer",
+                              fontSize:20, color:COLORS.blue, lineHeight:1, padding:0 }}>−</button>
+                          <span style={{ fontSize:14, fontWeight:500, minWidth:18, textAlign:"center" }}>
                             {itemQty[item.id] || 1}
                           </span>
                           <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
-                            style={{ border:"none", borderLeft:`1px solid ${COLORS.blueSoft}`,
-                              background:"transparent", cursor:"pointer", fontSize:16,
-                              color:COLORS.inkSoft, width:36, height:32, flexShrink:0,
-                              display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                            style={{ border:"none", background:"transparent", cursor:"pointer",
+                              fontSize:20, color:COLORS.blue, lineHeight:1, padding:0 }}>+</button>
                           <button
                             onClick={() => {
                               const qty = itemQty[item.id] || 1;
                               for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
                             }}
-                            style={{ border:"none", borderLeft:`1px solid ${COLORS.blueSoft}`,
-                              background:COLORS.blueDeep, cursor:"pointer", flex:1,
-                              fontSize:10, letterSpacing:".12em", color:COLORS.cream,
-                              height:32, fontFamily:"inherit" }}>
+                            style={{ border:"none", background:COLORS.blueDeep, color:COLORS.cream,
+                              borderRadius:6, padding:"5px 14px", fontSize:10,
+                              letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
                             AJOUTER
                           </button>
                         </div>
