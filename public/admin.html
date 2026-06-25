@@ -407,7 +407,7 @@ function renderProducts(){
     <div style="margin-bottom:1.25rem">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:.6rem">
         <p style="font-size:10px;letter-spacing:.15em;color:var(--ru)">${cat.toUpperCase()}</p>
-        <button onclick="renameCategory('${cat.replace(/'/g,"\'")}')}"
+        <button onclick="renameCategory(this.getAttribute('data-cat'))" data-cat="${cat}"
           style="font-size:10px;color:var(--is);border:1px solid var(--bs);background:transparent;border-radius:5px;padding:2px 7px;cursor:pointer">✏ Renommer</button>
       </div>
       <div class="card card0">
