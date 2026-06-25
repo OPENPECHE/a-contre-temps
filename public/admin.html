@@ -780,7 +780,8 @@ function renderDelivery(){
       <p class="sl-label">NOUVELLE RÈGLE</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div><label style="font-size:11px;color:var(--is)">Catégorie *</label>
-          <input class="fi" id="nr-cat" placeholder="ex: Box cadeau" style="margin-top:4px"></div>
+          <select class="fi sel" id="nr-cat" onchange="toggleNrCatCustom(this.value)" style="margin-top:4px"><option value="">-- Catégorie --</option><option value="__custom__">✏ Autre...</option></select>
+          <input class="fi" id="nr-cat-custom" placeholder="Saisir le nom..." style="margin-top:4px;display:none">
         <div><label style="font-size:11px;color:var(--is)">Mode</label>
           <select class="fi sel" id="nr-mode" style="margin-top:4px">
             <option value="delivery">🚚 Livraison</option>
@@ -792,7 +793,7 @@ function renderDelivery(){
         <button class="btn bg bsm" onclick="document.getElementById('new-rule-form').style.display='none'">Annuler</button>
       </div>
     </div>
-    <button class="btn bp bsm" onclick="document.getElementById('new-rule-form').style.display='block'" style="margin-top:.5rem">+ NOUVELLE RÈGLE</button>`;
+    <button class="btn bp bsm" onclick="showNewRuleForm()" style="margin-top:.5rem">+ NOUVELLE RÈGLE</button>`;
 }
 
 function deliveryCard(r){
@@ -872,6 +873,16 @@ function deliveryCard(r){
 }
 
 function toggleRule(id){ expandedRule = expandedRule===id?null:id; renderDelivery(); }
+function showNewRuleForm(){
+  const form=document.getElementById("new-rule-form");
+  form.style.display="block";
+  // Peupler le select avec les catégories sans règle
+  const sel=document.getElementById("nr-cat");
+  if(sel){
+    const cats=[...new Set(allProducts.map(p=>p.cat))].filter(c=>!allRules.some(r=>r.category===c));
+    sel.innerHTML=`<option value="">-- Catégorie --</option>${cats.map(c=>`<option value="${c}">${c}</option>`).join("")}<option value="__custom__">✏ Autre...</option>`;
+  }
+}
 
 function updateDayLabel(cb, ruleId, dayIdx){
   const lbl = cb.closest("label");
@@ -905,17 +916,36 @@ async function saveRule(id){
 }
 
 async function addRule(){
-  const cat=document.getElementById("nr-cat").value.trim();
+  const selVal=document.getElementById("nr-cat").value;
+  const custom=document.getElementById("nr-cat-custom");
+  const cat=selVal==="__custom__"?(custom?custom.value.trim():""):selVal;
   const mode=document.getElementById("nr-mode").value;
-  if(!cat){alert("Nom de catégorie obligatoire");return;}
-  const data=await sbFetch("delivery_rules",{method:"POST",body:JSON.stringify({
-    category:cat, mode, available_days:[], advance_hours:24, delivery_fee:0, active:true
-  })});
-  const created=Array.isArray(data)?data[0]:data;
-  allRules.push(created);
-  expandedRule=created.id;
-  document.getElementById("new-rule-form").style.display="none";
-  renderDelivery();
+  if(!cat){alert("Choisis ou saisis une catégorie.");return;}
+  if(allRules.some(r=>r.category===cat)){alert("Une règle existe déjà pour cette catégorie.");return;}
+  try{
+    const data=await sbFetch("delivery_rules",{method:"POST",body:JSON.stringify({
+      category:cat,mode,available_days:[1,2,3,4,5],advance_hours:24,delivery_fee:0,active:true,
+      notes:"Règle à configurer dans Livraison & Créneaux"
+    })});
+    const created=Array.isArray(data)?data[0]:data;
+    if(!created||!created.id){alert("Erreur RLS — exécute le SQL d'autorisation dans Supabase.");return;}
+    allRules.push(created);
+    expandedRule=created.id;
+    document.getElementById("new-rule-form").style.display="none";
+    renderDelivery();
+  }catch(e){alert("Erreur : "+e.message);}
+}
+function toggleNrCatCustom(val){
+  const cats=[...new Set(allProducts.map(p=>p.cat))].filter(c=>!allRules.some(r=>r.category===c));
+  const sel=document.getElementById("nr-cat");
+  if(sel){
+    const existing=Array.from(sel.options).map(o=>o.value).filter(v=>v&&v!=="__custom__");
+    if(existing.length===0){
+      cats.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.insertBefore(o,sel.lastChild);});
+    }
+  }
+  const custom=document.getElementById("nr-cat-custom");
+  if(custom) custom.style.display=val==="__custom__"?"block":"none";
 }
 
 async function deleteRule(id){
