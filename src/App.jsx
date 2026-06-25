@@ -662,25 +662,15 @@ export default function ContreTempsSite() {
                 </div>
               )}
 
-              {/* En-tête catégorie */}
-              <div className="text-center mb-8">
-                <Eyebrow>{(meta.label||cat).toUpperCase()}</Eyebrow>
-                <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-4xl mt-4 tracking-tight">
-                  {meta.title||cat}
-                </h2>
-                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft }} className="text-base mt-2">{meta.sub}</p>}
-                {meta.text && <p className="max-w-md mx-auto mt-4 text-[14px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>}
-                {deliveryRule && (
-                  <p className="text-xs mt-3" style={{ color:COLORS.rust }}>
-                    {deliveryRule.notes}
-                    {deliveryRule.delivery_fee > 0 && ` · Frais de port : ${deliveryRule.delivery_fee.toFixed(2)} €`}
-                    {deliveryRule.franco_amount && ` (offerts à partir de ${deliveryRule.franco_amount} €)`}
-                  </p>
-                )}
+              {/* Sous-titre et infos livraison — une seule fois */}
+              <div style={{ padding:"1rem 1.25rem .5rem" }}>
+                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:13 }}>{meta.sub}</p>}
+                {meta.text && <p style={{ fontSize:12, color:COLORS.inkSoft, lineHeight:1.6, marginTop:4 }}>{meta.text}</p>}
+                {deliveryRule?.notes && <p style={{ fontSize:11, color:COLORS.rust, marginTop:6 }}>{deliveryRule.notes}</p>}
               </div>
 
-              {/* Carte catégorie avec produits dedans — layout original */}
-              <div style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
+              {/* Produits */}
+              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}` }}>
                 {items.map((item, idx) => {
                   const contents = boxContents[item.id] || [];
                   const options = boxOptions[item.id] || [];
@@ -780,7 +770,6 @@ export default function ContreTempsSite() {
           </div>
         );
       })}
-              </div>
             </div>
           </section>
         ));
