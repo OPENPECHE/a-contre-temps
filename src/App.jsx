@@ -365,6 +365,7 @@ export default function ContreTempsSite() {
   const [selectedOptions, setSelectedOptions] = useState({}); // { productId: { optionId: bool } }
   const [hoveredItem, setHoveredItem] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
+  const [itemQty, setItemQty] = useState({});  // { itemId: quantity }
 
   useEffect(() => {
     Promise.all([
@@ -665,12 +666,36 @@ export default function ContreTempsSite() {
                             {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)} €)</span>}
                           </p>
                         </div>
-                        <button
-                          onClick={() => addToCart(item.id, extraPrice, checkedOpts.map(o => o.name))}
-                          className="shrink-0 text-[10px] tracked uppercase px-3 py-2 rounded-full"
-                          style={{ border: `1px solid ${COLORS.ink}`, color: COLORS.ink }}>
-                          Ajouter
-                        </button>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                          {/* Sélecteur de quantité */}
+                          <div style={{ display:"flex", alignItems:"center", gap:4,
+                            border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:"2px 6px" }}>
+                            <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) }))}
+                              style={{ border:"none", background:"transparent", cursor:"pointer",
+                                fontSize:14, color:COLORS.inkSoft, width:18, height:18,
+                                display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
+                            <span style={{ fontSize:13, minWidth:16, textAlign:"center", fontWeight:500 }}>
+                              {itemQty[item.id] || 1}
+                            </span>
+                            <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 }))}
+                              style={{ border:"none", background:"transparent", cursor:"pointer",
+                                fontSize:14, color:COLORS.inkSoft, width:18, height:18,
+                                display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                          </div>
+                          {/* Bouton Ajouter */}
+                          <button
+                            onClick={() => {
+                              const qty = itemQty[item.id] || 1;
+                              for (let i = 0; i < qty; i++) {
+                                addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
+                              }
+                              setItemQty(q => ({ ...q, [item.id]: 1 }));
+                            }}
+                            className="shrink-0 text-[10px] tracked uppercase px-3 py-2 rounded-full"
+                            style={{ border: `1px solid ${COLORS.ink}`, color: COLORS.ink }}>
+                            Ajouter
+                          </button>
+                        </div>
                       </div>
 
                       {/* Panneau déroulant — contenu + options */}
@@ -756,13 +781,32 @@ export default function ContreTempsSite() {
               <div key={item.id} className="p-7 flex flex-col items-center text-center" style={{ backgroundColor: COLORS.paper, border: `1px solid ${COLORS.blueSoft}` }}>
                 <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 500 }} className="text-lg">{item.name}</p>
                 <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>{item.price.toFixed(2)} €</p>
-                <button
-                  onClick={() => addToCart(item.id)}
-                  className="mt-5 text-[10px] tracked uppercase px-4 py-2 rounded-full"
-                  style={{ border: `1px solid ${COLORS.ink}`, color: COLORS.ink }}
-                >
-                  Ajouter
-                </button>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:"1.25rem" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:4,
+                    border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:"2px 6px" }}>
+                    <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) }))}
+                      style={{ border:"none", background:"transparent", cursor:"pointer",
+                        fontSize:14, color:COLORS.inkSoft, width:18, height:18,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
+                    <span style={{ fontSize:13, minWidth:16, textAlign:"center", fontWeight:500 }}>
+                      {itemQty[item.id] || 1}
+                    </span>
+                    <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 }))}
+                      style={{ border:"none", background:"transparent", cursor:"pointer",
+                        fontSize:14, color:COLORS.inkSoft, width:18, height:18,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const qty = itemQty[item.id] || 1;
+                      for (let i = 0; i < qty; i++) addToCart(item.id);
+                      setItemQty(q => ({ ...q, [item.id]: 1 }));
+                    }}
+                    className="text-[10px] tracked uppercase px-4 py-2 rounded-full"
+                    style={{ border: `1px solid ${COLORS.ink}`, color: COLORS.ink }}>
+                    Ajouter
+                  </button>
+                </div>
               </div>
             ))}
           </div>
