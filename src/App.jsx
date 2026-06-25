@@ -218,31 +218,33 @@ function ToastContainer({ toasts }) {
 const JOURS = ["Di","Lu","Ma","Me","Je","Ve","Sa"];
 const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 
-function MiniCalendar({ schedules, selectedDate, onSelect }) {
+function MiniCalendar({ schedules, selectedDate, onSelect, minDate }) {
   const today = new Date(); today.setHours(0,0,0,0);
+  const earliest = minDate ? new Date(minDate) : new Date(today);
+  earliest.setHours(0,0,0,0);
   const [viewDate, setViewDate] = useState(() => {
-    const d = new Date(); d.setDate(1); return d;
+    const d = new Date(earliest); d.setDate(1); return d;
   });
 
   // Calculer les dates disponibles selon les plannings
   const availableDates = useMemo(() => {
     const set = new Set();
-    const end = new Date(today); end.setMonth(end.getMonth() + 4);
+    const end = new Date(earliest); end.setMonth(end.getMonth() + 4);
     schedules.forEach(s => {
       if (!s.active) return;
       if (s.type === "recurring" && s.day_of_week !== null) {
-        let d = new Date(today); d.setDate(d.getDate() + 1);
+        let d = new Date(earliest); d.setDate(d.getDate() + 1);
         while (d <= end) {
           if (d.getDay() === s.day_of_week) set.add(d.toISOString().split("T")[0]);
           d.setDate(d.getDate() + 1);
         }
       } else if (s.type === "specific" && s.specific_date) {
         const sd = new Date(s.specific_date);
-        if (sd > today) set.add(s.specific_date);
+        if (sd > earliest) set.add(s.specific_date);
       }
     });
     return set;
-  }, [schedules]);
+  }, [schedules, minDate]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -286,7 +288,7 @@ function MiniCalendar({ schedules, selectedDate, onSelect }) {
           const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
           const isAvailable = availableDates.has(dateStr);
           const isSelected = selectedDate === dateStr;
-          const isPast = new Date(dateStr) <= today;
+          const isPast = new Date(dateStr) <= earliest;
           return (
             <button key={dateStr} onClick={() => isAvailable && !isPast && onSelect(dateStr)}
               style={{
@@ -360,6 +362,7 @@ export default function ContreTempsSite() {
   const [timeSlots, setTimeSlots] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [deliveryRules, setDeliveryRules] = useState([]);
   const [boxContents, setBoxContents] = useState({});   // { productId: [...items] }
   const [boxOptions, setBoxOptions] = useState({});     // { productId: [...options] }
   const [selectedOptions, setSelectedOptions] = useState({}); // { productId: { optionId: bool } }
@@ -371,7 +374,9 @@ export default function ContreTempsSite() {
     Promise.all([
       sbFetch("box_contents?order=product_id,position.asc"),
       sbFetch("box_options?active=eq.true&order=product_id,position.asc"),
-    ]).then(([contents, options]) => {
+      sbFetch("delivery_rules?active=eq.true"),
+    ]).then(([contents, options, rules]) => {
+      setDeliveryRules(rules || []);
       const c = {};
       (contents || []).forEach(item => {
         if (!c[item.product_id]) c[item.product_id] = [];
@@ -384,7 +389,7 @@ export default function ContreTempsSite() {
         o[opt.product_id].push(opt);
       });
       setBoxOptions(o);
-    }).catch(() => {});
+    }).catch(e => console.warn("Load error:", e));
   }, []);
 
   useEffect(() => {
@@ -1082,6 +1087,46 @@ export default function ContreTempsSite() {
                       style={{ borderBottom: `1px solid ${COLORS.blue}`, fontFamily: "inherit" }} />
                   </div>
                 ))}
+
+                {/* Calendrier de livraison selon la catégorie */}
+                {(() => {
+                  // Trouver la règle applicable au panier
+                  const cartCats = [...new Set(
+                    Object.keys(cart).map(id => {
+                      const item = allItems.find(i => i.id === id);
+                      return item ? RHYTHMS.find(r => r.items.some(it => it.id === id))?.id || "biscuiterie" : null;
+                    }).filter(Boolean)
+                  )];
+                  const rule = deliveryRules.find(r =>
+                    cartCats.some(c =>
+                      r.category.toLowerCase().includes(c === "matin" ? "petit" : c === "midi" ? "traiteur" : c === "soir" ? "brunch" : "biscuit")
+                    )
+                  ) || deliveryRules[0];
+                  if (!rule) return null;
+                  const minDate = new Date();
+                  minDate.setHours(minDate.getHours() + rule.advance_hours);
+                  const delivFee = rule.delivery_fee > 0
+                    ? (Object.entries(cart).reduce((s,[id,qty]) => { const it=allItems.find(i=>i.id===id); return s+(it?.price||0)*qty; },0) >= (rule.franco_amount||99999) ? 0 : rule.delivery_fee)
+                    : 0;
+                  return (
+                    <div>
+                      <p className="text-[10px] tracked uppercase mb-2" style={{ color: COLORS.rust }}>
+                        Date de {rule.mode === "delivery" ? "livraison" : "retrait"} souhaitée
+                      </p>
+                      <p style={{ fontSize:11, color:COLORS.inkSoft, marginBottom:".75rem", lineHeight:1.6 }}>
+                        {rule.notes}
+                        {delivFee > 0 && <span style={{ color:COLORS.rust }}> · Frais de port : {delivFee.toFixed(2)} €</span>}
+                        {delivFee === 0 && rule.delivery_fee > 0 && <span style={{ color:"#4A7C59" }}> · Livraison offerte ✓</span>}
+                      </p>
+                      <MiniCalendar
+                        schedules={rule.available_days.map(d => ({ type:"recurring", day_of_week:d, active:true, minDate }))}
+                        selectedDate={orderForm.pickupDate}
+                        onSelect={d => setOrderForm(f => ({ ...f, pickupDate:d }))}
+                        minDate={minDate}
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Mode de retrait — seulement si pas de biscuiterie */}
                 {!hasBiscuiterie && (
