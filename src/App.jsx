@@ -651,43 +651,44 @@ export default function ContreTempsSite() {
                       onMouseLeave={() => setHoveredItem(null)}>
                       {/* Ligne principale */}
                       <div className="py-3.5">
-                        {/* Nom et prix */}
-                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8,
-                          cursor: contents.length > 0 ? "pointer" : "default", marginBottom:"0.6rem" }}
+                        {/* Nom + prix + détail sur une ligne */}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                          gap:8, cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
                           onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
-                          <p className="text-[14px]" style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <p style={{ fontSize:13, lineHeight:1.35 }}>
                             {item.name}
                             {contents.length > 0 && (
-                              <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust, opacity:.7 }}>
-                                {isOpen ? "▲" : "▼"}
-                              </span>
+                              <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust,
+                                opacity:.7, marginLeft:5 }}>{isOpen ? "▲" : "▼"}</span>
                             )}
                           </p>
-                          <p className="text-xs" style={{ color: COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
+                          <p style={{ fontSize:12, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
                             {(item.price + extraPrice).toFixed(2)} €
-                            {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)} €)</span>}
+                            {extraPrice > 0 && <span style={{ color:COLORS.rust }}> +{extraPrice.toFixed(2)} €</span>}
                           </p>
                         </div>
-                        {/* Option D — stepper rectangulaire */}
-                        <div style={{ display:"inline-flex", alignItems:"center", gap:10,
-                          border:`1px solid ${COLORS.blueSoft}`, borderRadius:8, padding:"5px 12px", flexShrink:0 }}>
-                          <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
-                            style={{ border:"none", background:"transparent", cursor:"pointer",
-                              fontSize:20, color:COLORS.blue, lineHeight:1, padding:0 }}>−</button>
-                          <span style={{ fontSize:14, fontWeight:500, minWidth:18, textAlign:"center" }}>
-                            {itemQty[item.id] || 1}
-                          </span>
-                          <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
-                            style={{ border:"none", background:"transparent", cursor:"pointer",
-                              fontSize:20, color:COLORS.blue, lineHeight:1, padding:0 }}>+</button>
+                        {/* Stepper + Ajouter sur ligne séparée */}
+                        <div style={{ display:"flex", alignItems:"center", gap:8, justifyContent:"center" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8,
+                            border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
+                            <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
+                              style={{ border:"none", background:"transparent", cursor:"pointer",
+                                fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>−</button>
+                            <span style={{ fontSize:13, fontWeight:500, minWidth:16, textAlign:"center" }}>
+                              {itemQty[item.id] || 1}
+                            </span>
+                            <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
+                              style={{ border:"none", background:"transparent", cursor:"pointer",
+                                fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
+                          </div>
                           <button
                             onClick={() => {
                               const qty = itemQty[item.id] || 1;
                               for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
                             }}
-                            style={{ border:"none", background:COLORS.blueDeep, color:COLORS.cream,
-                              borderRadius:6, padding:"5px 14px", fontSize:10,
+                            style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream,
+                              borderRadius:7, padding:"6px 0", fontSize:10,
                               letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
                             AJOUTER
                           </button>
