@@ -854,6 +854,18 @@ function deliveryCard(r){
         </div>
       </div>
 
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:.75rem;margin-bottom:.75rem">
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">CHAPITRE D'AFFICHAGE SUR LE SITE</label>
+          <input class="fi" id="section-${r.id}" value="${(r.display_section||"Nos box")}"
+            placeholder="ex: Nos box, Biscuiterie, Coffrets..." style="margin-top:6px;width:100%">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">ORDRE (1, 2, 3...)</label>
+          <input class="fi" id="order-${r.id}" type="number" step="1" value="${r.display_order||0}"
+            style="margin-top:6px;width:100%">
+        </div>
+      </div>
       <div style="margin-bottom:1rem">
         <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">NOTE AFFICHÉE AU CLIENT</label>
         <textarea class="fi" id="notes-${r.id}" rows="2"
@@ -907,6 +919,8 @@ async function saveRule(id){
     franco_amount: parseFloat(document.getElementById("franco-"+id).value)||null,
     advance_hours: parseInt(document.getElementById("advance-"+id).value)||24,
     notes: document.getElementById("notes-"+id).value,
+    display_section: document.getElementById("section-"+id)?.value||"Nos box",
+    display_order: parseInt(document.getElementById("order-"+id)?.value)||0,
   };
   const btn=document.getElementById("save-btn-"+id);
   if(btn){btn.textContent="Sauvegarde…";btn.disabled=true;}
