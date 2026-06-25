@@ -101,65 +101,60 @@ const PHOTOS = {
   biscuiterie: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80",
 };
 
-const RHYTHMS = [
-  {
-    id: "matin",
+// Métadonnées visuelles par catégorie — les produits viennent de Supabase
+// Ajoutez une entrée ici quand vous créez une nouvelle catégorie dans le back office
+const CATEGORY_META = {
+  "Petit-déjeuner entreprises": {
     photo: PHOTOS.matin,
     label: "Le matin",
-    time: "Livré avant 9h",
+    time: "Livré avant 9h30",
     title: "Box petit-déjeuner",
     sub: "Pour les entreprises",
-    text: "Viennoiseries du fournil, pains spéciaux, confitures de producteurs et jus pressés, posés frais sur la table de la salle de pause.",
-    items: [
-      { id: "m1", name: "Box petit-déjeuner — par personne", price: 6.5 },
-      { id: "m2", name: "Box petit-déjeuner — formule premium", price: 9.0 },
-      { id: "m3", name: "Café & thé en supplément", price: 2.0 },
-    ],
-    offset: "",
+    text: "Viennoiseries du fournil, pains spéciaux, confitures de producteurs et jus pressés.",
   },
-  {
-    id: "midi",
+  "Traiteur midi": {
     photo: PHOTOS.midi,
     label: "Le midi",
-    time: "Livré entre 12h et 13h",
+    time: "Livré entre 11h30 et 12h30",
     title: "Pain & traiteur léger",
     sub: "Pour les bureaux",
-    text: "Sandwiches au levain, salades composées, pains à partager. Une pause déjeuner sans file d'attente, livrée directement sur place.",
-    items: [
-      { id: "d1", name: "Sandwich au levain + accompagnement", price: 9.5 },
-      { id: "d2", name: "Salade composée du jour", price: 8.5 },
-      { id: "d3", name: "Pain à partager — focaccia", price: 7.0 },
-    ],
-    offset: "",
+    text: "Sandwiches au levain, salades composées, pains à partager. Une pause déjeuner sans file d'attente.",
   },
-  {
-    id: "soir",
+  "Brunch & apéritif": {
     photo: PHOTOS.soir,
     label: "Soir & week-end",
     time: "Sur réservation",
-    title: "Box brunch & apéritif",
+    title: "Box apéritif",
     sub: "Pour recevoir",
-    text: "Planches à composer, mini-viennoiseries sucrées-salées, confitures et accompagnements de producteurs locaux. Pour recevoir sans cuisiner.",
-    items: [
-      { id: "s1", name: "Box brunch — pour 2", price: 24.0 },
-      { id: "s2", name: "Box apéritif — planche pour 4 à 6", price: 32.0 },
-      { id: "s3", name: "Box apéritif — planche pour 8 à 10", price: 52.0 },
-    ],
-    offset: "",
+    text: "Planches à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
   },
-];
+  "Brunch week-end": {
+    photo: PHOTOS.soir,
+    label: "Week-end",
+    time: "Samedi et dimanche matin",
+    title: "Box brunch",
+    sub: "Pour recevoir",
+    text: "Mini-viennoiseries sucrées-salées, confitures et accompagnements de producteurs locaux.",
+  },
+  "Biscuiterie (expédition)": {
+    photo: PHOTOS.biscuiterie,
+    label: "Expédiée partout en France",
+    time: "Chronopost 24/48h",
+    title: "La biscuiterie",
+    sub: "Coffrets à offrir",
+    text: "Sablés au beurre, biscuits du fournil et mendiants — emballés et expédiés en Chronopost.",
+    isChronopost: true,
+  },
+};
 
-const BISCUITERIE = {
-  id: "biscuiterie",
-  photo: PHOTOS.biscuiterie,
-  label: "Expédiée partout en France",
-  title: "La biscuiterie",
-  text: "Sablés au beurre, biscuits du fournil et mendiants pensés pour voyager : emballés et expédiés en Chronopost, où que vous soyez.",
-  items: [
-    { id: "b1", name: "Coffret biscuits — 250g", price: 12.0 },
-    { id: "b2", name: "Coffret biscuits — 500g", price: 19.0 },
-    { id: "b3", name: "Coffret cadeau biscuiterie", price: 28.0 },
-  ],
+// Métadonnées par défaut pour les nouvelles catégories
+const DEFAULT_CAT_META = {
+  photo: PHOTOS.hero,
+  label: "Nos créations",
+  time: "Sur réservation",
+  title: "",
+  sub: "",
+  text: "",
 };
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -408,23 +403,32 @@ export default function ContreTempsSite() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Fusionne les produits Supabase avec le catalogue local (fallback si pas de connexion)
-  const allItems = useMemo(() => {
-    const base = [...RHYTHMS.flatMap((r) => r.items), ...BISCUITERIE.items];
-    if (!sbProducts.length) return base;
-    return base.map(item => {
-      const sb = sbProducts.find(p => p.id === item.id);
-      return sb ? { ...item, name: sb.name, price: Number(sb.price), active: sb.active } : item;
-    }).filter(item => item.active !== false);
+  // Tous les produits viennent de Supabase — dynamique
+  const allItems = useMemo(() => sbProducts.map(p => ({
+    id: p.id, name: p.name, price: Number(p.price), cat: p.cat, active: p.active
+  })), [sbProducts]);
+
+  // Grouper les produits par catégorie (ordre d'apparition dans Supabase)
+  const categorizedProducts = useMemo(() => {
+    const cats = {};
+    sbProducts.forEach(p => {
+      if (!cats[p.cat]) cats[p.cat] = [];
+      cats[p.cat].push(p);
+    });
+    return cats;
   }, [sbProducts]);
 
+  // Détecter si le panier contient des articles Chronopost
   const hasBiscuiterie = useMemo(() =>
-    Object.keys(cart).some(id => BISCUITERIE.items.find(i => i.id === id)),
-  [cart]);
+    Object.keys(cart).some(id => {
+      const p = sbProducts.find(p => p.id === id);
+      return p?.cat === "Biscuiterie (expédition)";
+    }),
+  [cart, sbProducts]);
 
   const addToCart = (id, extraPrice = 0, optionLabels = []) => {
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
-    const item = [...RHYTHMS.flatMap(r => r.items), ...BISCUITERIE.items].find(i => i.id === id);
+    const item = allItems.find(i => i.id === id);
     const name = item?.name?.split("—")[0]?.trim() || id;
     const opts = optionLabels.length > 0 ? ` + ${optionLabels.join(", ")}` : "";
     toast(`${name}${opts} ajouté`, "cart");
@@ -605,48 +609,51 @@ export default function ContreTempsSite() {
         </p>
       </section>
 
-      {/* RYTHMES DU JOUR */}
-      <section id="rythmes" className="px-6 md:px-10 pb-20 md:pb-28 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <Eyebrow>NOS RYTHMES</Eyebrow>
-          <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
-            Trois moments, une seule fraîcheur
-          </h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-px md:gap-8">
-          {RHYTHMS.map((r) => (
-            <div
-              key={r.id}
-              className={`flex flex-col ${r.offset}`}
-              style={{ backgroundColor: COLORS.paper, border: `1px solid ${COLORS.blueSoft}`, overflow:"hidden", borderRadius:8 }}
-            >
-              {r.photo && (
-                <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
-                  <img src={r.photo} alt={r.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
-                  <div style={{ position:"absolute", bottom:12, left:16 }}>
-                    <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{r.label.toUpperCase()}</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{r.title}</p>
+      {/* CATALOGUE DYNAMIQUE — depuis Supabase */}
+      {Object.entries(categorizedProducts).map(([cat, items]) => {
+        const meta = CATEGORY_META[cat] || { ...DEFAULT_CAT_META, title: cat };
+        const isChronopost = meta.isChronopost;
+        const deliveryRule = deliveryRules.find(r => r.category === cat);
+        return (
+          <section key={cat} id={cat.toLowerCase().replace(/\s+/g,"-")}
+            className="px-6 md:px-10 py-16 md:py-20"
+            style={{ backgroundColor: isChronopost ? COLORS.cream : COLORS.paper }}>
+            <div className="max-w-5xl mx-auto">
+              {/* Photo de catégorie */}
+              {meta.photo && (
+                <div style={{ height:240, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
+                  <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.6) 0%, transparent 65%)" }} />
+                  <div style={{ position:"absolute", bottom:24, left:28 }}>
+                    <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>{(meta.label||cat).toUpperCase()}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:28, fontWeight:500, color:COLORS.cream, marginTop:4 }}>{meta.title||cat}</p>
+                    {deliveryRule && (
+                      <p style={{ fontSize:12, color:COLORS.cream, opacity:.85, marginTop:4 }}>{deliveryRule.time_label}</p>
+                    )}
                   </div>
                 </div>
               )}
-              <div className="p-8 flex flex-col flex-1">
-              <p className="tracked text-[10px]" style={{ color: COLORS.rust }}>
-                {r.label.toUpperCase()}
-              </p>
-              <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>{r.time}</p>
 
-              <h3 style={{ fontFamily: FONT_DISPLAY, fontWeight: 500 }} className="text-2xl mt-4">
-                {r.title}
-              </h3>
-              <p style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", color: COLORS.inkSoft }} className="text-sm mt-1">
-                {r.sub}
-              </p>
-              <p className="text-sm leading-relaxed mt-4" style={{ color: COLORS.inkSoft }}>{r.text}</p>
+              {/* En-tête catégorie */}
+              <div className="text-center mb-8">
+                <Eyebrow>{(meta.label||cat).toUpperCase()}</Eyebrow>
+                <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-4xl mt-4 tracking-tight">
+                  {meta.title||cat}
+                </h2>
+                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft }} className="text-base mt-2">{meta.sub}</p>}
+                {meta.text && <p className="max-w-md mx-auto mt-4 text-[14px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>}
+                {deliveryRule && (
+                  <p className="text-xs mt-3" style={{ color:COLORS.rust }}>
+                    {deliveryRule.time_label} · {deliveryRule.notes}
+                    {deliveryRule.delivery_fee > 0 && ` · Frais de port : ${deliveryRule.delivery_fee.toFixed(2)} €`}
+                    {deliveryRule.franco_amount && ` (offerts à partir de ${deliveryRule.franco_amount} €)`}
+                  </p>
+                )}
+              </div>
 
-              <div className="mt-7 flex flex-col flex-1" style={{ borderTop: `1px solid ${COLORS.blueSoft}` }}>
-                {r.items.map((item) => {
+              {/* Grille produits */}
+              <div className={`grid gap-4 ${items.length > 2 ? "md:grid-cols-3" : "md:grid-cols-2 max-w-2xl mx-auto"}`}>
+                {items.map((item) => {
                   const contents = boxContents[item.id] || [];
                   const options = boxOptions[item.id] || [];
                   const isOpen = hoveredItem === item.id || expandedItem === item.id;
@@ -655,20 +662,20 @@ export default function ContreTempsSite() {
                   const extraPrice = checkedOpts.reduce((s, o) => s + Number(o.price), 0);
                   return (
                     <div key={item.id}
-                      style={{ borderBottom: `1px solid ${COLORS.blueSoft}` }}
+                      style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, overflow:"hidden" }}
                       onMouseEnter={() => setHoveredItem(item.id)}
                       onMouseLeave={() => setHoveredItem(null)}>
-                      {/* Ligne principale */}
-                      <div className="py-3.5">
-                        {/* Nom + prix + détail sur une ligne */}
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                          gap:8, cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
+                      <div className="p-5">
+                        {/* Nom + prix */}
+                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8,
+                          cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
                           onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
-                          <p style={{ fontSize:12, lineHeight:1.35 }}>
+                          <p style={{ fontSize:13, lineHeight:1.35 }}>
                             {item.name}
                             {contents.length > 0 && (
-                              <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust,
-                                opacity:.7, marginLeft:5 }}>{isOpen ? "▲" : "▼"}</span>
+                              <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust, opacity:.7, marginLeft:5 }}>
+                                {isOpen ? "▲" : "▼"}
+                              </span>
                             )}
                           </p>
                           <p style={{ fontSize:12, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
@@ -676,7 +683,8 @@ export default function ContreTempsSite() {
                             {extraPrice > 0 && <span style={{ color:COLORS.rust }}> +{extraPrice.toFixed(2)} €</span>}
                           </p>
                         </div>
-                        {/* Stepper + Ajouter sur ligne séparée */}
+
+                        {/* Stepper + Ajouter */}
                         <div style={{ display:"flex", alignItems:"center", gap:8, justifyContent:"flex-start" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8,
                             border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
@@ -690,8 +698,7 @@ export default function ContreTempsSite() {
                               style={{ border:"none", background:"transparent", cursor:"pointer",
                                 fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
                           </div>
-                          <button
-                            onClick={() => {
+                          <button onClick={() => {
                               const qty = itemQty[item.id] || 1;
                               for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
@@ -702,127 +709,49 @@ export default function ContreTempsSite() {
                             AJOUTER
                           </button>
                         </div>
-                      </div>
 
-                      {/* Panneau déroulant — contenu + options */}
-                      {isOpen && (contents.length > 0 || options.length > 0) && (
-                        <div style={{ padding:".75rem 0 1rem", borderTop:`1px dashed ${COLORS.blueSoft}` }}>
-                          {/* Contenu */}
-                          {contents.length > 0 && (
-                            <div style={{ marginBottom: options.length > 0 ? ".75rem" : 0 }}>
-                              <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.rust, marginBottom:".4rem" }}>
-                                CONTENU DE LA BOX
-                              </p>
-                              {contents.map((c, i) => (
-                                <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0",
-                                  display:"flex", alignItems:"center", gap:6 }}>
-                                  <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                          {/* Options */}
-                          {options.length > 0 && (
-                            <div>
-                              <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".4rem" }}>
-                                OPTIONS EN SUPPLÉMENT
-                              </p>
-                              {options.map(opt => (
-                                <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8,
-                                  padding:"3px 0", fontSize:12, cursor:"pointer" }}>
-                                  <input type="checkbox"
-                                    checked={!!optSel[opt.id]}
-                                    onChange={e => setSelectedOptions(so => ({
-                                      ...so,
-                                      [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked }
-                                    }))}
-                                    style={{ accentColor: COLORS.blueDeep }} />
-                                  <span style={{ flex:1 }}>{opt.name}</span>
-                                  <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        {/* Détail box au survol/clic */}
+                        {isOpen && (contents.length > 0 || options.length > 0) && (
+                          <div style={{ padding:".75rem 0 .25rem", borderTop:`1px dashed ${COLORS.blueSoft}`, marginTop:".75rem" }}>
+                            {contents.length > 0 && (
+                              <div style={{ marginBottom: options.length > 0 ? ".75rem" : 0 }}>
+                                <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.rust, marginBottom:".4rem" }}>CONTENU</p>
+                                {contents.map((c, i) => (
+                                  <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0", display:"flex", alignItems:"center", gap:6 }}>
+                                    <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                            {options.length > 0 && (
+                              <div>
+                                <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".4rem" }}>OPTIONS</p>
+                                {options.map(opt => (
+                                  <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8,
+                                    padding:"3px 0", fontSize:12, cursor:"pointer" }}>
+                                    <input type="checkbox"
+                                      checked={!!optSel[opt.id]}
+                                      onChange={e => setSelectedOptions(so => ({
+                                        ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked }
+                                      }))}
+                                      style={{ accentColor: COLORS.blueDeep }} />
+                                    <span style={{ flex:1 }}>{opt.name}</span>
+                                    <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              </div>
             </div>
-          ))}
-        </div>
-        <p className="text-center text-xs mt-8" style={{ color: COLORS.inkSoft }}>
-          Tarifs indicatifs — à ajuster ensemble selon vos volumes.
-        </p>
-      </section>
-
-      {/* BISCUITERIE */}
-      <section id="biscuiterie" className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
-        <div className="max-w-5xl mx-auto">
-          {BISCUITERIE.photo && (
-            <div style={{ height:300, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
-              <img src={BISCUITERIE.photo} alt="biscuiterie" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-              <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
-              <div style={{ position:"absolute", bottom:28, left:32 }}>
-                <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>EXPÉDIÉ PARTOUT EN FRANCE</p>
-                <p style={{ fontFamily:FONT_DISPLAY, fontSize:30, fontWeight:500, color:COLORS.cream, marginTop:6 }}>La biscuiterie</p>
-                <p style={{ fontSize:13, color:COLORS.cream, opacity:.85, marginTop:6, maxWidth:340, lineHeight:1.65 }}>{BISCUITERIE.text}</p>
-              </div>
-            </div>
-          )}
-          <div className="text-center mb-4">
-            <Eyebrow>{BISCUITERIE.label.toUpperCase()}</Eyebrow>
-            <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
-              {BISCUITERIE.title}
-            </h2>
-            <p className="max-w-md mx-auto mt-5 text-[15px] leading-loose" style={{ color: COLORS.inkSoft }}>
-              {BISCUITERIE.text}
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-px md:gap-6 mt-12">
-            {BISCUITERIE.items.map((item) => (
-              <div key={item.id} className="p-7 flex flex-col items-center text-center" style={{ backgroundColor: COLORS.paper, border: `1px solid ${COLORS.blueSoft}` }}>
-                <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 500 }} className="text-lg">{item.name}</p>
-                <p className="text-sm mt-2" style={{ color: COLORS.inkSoft }}>{item.price.toFixed(2)} €</p>
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:"1.25rem" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:4,
-                    border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:"2px 6px" }}>
-                    <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) }))}
-                      style={{ border:"none", background:"transparent", cursor:"pointer",
-                        fontSize:14, color:COLORS.inkSoft, width:18, height:18,
-                        display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
-                    <span style={{ fontSize:13, minWidth:16, textAlign:"center", fontWeight:500 }}>
-                      {itemQty[item.id] || 1}
-                    </span>
-                    <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 }))}
-                      style={{ border:"none", background:"transparent", cursor:"pointer",
-                        fontSize:14, color:COLORS.inkSoft, width:18, height:18,
-                        display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const qty = itemQty[item.id] || 1;
-                      for (let i = 0; i < qty; i++) addToCart(item.id);
-                      setItemQty(q => ({ ...q, [item.id]: 1 }));
-                    }}
-                    className="text-[10px] tracked uppercase px-4 py-2 rounded-full"
-                    style={{ border: `1px solid ${COLORS.ink}`, color: COLORS.ink }}>
-                    Ajouter
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <p className="flex items-center justify-center gap-2 text-xs mt-8" style={{ color: COLORS.inkSoft }}>
-            <Truck size={14} strokeWidth={1.6} />
-            Expédition Chronopost 24/48h — frais de port calculés à la commande.
-          </p>
-        </div>
-      </section>
+          </section>
+        );
+      })}
 
       {/* ENTREPRISES */}
       <section id="entreprises" className="relative px-6 md:px-10 py-24 md:py-32 overflow-hidden" style={{ backgroundColor: COLORS.blueDeep }}>
@@ -1098,7 +1027,7 @@ export default function ContreTempsSite() {
                   const cartCats = [...new Set(
                     Object.keys(cart).map(id => {
                       const item = allItems.find(i => i.id === id);
-                      return item ? RHYTHMS.find(r => r.items.some(it => it.id === id))?.id || "biscuiterie" : null;
+                      return item ? (item.cat || null) : null;
                     }).filter(Boolean)
                   )];
                   const rule = deliveryRules.find(r =>
