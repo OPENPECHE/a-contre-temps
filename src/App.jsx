@@ -229,18 +229,21 @@ function MiniCalendar({ schedules, selectedDate, onSelect, minDate }) {
   // Calculer les dates disponibles selon les plannings
   const availableDates = useMemo(() => {
     const set = new Set();
-    const end = new Date(earliest); end.setMonth(end.getMonth() + 4);
+    // Date de départ = earliest (sans l'heure, juste le jour)
+    const startDay = new Date(earliest);
+    startDay.setHours(0, 0, 0, 0);
+    const end = new Date(startDay); end.setMonth(end.getMonth() + 4);
     schedules.forEach(s => {
       if (!s.active) return;
       if (s.type === "recurring" && s.day_of_week !== null) {
-        let d = new Date(earliest); d.setDate(d.getDate() + 1);
+        let d = new Date(startDay); // commence depuis le jour minimum (inclus)
         while (d <= end) {
           if (d.getDay() === s.day_of_week) set.add(d.toISOString().split("T")[0]);
           d.setDate(d.getDate() + 1);
         }
       } else if (s.type === "specific" && s.specific_date) {
         const sd = new Date(s.specific_date);
-        if (sd > earliest) set.add(s.specific_date);
+        if (sd >= startDay) set.add(s.specific_date);
       }
     });
     return set;
@@ -288,7 +291,8 @@ function MiniCalendar({ schedules, selectedDate, onSelect, minDate }) {
           const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
           const isAvailable = availableDates.has(dateStr);
           const isSelected = selectedDate === dateStr;
-          const isPast = new Date(dateStr) <= earliest;
+          const earliestDay = new Date(earliest); earliestDay.setHours(0,0,0,0);
+          const isPast = new Date(dateStr) < earliestDay;
           return (
             <button key={dateStr} onClick={() => isAvailable && !isPast && onSelect(dateStr)}
               style={{
@@ -1119,7 +1123,7 @@ export default function ContreTempsSite() {
                         {delivFee === 0 && rule.delivery_fee > 0 && <span style={{ color:"#4A7C59" }}> · Livraison offerte ✓</span>}
                       </p>
                       <MiniCalendar
-                        schedules={rule.available_days.map(d => ({ type:"recurring", day_of_week:d, active:true, minDate }))}
+                        schedules={rule.available_days.map(d => ({ type:"recurring", day_of_week:d, active:true }))}
                         selectedDate={orderForm.pickupDate}
                         onSelect={d => setOrderForm(f => ({ ...f, pickupDate:d }))}
                         minDate={minDate}
