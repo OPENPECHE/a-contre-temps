@@ -806,7 +806,12 @@ export default function ContreTempsSite() {
               </div>
               <div className="grid sm:grid-cols-3 gap-6 mt-12">
                 {items.map(item => (
-                  <div key={item.id} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"1.5rem" }}>
+                  <div key={item.id} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, overflow:"hidden" }}>
+                    {/* Photo d'illustration du produit (colonne products.photo) */}
+                    <div style={{ height:150, background:`linear-gradient(135deg, ${COLORS.blueSoft}, ${COLORS.cream})` }}>
+                      {item.photo && <img src={item.photo} alt={item.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />}
+                    </div>
+                    <div style={{ padding:"1.25rem" }}>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:17, marginBottom:4 }}>{item.name}</p>
                     <p style={{ color:COLORS.inkSoft, fontSize:13, marginBottom:"1rem" }}>{Number(item.price).toFixed(2)} €</p>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -821,6 +826,7 @@ export default function ContreTempsSite() {
                         style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream, borderRadius:7, padding:"6px 0", fontSize:10, letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
                         AJOUTER
                       </button>
+                    </div>
                     </div>
                   </div>
                 ))}
