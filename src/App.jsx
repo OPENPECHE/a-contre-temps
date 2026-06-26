@@ -495,7 +495,7 @@ export default function ContreTempsSite() {
       >
         <div className="max-w-6xl mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <HeartMark size={20} tone="cream" />
+            <HeartMark size={26} tone="cream" />
             <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base tracking-tight">
               à contre-temps
             </span>
@@ -939,7 +939,7 @@ export default function ContreTempsSite() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-start justify-between gap-12">
           <div>
             <div className="flex items-center gap-2.5">
-              <HeartMark size={18} tone="cream" />
+              <HeartMark size={24} tone="cream" />
               <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base">à contre-temps</span>
             </div>
             <p className="text-[11px] mt-2 tracked" style={{ color: COLORS.cream, opacity: 0.65 }}>FOURNIL VIVANT</p>
