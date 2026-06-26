@@ -150,7 +150,7 @@ const DEFAULT_CAT_META = {
 function metaFromRule(cat, rule) {
   const base = CATEGORY_META[cat] || {};
   return {
-    photo: (rule && rule.photo) || base.photo || null,
+    photo: (rule && rule.photo) || base.photo || PHOTOS.hero, // défaut : toute nouvelle catégorie prend le grand bandeau image
     label: (rule && rule.label) || base.label || cat,
     title: (rule && rule.title) || base.title || cat,
     sub:   (rule && rule.subtitle) || base.sub || "",
