@@ -35,16 +35,13 @@ const COLORS = {
 const FONT_DISPLAY = "'Fraunces', serif";
 const FONT_BODY = "'Outfit', sans-serif";
 
-// Logo cœur dessiné en SVG (léger, aucun copier-coller fragile)
+// Logo "à contre-temps" — images dans publique/ (servies à la racine du site)
 function HeartMark({ size = 28, tone = "cream", className = "" }) {
-  const color = tone === "rust" ? COLORS.rust : COLORS.cream;
+  const src = tone === "rust" ? "/heart-rust.png" : "/heart-cream.png";
+  const width = Math.round(size * 0.852);
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none"
-      className={`inline-block mx-auto ${className}`}
-      style={{ display: "block" }} aria-label="à contre-temps">
-      <path d="M16 11.5C13.8 6.8 6 7.6 5 13.5C4.1 18.8 11 23.6 16 27.5C21 23.6 27.9 18.8 27 13.5C26 7.6 18.2 6.8 16 11.5Z"
-        stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <img src={src} alt="à contre-temps" width={width} height={size}
+      className={`inline-block mx-auto ${className}`} style={{ display: "block" }} />
   );
 }
 
