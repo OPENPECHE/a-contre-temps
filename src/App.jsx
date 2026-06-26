@@ -38,10 +38,10 @@ const FONT_BODY = "'Outfit', sans-serif";
 // Logo "à contre-temps" — images dans publique/ (servies à la racine du site)
 function HeartMark({ size = 28, tone = "cream", className = "" }) {
   const src = tone === "rust" ? "/heart-rust.png" : "/heart-cream.png";
-  const width = Math.round(size * 0.852);
   return (
-    <img src={src} alt="à contre-temps" width={width} height={size}
-      className={`inline-block mx-auto ${className}`} style={{ display: "block" }} />
+    <img src={src} alt="à contre-temps"
+      style={{ display: "block", height: `${size}px`, width: `${Math.round(size * 0.852)}px`, maxWidth: "none" }}
+      className={className} />
   );
 }
 
@@ -495,7 +495,7 @@ export default function ContreTempsSite() {
       >
         <div className="max-w-6xl mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <HeartMark size={34} tone="cream" />
+            <HeartMark size={44} tone="cream" />
             <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base tracking-tight">
               à contre-temps
             </span>
@@ -577,7 +577,7 @@ export default function ContreTempsSite() {
         <img src={PHOTOS.hero} alt="fournil" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.2 }} />
         <GrainOverlay />
         <div className="relative">
-          <HeartMark size={56} tone="cream" />
+          <HeartMark size={100} tone="cream" />
           <h1 style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream, fontWeight: 400 }} className="mt-7 text-6xl md:text-8xl tracking-tight">
             à contre-temps
           </h1>
