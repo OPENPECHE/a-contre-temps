@@ -460,7 +460,7 @@ function productRow(p){
         <button class="btn bg bsm" style="padding:3px 6px" onclick="cancelEditProd()">✕</button>
       `:`
         <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
-        <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu & options">📋 Détail</button>
+        <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu, options & photo">📋 Détail</button>
         <button class="btn bg bsm" style="padding:3px 6px" onclick="startEditProd('${p.id}','${p.name.replace(/'/g,"\\'")}',${p.price})">✏</button>
         <button class="btn bsm" style="padding:3px 6px;border:1px solid var(--rd)22;background:transparent;color:var(--rd)" onclick="deleteProd('${p.id}')">✕</button>
       `}
@@ -506,9 +506,7 @@ async function addProduct(){
     const isNewCat = selVal==="__new__";
     const ruleExists = allRules.some(r=>r.category===cat);
     if(isNewCat && !ruleExists){
-      if(confirm(`Nouvelle catégorie "${cat}" créée !
-
-Voulez-vous créer une règle de livraison pour cette catégorie ?`)){
+      if(confirm(`Nouvelle catégorie "${cat}" créée !\n\nVoulez-vous créer une règle de livraison pour cette catégorie ?`)){
         const ruleData=await sbFetch("delivery_rules",{method:"POST",body:JSON.stringify({
           category:cat, mode:"delivery", available_days:[1,2,3,4,5],
           advance_hours:24, delivery_fee:0, active:true,
@@ -686,6 +684,10 @@ async function openBoxDetail(id, name) {
   currentBoxId = id;
   document.getElementById("box-modal-title").textContent = name;
   document.getElementById("box-modal").style.display = "flex";
+  // Pré-remplir le champ photo avec la valeur existante du produit
+  const prod = allProducts.find(p => p.id === id);
+  const photoInput = document.getElementById("prod-photo-inp");
+  if (photoInput) photoInput.value = (prod && prod.photo) || "";
   // Charger contenu et options
   const [contents, options] = await Promise.all([
     sbFetch(`box_contents?product_id=eq.${id}&order=position.asc`),
@@ -694,6 +696,14 @@ async function openBoxDetail(id, name) {
   boxContentsData[id] = contents || [];
   boxOptionsData[id] = options || [];
   renderBoxContents(); renderBoxOptions();
+}
+async function saveProdPhoto() {
+  if (!currentBoxId) return;
+  const url = document.getElementById("prod-photo-inp").value.trim();
+  await sbFetch(`products?id=eq.${currentBoxId}`, {method:"PATCH", body:JSON.stringify({photo: url || null})});
+  allProducts = allProducts.map(p => p.id === currentBoxId ? {...p, photo: url || null} : p);
+  const btn = document.getElementById("prod-photo-btn");
+  if (btn) { btn.textContent = "✓ Enregistré"; setTimeout(()=>{ btn.textContent = "Enregistrer"; }, 1500); }
 }
 function closeBoxModal() {
   document.getElementById("box-modal").style.display = "none";
@@ -782,6 +792,7 @@ function renderDelivery(){
         <div><label style="font-size:11px;color:var(--is)">Catégorie *</label>
           <select class="fi sel" id="nr-cat" onchange="toggleNrCatCustom(this.value)" style="margin-top:4px"><option value="">-- Catégorie --</option><option value="__custom__">✏ Autre...</option></select>
           <input class="fi" id="nr-cat-custom" placeholder="Saisir le nom..." style="margin-top:4px;display:none">
+        </div>
         <div><label style="font-size:11px;color:var(--is)">Mode</label>
           <select class="fi sel" id="nr-mode" style="margin-top:4px">
             <option value="delivery">🚚 Livraison</option>
@@ -866,6 +877,31 @@ function deliveryCard(r){
             style="margin-top:6px;width:100%">
         </div>
       </div>
+
+      <p style="font-size:10px;letter-spacing:.12em;color:var(--ru);margin:.5rem 0 .75rem">AFFICHAGE DU CHAPITRE (BANDEAU)</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">ÉTIQUETTE (ex: Le matin)</label>
+          <input class="fi" id="label-${r.id}" value="${(r.label||"").replace(/"/g,"&quot;")}" style="margin-top:6px;width:100%">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">TITRE (ex: Box petit-déjeuner)</label>
+          <input class="fi" id="title-${r.id}" value="${(r.title||"").replace(/"/g,"&quot;")}" style="margin-top:6px;width:100%">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">SOUS-TITRE</label>
+          <input class="fi" id="subtitle-${r.id}" value="${(r.subtitle||"").replace(/"/g,"&quot;")}" style="margin-top:6px;width:100%">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">PHOTO DU CHAPITRE (URL)</label>
+          <input class="fi" id="photo-${r.id}" value="${(r.photo||"").replace(/"/g,"&quot;")}" placeholder="https://…" style="margin-top:6px;width:100%">
+        </div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">DESCRIPTIF</label>
+        <textarea class="fi" id="description-${r.id}" rows="2" style="margin-top:6px;width:100%;resize:vertical;padding:.5rem .7rem">${(r.description||"")}</textarea>
+      </div>
+
       <div style="margin-bottom:1rem">
         <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">NOTE AFFICHÉE AU CLIENT</label>
         <textarea class="fi" id="notes-${r.id}" rows="2"
@@ -921,6 +957,11 @@ async function saveRule(id){
     notes: document.getElementById("notes-"+id).value,
     display_section: document.getElementById("section-"+id)?.value||"Nos box",
     display_order: parseInt(document.getElementById("order-"+id)?.value)||0,
+    label: document.getElementById("label-"+id)?.value || null,
+    title: document.getElementById("title-"+id)?.value || null,
+    subtitle: document.getElementById("subtitle-"+id)?.value || null,
+    photo: document.getElementById("photo-"+id)?.value || null,
+    description: document.getElementById("description-"+id)?.value || null,
   };
   const btn=document.getElementById("save-btn-"+id);
   if(btn){btn.textContent="Sauvegarde…";btn.disabled=true;}
@@ -995,6 +1036,13 @@ async function exportCSV(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
       <h2 class="fd" id="box-modal-title" style="font-size:20px;font-weight:400"></h2>
       <button onclick="closeBoxModal()" style="border:none;background:transparent;cursor:pointer;font-size:20px;color:var(--is)">×</button>
+    </div>
+
+    <!-- Photo d'illustration du produit -->
+    <p class="sl-label">PHOTO D'ILLUSTRATION</p>
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+      <input class="fi" id="prod-photo-inp" placeholder="https://… (URL de l'image)" style="flex:1" />
+      <button class="btn bp bsm" id="prod-photo-btn" onclick="saveProdPhoto()">Enregistrer</button>
     </div>
 
     <!-- Contenu -->
