@@ -619,6 +619,7 @@ export default function ContreTempsSite() {
           const meta = metaFromRule(cat, rule);
           if (meta.isChronopost) return; // biscuiterie gérée séparément plus bas
           const section = rule?.display_section || "Nos box";
+          if (section !== "Nos box") return; // chapitre à part → grand format pleine largeur (bloc plus bas)
           if (!sections[section]) sections[section] = [];
           sections[section].push({ cat, items, rule, order: rule?.display_order || 99 });
         });
@@ -775,22 +776,24 @@ export default function ContreTempsSite() {
         ));
       })()}
 
-      {/* BISCUITERIE — section séparée fond crème */}
+      {/* CHAPITRES À PART (biscuiterie + toute rubrique hors « Nos box ») — grand format pleine largeur */}
       {Object.entries(categorizedProducts).filter(([cat]) => {
         const rule = deliveryRules.find(r => r.category === cat);
-        return metaFromRule(cat, rule).isChronopost;
+        const section = rule?.display_section || "Nos box";
+        return section !== "Nos box"; // tout chapitre dédié → grand bandeau type biscuiterie
       }).map(([cat, items]) => {
         const deliveryRule = deliveryRules.find(r => r.category === cat);
         const meta = metaFromRule(cat, deliveryRule);
+        const anchorId = meta.isChronopost ? "biscuiterie" : cat.toLowerCase().replace(/\s+/g,"-");
         return (
-          <section key={cat} id="biscuiterie" className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
+          <section key={cat} id={anchorId} className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
             <div className="max-w-5xl mx-auto">
               {meta.photo && (
                 <div style={{ height:280, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
                   <div style={{ position:"absolute", bottom:28, left:32 }}>
-                    <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>EXPÉDIÉ PARTOUT EN FRANCE</p>
+                    <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>{(meta.label||cat).toUpperCase()}</p>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:30, fontWeight:500, color:COLORS.cream, marginTop:6 }}>{meta.title||cat}</p>
                     <p style={{ fontSize:13, color:COLORS.cream, opacity:.85, marginTop:6, maxWidth:340, lineHeight:1.65 }}>{meta.text}</p>
                   </div>
