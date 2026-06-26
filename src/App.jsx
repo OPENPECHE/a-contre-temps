@@ -495,7 +495,7 @@ export default function ContreTempsSite() {
       >
         <div className="max-w-6xl mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <HeartMark size={44} tone="cream" />
+            <HeartMark size={30} tone="cream" />
             <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base tracking-tight">
               à contre-temps
             </span>
