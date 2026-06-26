@@ -577,7 +577,9 @@ export default function ContreTempsSite() {
         <img src={PHOTOS.hero} alt="fournil" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.2 }} />
         <GrainOverlay />
         <div className="relative">
-          <HeartMark size={100} tone="cream" />
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <HeartMark size={78} tone="cream" />
+          </div>
           <h1 style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream, fontWeight: 400 }} className="mt-7 text-6xl md:text-8xl tracking-tight">
             à contre-temps
           </h1>
