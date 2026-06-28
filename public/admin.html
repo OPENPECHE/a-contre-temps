@@ -204,6 +204,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
             </select>
           </div>
           <div><label style="font-size:11px;color:var(--is)">Adresse</label><input class="fi" id="np-address" placeholder="12 rue du Fournil" style="margin-top:4px"></div>
+          <div><label style="font-size:11px;color:var(--is)">Code postal <span style="color:var(--ru)">(pour le tri par distance)</span></label><input class="fi" id="np-postal" inputmode="numeric" maxlength="5" placeholder="63000" style="margin-top:4px"></div>
           <div><label style="font-size:11px;color:var(--is)">Note</label><input class="fi" id="np-notes" placeholder="Stand allée B…" style="margin-top:4px"></div>
         </div>
         <div style="display:flex;gap:7px">
@@ -226,6 +227,34 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
     <div id="page-settings" class="page">
       <h1>Paramètres</h1>
       <p class="sub">Configuration du back office</p>
+
+      <div class="card" style="max-width:440px;margin-bottom:1.1rem">
+        <p class="sl-label">ZONE DE LIVRAISON</p>
+        <p style="font-size:12px;color:var(--is);margin-bottom:1rem;line-height:1.5">
+          Au-delà du rayon, le client ne pourra pas valider sa commande.
+        </p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:1rem;cursor:pointer">
+          <input type="checkbox" id="zone-enabled" style="width:16px;height:16px;accent-color:var(--bd)">
+          Activer le contrôle de zone
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
+          <div>
+            <label style="font-size:11px;color:var(--is)">Code postal de référence</label>
+            <input class="fi" id="zone-postal" inputmode="numeric" maxlength="5" placeholder="63000" style="margin-top:4px">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--is)">Rayon (km)</label>
+            <input class="fi" id="zone-radius" type="number" step="1" placeholder="50" style="margin-top:4px">
+          </div>
+        </div>
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:11px;color:var(--is)">Message affiché au client hors zone</label>
+          <textarea class="fi" id="zone-message" rows="2" style="margin-top:4px;width:100%;resize:vertical;padding:.5rem .7rem" placeholder="Nous ne livrons pas encore dans votre zone."></textarea>
+        </div>
+        <button class="btn bp" onclick="saveZone()">Enregistrer la zone</button>
+        <p id="zone-saved" style="display:none;font-size:12px;margin-top:8px"></p>
+      </div>
+
       <div class="card" style="max-width:440px;margin-bottom:1.1rem">
         <p class="sl-label">SÉCURITÉ — CODE PIN</p>
         <div style="display:flex;gap:8px">
@@ -277,6 +306,54 @@ async function sbFetch(path, opts={}) {
   return t ? JSON.parse(t) : [];
 }
 
+// ── Géolocalisation code postal (API gratuite data.gouv) ───────────────────────
+async function geocodePostal(cp){
+  if(!/^\d{5}$/.test(cp)) return null;
+  try{
+    const r=await fetch(`https://api-adresse.data.gouv.fr/search/?q=${cp}&type=municipality&limit=1`);
+    const j=await r.json();
+    const f=j.features&&j.features[0];
+    if(!f) return null;
+    const [lng,lat]=f.geometry.coordinates;
+    return {lat,lng,city:f.properties.city,label:f.properties.label};
+  }catch{ return null; }
+}
+
+// ── Zone de livraison ───────────────────────────────────────────────────────────
+let zoneData=null;
+async function loadSettings(){
+  const d=await sbFetch("delivery_zone?id=eq.1");
+  zoneData=(d&&d[0])||null;
+  if(zoneData){
+    document.getElementById("zone-enabled").checked=!!zoneData.enabled;
+    document.getElementById("zone-postal").value=zoneData.center_postal||"";
+    document.getElementById("zone-radius").value=zoneData.radius_km||"";
+    document.getElementById("zone-message").value=zoneData.message||"";
+  }
+}
+async function saveZone(){
+  const postal=document.getElementById("zone-postal").value.trim();
+  const radius=parseFloat(document.getElementById("zone-radius").value)||50;
+  const message=document.getElementById("zone-message").value.trim()||"Nous ne livrons pas encore dans votre zone.";
+  const enabled=document.getElementById("zone-enabled").checked;
+  const msgEl=document.getElementById("zone-saved");
+  if(enabled && !/^\d{5}$/.test(postal)){
+    msgEl.style.display="block";msgEl.style.color="var(--rd)";msgEl.textContent="Code postal invalide (5 chiffres).";return;
+  }
+  msgEl.style.display="block";msgEl.style.color="var(--is)";msgEl.textContent="Géolocalisation…";
+  let center_lat=zoneData?.center_lat||null, center_lng=zoneData?.center_lng||null;
+  if(/^\d{5}$/.test(postal)){
+    const g=await geocodePostal(postal);
+    if(!g){ msgEl.style.color="var(--rd)";msgEl.textContent="Code postal introuvable.";return; }
+    center_lat=g.lat; center_lng=g.lng;
+  }
+  const row={id:1,center_postal:postal,center_lat,center_lng,radius_km:radius,message,enabled};
+  await sbFetch("delivery_zone?id=eq.1",{method:"PATCH",body:JSON.stringify(row)});
+  zoneData=row;
+  msgEl.style.color="var(--gn)";msgEl.textContent="✓ Zone enregistrée";
+  setTimeout(()=>{msgEl.style.display="none";},2500);
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 document.getElementById("pin-inp").addEventListener("keydown",e=>{if(e.key==="Enter")tryLogin();});
 function tryLogin(){
@@ -309,6 +386,7 @@ function goTab(name,btn){
   if(name==="products") loadProducts();
   if(name==="pickup") loadPickups();
   if(name==="delivery") loadDelivery();
+  if(name==="settings") loadSettings();
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -576,6 +654,13 @@ function pickupCard(p){
       </div>
     </div>
     <div class="pickup-body${open?" on":""}" id="pbody-${p.id}">
+      <!-- Localisation -->
+      <p style="font-size:11px;letter-spacing:.12em;color:var(--ru);margin-bottom:.6rem">LOCALISATION (TRI PAR DISTANCE)</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+        <input class="fi" id="pp-postal-${p.id}" inputmode="numeric" maxlength="5" placeholder="Code postal" value="${p.postal||""}" style="width:140px">
+        <button class="btn bp bsm" onclick="setPickupPostal('${p.id}')">📍 Géolocaliser</button>
+        <span id="pp-geo-${p.id}" style="font-size:11px;color:${p.lat!=null?"var(--gn)":"var(--is)"}">${p.lat!=null?"✓ géolocalisé":"Non géolocalisé"}</span>
+      </div>
       <!-- Plannings -->
       <p style="font-size:11px;letter-spacing:.12em;color:var(--ru);margin-bottom:.6rem">CALENDRIER — RÉCURRENCES & DATES</p>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem">
@@ -629,11 +714,32 @@ async function togglePickupActive(id){
 async function addPickup(){
   const name=document.getElementById("np-name").value.trim();
   if(!name){alert("Nom obligatoire.");return;}
+  const postal=document.getElementById("np-postal").value.trim();
   const pos=Math.max(0,...allPickups.map(p=>p.position||0))+1;
   const row={name,address:document.getElementById("np-address").value,type:document.getElementById("np-type").value,notes:document.getElementById("np-notes").value,active:true,position:pos};
+  if(/^\d{5}$/.test(postal)){
+    row.postal=postal;
+    const g=await geocodePostal(postal);
+    if(g){ row.lat=g.lat; row.lng=g.lng; }
+  }
   const data=await sbFetch("pickup_points",{method:"POST",body:JSON.stringify(row)});
   allPickups.push(Array.isArray(data)?data[0]:data);
+  document.getElementById("np-name").value="";
+  document.getElementById("np-address").value="";
+  document.getElementById("np-postal").value="";
+  document.getElementById("np-notes").value="";
   toggleNewPickup();renderPickups();
+}
+async function setPickupPostal(id){
+  const postal=document.getElementById("pp-postal-"+id).value.trim();
+  const geoEl=document.getElementById("pp-geo-"+id);
+  if(!/^\d{5}$/.test(postal)){ geoEl.style.color="var(--rd)";geoEl.textContent="Code postal invalide";return; }
+  geoEl.style.color="var(--is)";geoEl.textContent="Géolocalisation…";
+  const g=await geocodePostal(postal);
+  if(!g){ geoEl.style.color="var(--rd)";geoEl.textContent="Introuvable";return; }
+  await sbFetch("pickup_points?id=eq."+id,{method:"PATCH",body:JSON.stringify({postal,lat:g.lat,lng:g.lng})});
+  allPickups=allPickups.map(p=>p.id===id?{...p,postal,lat:g.lat,lng:g.lng}:p);
+  geoEl.style.color="var(--gn)";geoEl.textContent="✓ "+g.city;
 }
 async function deletePickup(id){
   if(!confirm("Supprimer ce point relais ?"))return;
