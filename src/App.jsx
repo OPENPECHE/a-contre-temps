@@ -529,6 +529,8 @@ export default function ContreTempsSite() {
   const zoneActive = !!zone?.enabled;
   const orderBlocked = zoneActive && zoneState === "out";
   const postalOk = !zoneActive || zoneState === "ok";
+  // Les points de vente / modes de retrait n'apparaissent qu'une fois la zone validée
+  const showDeliveryOptions = !zoneActive || zoneState === "ok";
 
   const navLinks = [
     { href: "#rythmes", label: "Nos box" },
@@ -1171,49 +1173,6 @@ export default function ContreTempsSite() {
                   </div>
                 ))}
 
-                {/* Code postal — zone de livraison + tri des points relais */}
-                <div>
-                  <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>
-                    Code postal {zoneActive && <span style={{ color: COLORS.rust }}>*</span>}
-                  </label>
-                  <input
-                    type="text" inputMode="numeric" maxLength={5} placeholder="63000"
-                    value={custPostal}
-                    onChange={e => {
-                      const v = e.target.value.replace(/\D/g, "").slice(0, 5);
-                      setCustPostal(v);
-                      checkPostal(v);
-                    }}
-                    className="w-full mt-2 pb-2 bg-transparent outline-none text-sm"
-                    style={{
-                      borderBottom: `1px solid ${orderBlocked ? "#A63333" : COLORS.blue}`,
-                      fontFamily: "inherit",
-                    }} />
-                  {zoneState === "checking" && (
-                    <p style={{ fontSize: 11, color: COLORS.inkSoft, marginTop: 6 }}>Vérification…</p>
-                  )}
-                  {zoneState === "invalid" && custPostal.length === 5 && (
-                    <p style={{ fontSize: 11, color: "#A63333", marginTop: 6 }}>Code postal introuvable.</p>
-                  )}
-                  {zoneState === "ok" && custGeo && (
-                    <p style={{ fontSize: 11, color: "#4A7C59", marginTop: 6 }}>✓ {custGeo.city} — nous livrons dans votre zone</p>
-                  )}
-                  {orderBlocked && (
-                    <div style={{
-                      marginTop: 10, padding: ".75rem .9rem", borderRadius: 8,
-                      background: "rgba(166,51,51,.08)", border: "1px solid rgba(166,51,51,.35)",
-                    }}>
-                      <p style={{ fontSize: 13, color: "#A63333", fontWeight: 500, marginBottom: 2 }}>
-                        Hors zone de livraison
-                      </p>
-                      <p style={{ fontSize: 12, color: COLORS.inkSoft, lineHeight: 1.5 }}>
-                        {zone?.message || "Nous ne livrons pas encore dans votre zone."}
-                        {custGeo && ` (${custGeo.city})`}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
                 {/* Calendrier de livraison selon la catégorie */}
                 {(() => {
                   // Trouver la règle applicable au panier (match exact par nom de catégorie)
@@ -1250,8 +1209,46 @@ export default function ContreTempsSite() {
                   );
                 })()}
 
-                {/* Mode de retrait — seulement si pas de biscuiterie */}
-                {!hasBiscuiterie && (
+                {/* Lieu de livraison — code postal : vérifie la zone + révèle les points proches */}
+                <div className="pt-2">
+                  <p className="text-[10px] tracked uppercase mb-2" style={{ color: COLORS.rust }}>
+                    Où souhaitez-vous être livré ?
+                  </p>
+                  <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>
+                    Code postal {zoneActive && <span style={{ color: COLORS.rust }}>*</span>}
+                  </label>
+                  <input
+                    type="text" inputMode="numeric" maxLength={5} placeholder="63000"
+                    value={custPostal}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 5);
+                      setCustPostal(v);
+                      checkPostal(v);
+                    }}
+                    className="w-full mt-2 pb-2 bg-transparent outline-none text-sm"
+                    style={{ borderBottom: `1px solid ${orderBlocked ? "#A63333" : COLORS.blue}`, fontFamily: "inherit" }} />
+                  {zoneState === "checking" && (
+                    <p style={{ fontSize: 11, color: COLORS.inkSoft, marginTop: 6 }}>Vérification…</p>
+                  )}
+                  {zoneState === "invalid" && custPostal.length === 5 && (
+                    <p style={{ fontSize: 11, color: "#A63333", marginTop: 6 }}>Code postal introuvable.</p>
+                  )}
+                  {zoneState === "ok" && custGeo && (
+                    <p style={{ fontSize: 11, color: "#4A7C59", marginTop: 6 }}>✓ {custGeo.city} — points de vente proches ci-dessous</p>
+                  )}
+                  {orderBlocked && (
+                    <div style={{ marginTop: 10, padding: ".75rem .9rem", borderRadius: 8, background: "rgba(166,51,51,.08)", border: "1px solid rgba(166,51,51,.35)" }}>
+                      <p style={{ fontSize: 13, color: "#A63333", fontWeight: 500, marginBottom: 2 }}>Hors zone de livraison</p>
+                      <p style={{ fontSize: 12, color: COLORS.inkSoft, lineHeight: 1.5 }}>
+                        {zone?.message || "Nous ne livrons pas encore dans votre zone."}
+                        {custGeo && ` (${custGeo.city})`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mode de retrait — affiché une fois la zone validée */}
+                {showDeliveryOptions && !hasBiscuiterie && (
                   <div className="pt-2">
                     <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>
                       Mode de retrait
@@ -1277,7 +1274,7 @@ export default function ContreTempsSite() {
                 )}
 
                 {/* Sélection point relais */}
-                {orderForm.deliveryMode === "pickup" && !hasBiscuiterie && pickupPoints.length > 0 && (
+                {showDeliveryOptions && orderForm.deliveryMode === "pickup" && !hasBiscuiterie && pickupPoints.length > 0 && (
                   <div>
                     <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>Point de retrait</label>
                     <select value={orderForm.pickupPointId}
@@ -1343,7 +1340,7 @@ export default function ContreTempsSite() {
                 )}
 
                 {/* Options de paiement */}
-                {orderForm.deliveryMode === "pickup" && !hasBiscuiterie && (
+                {showDeliveryOptions && orderForm.deliveryMode === "pickup" && !hasBiscuiterie && (
                   <div className="pt-2">
                     <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>
                       Mode de paiement
@@ -1371,7 +1368,7 @@ export default function ContreTempsSite() {
                 )}
 
                 {/* Livraison à domicile */}
-                {orderForm.deliveryMode === "home" && !hasBiscuiterie && (
+                {showDeliveryOptions && orderForm.deliveryMode === "home" && !hasBiscuiterie && (
                   <div>
                     <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>Adresse de livraison</p>
                     {[
@@ -1391,7 +1388,7 @@ export default function ContreTempsSite() {
                 )}
 
                 {/* Chronopost pour biscuiterie */}
-                {hasBiscuiterie && (
+                {showDeliveryOptions && hasBiscuiterie && (
                   <div className="pt-2">
                     <p className="text-[10px] tracked uppercase mb-3" style={{ color: COLORS.rust }}>Adresse de livraison — Chronopost</p>
                     {[
