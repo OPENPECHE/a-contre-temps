@@ -60,7 +60,7 @@ function HeartMark({ size = 28, tone = "cream", className = "" }) {
   const src = tone === "rust" ? "/heart-rust.png" : "/heart-cream.png";
   return (
     <img src={src} alt="à contre-temps"
-      style={{ display: "block", height: `${size}px`, width: `${Math.round(size * 0.852)}px`, maxWidth: "none" }}
+      style={{ display: "inline-block", height: `${size}px`, width: `${Math.round(size * 0.852)}px`, maxWidth: "none" }}
       className={className} />
   );
 }
