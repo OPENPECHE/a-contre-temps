@@ -532,6 +532,20 @@ export default function ContreTempsSite() {
   // Les points de vente / modes de retrait n'apparaissent qu'une fois la zone validée
   const showDeliveryOptions = !zoneActive || zoneState === "ok";
 
+  // Sélection d'un point de vente : charge ses créneaux et plannings
+  const selectPickup = useCallback(async (id) => {
+    setOrderForm(f => ({ ...f, pickupPointId: id, timeSlotId: "", timeSlotLabel: "" }));
+    setSelectedDate(null);
+    if (id) {
+      const [sl, sc] = await Promise.all([
+        sbFetch(`time_slots?pickup_point_id=eq.${id}&active=eq.true&order=position.asc`),
+        sbFetch(`market_schedules?pickup_point_id=eq.${id}&active=eq.true`),
+      ]);
+      setTimeSlots(sl || []);
+      setSchedules(sc || []);
+    } else { setTimeSlots([]); setSchedules([]); }
+  }, []);
+
   const navLinks = [
     { href: "#rythmes", label: "Nos box" },
     { href: "#biscuiterie", label: "Biscuiterie" },
@@ -1273,36 +1287,47 @@ export default function ContreTempsSite() {
                   </div>
                 )}
 
-                {/* Sélection point relais */}
+                {/* Sélection point relais — liste de cartes triées par distance */}
                 {showDeliveryOptions && orderForm.deliveryMode === "pickup" && !hasBiscuiterie && pickupPoints.length > 0 && (
                   <div>
-                    <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>Point de retrait</label>
-                    <select value={orderForm.pickupPointId}
-                      onChange={async e => {
-                        const id = e.target.value;
-                        setOrderForm(f => ({ ...f, pickupPointId: id, timeSlotId:"", timeSlotLabel:"" }));
-                        setSelectedDate(null);
-                        if (id) {
-                          const [sl, sc] = await Promise.all([
-                            sbFetch(`time_slots?pickup_point_id=eq.${id}&active=eq.true&order=position.asc`),
-                            sbFetch(`market_schedules?pickup_point_id=eq.${id}&active=eq.true`),
-                          ]);
-                          setTimeSlots(sl || []);
-                          setSchedules(sc || []);
-                        } else { setTimeSlots([]); setSchedules([]); }
-                      }}
-                      className="w-full mt-2 bg-transparent outline-none text-sm"
-                      style={{ border:"none", borderBottom:`1px solid ${COLORS.blue}`, fontFamily:"inherit", fontSize:14, padding:".5rem 0" }}>
-                      <option value="">
-                        {custGeo ? "— Du plus proche au plus loin —" : "— Choisir un point de retrait —"}
-                      </option>
-                      {sortedPickupPoints.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}{p.day ? ` — ${p.day}` : ""}{p.address ? ` (${p.address})` : ""}
-                          {p._dist != null ? ` · à ${p._dist < 1 ? "<1" : Math.round(p._dist)} km` : ""}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>
+                      {custGeo ? "Points de vente — du plus proche au plus loin" : "Point de retrait"}
+                    </label>
+                    <div className="mt-3 flex flex-col gap-2">
+                      {sortedPickupPoints.map(p => {
+                        const selected = orderForm.pickupPointId === p.id;
+                        return (
+                          <button key={p.id} type="button" onClick={() => selectPickup(selected ? "" : p.id)}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                              textAlign: "left", width: "100%", cursor: "pointer", fontFamily: "inherit",
+                              padding: ".7rem .9rem", borderRadius: 8,
+                              border: `1px solid ${selected ? COLORS.blueDeep : COLORS.blueSoft}`,
+                              background: selected ? COLORS.blueDeep + "11" : "transparent",
+                            }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontSize: 13, color: COLORS.ink, fontWeight: selected ? 500 : 400 }}>
+                                {p.name}
+                              </p>
+                              {(p.day || p.address) && (
+                                <p style={{ fontSize: 11, color: COLORS.inkSoft, marginTop: 2 }}>
+                                  {p.day || ""}{p.day && p.address ? " · " : ""}{p.address || ""}
+                                </p>
+                              )}
+                            </div>
+                            {p._dist != null && (
+                              <span style={{
+                                flexShrink: 0, fontSize: 11, fontWeight: 500, color: COLORS.rust,
+                                background: "rgba(166,113,63,.1)", borderRadius: 999,
+                                padding: "3px 10px", whiteSpace: "nowrap",
+                              }}>
+                                {p._dist < 1 ? "< 1 km" : `${Math.round(p._dist)} km`}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
