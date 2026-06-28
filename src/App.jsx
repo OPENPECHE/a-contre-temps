@@ -21,6 +21,26 @@ async function sbFetch(path, opts = {}) {
 }
 import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck, User, ChevronLeft, ChevronRight, CreditCard, Banknote, Smartphone } from "lucide-react";
 
+// ─── Zone de livraison : géolocalisation code postal (API gratuite data.gouv) ──
+async function geocodePostal(cp) {
+  if (!/^\d{5}$/.test(cp)) return null;
+  try {
+    const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${cp}&type=municipality&limit=1`);
+    const j = await r.json();
+    const f = j.features?.[0];
+    if (!f) return null;
+    const [lng, lat] = f.geometry.coordinates;
+    return { lat, lng, city: f.properties.city, label: f.properties.label };
+  } catch { return null; }
+}
+// Distance en km entre deux points (formule de Haversine)
+function haversineKm(a, b) {
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 const COLORS = {
   blueDeep: "#3E5A70",
   blue: "#7C97AC",
@@ -346,6 +366,31 @@ export default function ContreTempsSite() {
       .catch(() => {});
   }, []);
 
+  // Zone de livraison (config back-office) + vérification du code postal client
+  const [zone, setZone] = useState(null);
+  useEffect(() => {
+    sbFetch("delivery_zone?id=eq.1")
+      .then(d => { if (d?.length) setZone(d[0]); })
+      .catch(() => {});
+  }, []);
+  const [custPostal, setCustPostal] = useState("");
+  const [custGeo, setCustGeo] = useState(null);          // { lat, lng, city }
+  const [zoneState, setZoneState] = useState("idle");    // idle | checking | invalid | ok | out
+
+  const checkPostal = useCallback(async (cp) => {
+    if (!/^\d{5}$/.test(cp)) { setCustGeo(null); setZoneState(cp ? "invalid" : "idle"); return; }
+    setZoneState("checking");
+    const g = await geocodePostal(cp);
+    if (!g) { setCustGeo(null); setZoneState("invalid"); return; }
+    setCustGeo(g);
+    if (zone?.enabled && zone.center_lat != null) {
+      const dist = haversineKm({ lat: zone.center_lat, lng: zone.center_lng }, g);
+      setZoneState(dist > Number(zone.radius_km) ? "out" : "ok");
+    } else {
+      setZoneState("ok");
+    }
+  }, [zone]);
+
   // Commande en cours — étapes : "cart" | "form" | "done"
   const [orderStep, setOrderStep] = useState("cart");
   const [orderForm, setOrderForm] = useState({
@@ -464,6 +509,26 @@ export default function ContreTempsSite() {
   const singleId = cartIds.length === 1 ? cartIds[0] : null;
   const directPaymentLink =
     singleId && cart[singleId] === 1 && PAYMENT_LINKS[singleId] ? PAYMENT_LINKS[singleId] : null;
+
+  // Points relais triés du plus proche au plus loin selon le code postal du client
+  const sortedPickupPoints = useMemo(() => {
+    if (!custGeo) return pickupPoints;
+    return pickupPoints
+      .map(p => ({
+        ...p,
+        _dist: (p.lat != null && p.lng != null) ? haversineKm(custGeo, { lat: p.lat, lng: p.lng }) : null,
+      }))
+      .sort((a, b) => {
+        if (a._dist == null) return 1;
+        if (b._dist == null) return -1;
+        return a._dist - b._dist;
+      });
+  }, [pickupPoints, custGeo]);
+
+  // Blocage hors zone : si la zone est active, le client doit saisir un code postal valide ET dans le rayon
+  const zoneActive = !!zone?.enabled;
+  const orderBlocked = zoneActive && zoneState === "out";
+  const postalOk = !zoneActive || zoneState === "ok";
 
   const navLinks = [
     { href: "#rythmes", label: "Nos box" },
@@ -1106,6 +1171,49 @@ export default function ContreTempsSite() {
                   </div>
                 ))}
 
+                {/* Code postal — zone de livraison + tri des points relais */}
+                <div>
+                  <label className="text-[10px] tracked uppercase" style={{ color: COLORS.inkSoft }}>
+                    Code postal {zoneActive && <span style={{ color: COLORS.rust }}>*</span>}
+                  </label>
+                  <input
+                    type="text" inputMode="numeric" maxLength={5} placeholder="63000"
+                    value={custPostal}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 5);
+                      setCustPostal(v);
+                      checkPostal(v);
+                    }}
+                    className="w-full mt-2 pb-2 bg-transparent outline-none text-sm"
+                    style={{
+                      borderBottom: `1px solid ${orderBlocked ? "#A63333" : COLORS.blue}`,
+                      fontFamily: "inherit",
+                    }} />
+                  {zoneState === "checking" && (
+                    <p style={{ fontSize: 11, color: COLORS.inkSoft, marginTop: 6 }}>Vérification…</p>
+                  )}
+                  {zoneState === "invalid" && custPostal.length === 5 && (
+                    <p style={{ fontSize: 11, color: "#A63333", marginTop: 6 }}>Code postal introuvable.</p>
+                  )}
+                  {zoneState === "ok" && custGeo && (
+                    <p style={{ fontSize: 11, color: "#4A7C59", marginTop: 6 }}>✓ {custGeo.city} — nous livrons dans votre zone</p>
+                  )}
+                  {orderBlocked && (
+                    <div style={{
+                      marginTop: 10, padding: ".75rem .9rem", borderRadius: 8,
+                      background: "rgba(166,51,51,.08)", border: "1px solid rgba(166,51,51,.35)",
+                    }}>
+                      <p style={{ fontSize: 13, color: "#A63333", fontWeight: 500, marginBottom: 2 }}>
+                        Hors zone de livraison
+                      </p>
+                      <p style={{ fontSize: 12, color: COLORS.inkSoft, lineHeight: 1.5 }}>
+                        {zone?.message || "Nous ne livrons pas encore dans votre zone."}
+                        {custGeo && ` (${custGeo.city})`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Calendrier de livraison selon la catégorie */}
                 {(() => {
                   // Trouver la règle applicable au panier (match exact par nom de catégorie)
@@ -1188,10 +1296,13 @@ export default function ContreTempsSite() {
                       }}
                       className="w-full mt-2 bg-transparent outline-none text-sm"
                       style={{ border:"none", borderBottom:`1px solid ${COLORS.blue}`, fontFamily:"inherit", fontSize:14, padding:".5rem 0" }}>
-                      <option value="">— Choisir un point de retrait —</option>
-                      {pickupPoints.map(p => (
+                      <option value="">
+                        {custGeo ? "— Du plus proche au plus loin —" : "— Choisir un point de retrait —"}
+                      </option>
+                      {sortedPickupPoints.map(p => (
                         <option key={p.id} value={p.id}>
                           {p.name}{p.day ? ` — ${p.day}` : ""}{p.address ? ` (${p.address})` : ""}
+                          {p._dist != null ? ` · à ${p._dist < 1 ? "<1" : Math.round(p._dist)} km` : ""}
                         </option>
                       ))}
                     </select>
@@ -1306,9 +1417,9 @@ export default function ContreTempsSite() {
                     ← Retour
                   </button>
                   <button
-                    disabled={orderLoading || !orderForm.nom || !orderForm.email}
+                    disabled={orderLoading || !orderForm.nom || !orderForm.email || !postalOk}
                     onClick={async () => {
-                      if (!orderForm.nom || !orderForm.email) return;
+                      if (!orderForm.nom || !orderForm.email || !postalOk) return;
                       setOrderLoading(true);
                       try {
                         const items = Object.entries(cart).map(([id, qty]) => {
@@ -1318,6 +1429,7 @@ export default function ContreTempsSite() {
                         const total = items.reduce((s, i) => s + i.price * i.qty, 0);
                         const pickup = pickupPoints.find(p => p.id===orderForm.pickupPointId);
                         let noteDetails = orderForm.note;
+                        if (custPostal) noteDetails += ` | CP : ${custPostal}${custGeo ? " " + custGeo.city : ""}`;
                         if (pickup) noteDetails += ` | Retrait : ${pickup.name}${orderForm.timeSlotLabel ? " — " + orderForm.timeSlotLabel : ""}`;
                         if (orderForm.deliveryMode==="home" && orderForm.address) noteDetails += ` | Livraison : ${orderForm.address}, ${orderForm.zip} ${orderForm.city}`;
                         if (hasBiscuiterie) noteDetails += ` | Chronopost : ${orderForm.address}, ${orderForm.zip} ${orderForm.city}`;
@@ -1352,8 +1464,8 @@ export default function ContreTempsSite() {
                       }
                     }}
                     className="flex-1 py-3 rounded-full text-xs tracked uppercase"
-                    style={{ backgroundColor: orderLoading ? COLORS.blue : COLORS.rust, color: COLORS.cream, opacity: (!orderForm.nom || !orderForm.email) ? 0.5 : 1 }}>
-                    {orderLoading ? "Envoi…" : "Confirmer la commande"}
+                    style={{ backgroundColor: orderLoading ? COLORS.blue : COLORS.rust, color: COLORS.cream, opacity: (!orderForm.nom || !orderForm.email || !postalOk) ? 0.5 : 1 }}>
+                    {orderLoading ? "Envoi…" : orderBlocked ? "Indisponible dans votre zone" : "Confirmer la commande"}
                   </button>
                 </div>
               </div>
