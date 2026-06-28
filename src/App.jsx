@@ -356,6 +356,30 @@ export default function ContreTempsSite() {
   const [cart, setCart] = useState({});
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ nom: "", email: "", message: "" });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactError, setContactError] = useState("");
+
+  async function submitContact() {
+    if (!form.email || !form.message) {
+      setContactError("Merci d'indiquer au moins votre email et votre message.");
+      return;
+    }
+    setContactError("");
+    setContactLoading(true);
+    try {
+      const r = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!r.ok) throw new Error("send failed");
+      setSent(true);
+    } catch {
+      setContactError("L'envoi a échoué. Réessayez ou écrivez-nous directement à acontretemps@fournilvivant.fr.");
+    } finally {
+      setContactLoading(false);
+    }
+  }
   const [scrolled, setScrolled] = useState(false);
 
   // Produits depuis Supabase
@@ -980,7 +1004,7 @@ export default function ContreTempsSite() {
             <div className="mt-12 py-10" style={{ borderTop: `1px solid ${COLORS.blue}`, borderBottom: `1px solid ${COLORS.blue}` }}>
               <HeartMark size={30} tone="rust" />
               <p className="mt-4 text-sm" style={{ color: COLORS.inkSoft }}>
-                Message prêt à être envoyé. Merci, nous revenons vers vous vite.
+                Message envoyé. Merci, nous revenons vers vous très vite.
               </p>
             </div>
           ) : (
@@ -1013,12 +1037,16 @@ export default function ContreTempsSite() {
                   style={{ borderBottom: `1px solid ${COLORS.blue}` }}
                 />
               </div>
+              {contactError && (
+                <p className="text-sm self-center text-center" style={{ color: "#A63333" }}>{contactError}</p>
+              )}
               <button
-                onClick={() => setSent(true)}
+                onClick={submitContact}
+                disabled={contactLoading}
                 className="mt-3 px-8 py-3.5 rounded-full text-xs tracked uppercase self-center"
-                style={{ backgroundColor: COLORS.rust, color: COLORS.cream }}
+                style={{ backgroundColor: COLORS.rust, color: COLORS.cream, opacity: contactLoading ? 0.6 : 1 }}
               >
-                Envoyer
+                {contactLoading ? "Envoi…" : "Envoyer"}
               </button>
             </div>
           )}
