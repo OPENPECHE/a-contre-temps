@@ -532,6 +532,14 @@ export default function ContreTempsSite() {
   // Les points de vente / modes de retrait n'apparaissent qu'une fois la zone validée
   const showDeliveryOptions = !zoneActive || zoneState === "ok";
 
+  // La commande ne peut être validée que si le lieu (point de vente OU adresse) est renseigné
+  const needsPickup = showDeliveryOptions && !hasBiscuiterie && orderForm.deliveryMode === "pickup";
+  const needsAddress = showDeliveryOptions && (hasBiscuiterie || (!hasBiscuiterie && orderForm.deliveryMode === "home"));
+  const deliveryReady =
+    postalOk &&
+    (!needsPickup || !!orderForm.pickupPointId) &&
+    (!needsAddress || (!!orderForm.address && !!orderForm.city && !!orderForm.zip));
+
   // Sélection d'un point de vente : charge ses créneaux et plannings
   const selectPickup = useCallback(async (id) => {
     setOrderForm(f => ({ ...f, pickupPointId: id, timeSlotId: "", timeSlotLabel: "" }));
@@ -1432,6 +1440,15 @@ export default function ContreTempsSite() {
                   </div>
                 )}
 
+                {/* Indique ce qui manque pour valider */}
+                {orderForm.nom && orderForm.email && postalOk && !deliveryReady && (
+                  <p style={{ fontSize: 12, color: COLORS.rust, marginTop: 4 }}>
+                    {needsPickup && !orderForm.pickupPointId
+                      ? "Sélectionnez un point de vente pour continuer."
+                      : "Complétez l'adresse de livraison pour continuer."}
+                  </p>
+                )}
+
                 <div className="flex gap-3 mt-2">
                   <button onClick={() => setOrderStep("cart")}
                     className="px-5 py-3 rounded-full text-xs tracked"
@@ -1439,9 +1456,9 @@ export default function ContreTempsSite() {
                     ← Retour
                   </button>
                   <button
-                    disabled={orderLoading || !orderForm.nom || !orderForm.email || !postalOk}
+                    disabled={orderLoading || !orderForm.nom || !orderForm.email || !deliveryReady}
                     onClick={async () => {
-                      if (!orderForm.nom || !orderForm.email || !postalOk) return;
+                      if (!orderForm.nom || !orderForm.email || !deliveryReady) return;
                       setOrderLoading(true);
                       try {
                         const items = Object.entries(cart).map(([id, qty]) => {
@@ -1486,7 +1503,7 @@ export default function ContreTempsSite() {
                       }
                     }}
                     className="flex-1 py-3 rounded-full text-xs tracked uppercase"
-                    style={{ backgroundColor: orderLoading ? COLORS.blue : COLORS.rust, color: COLORS.cream, opacity: (!orderForm.nom || !orderForm.email || !postalOk) ? 0.5 : 1 }}>
+                    style={{ backgroundColor: orderLoading ? COLORS.blue : COLORS.rust, color: COLORS.cream, opacity: (!orderForm.nom || !orderForm.email || !deliveryReady) ? 0.5 : 1 }}>
                     {orderLoading ? "Envoi…" : orderBlocked ? "Indisponible dans votre zone" : "Confirmer la commande"}
                   </button>
                 </div>
