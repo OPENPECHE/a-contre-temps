@@ -920,44 +920,42 @@ export default function ContreTempsSite() {
                     style={{ display:"inline-flex", alignItems:"center", gap:8, background:"transparent", border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:".5rem 1.1rem", cursor:"pointer", fontFamily:"inherit", fontSize:11, letterSpacing:".12em", color:COLORS.inkSoft, textTransform:"uppercase", marginBottom:"2rem" }}>
                     ← Tous les instants
                   </button>
-                  <div className="grid gap-8 max-w-3xl mx-auto">
+                  <div className="grid gap-8 max-w-md mx-auto">
       {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
-            <div className="md:grid md:grid-cols-2">
-              {/* GAUCHE — photo qui remplit la colonne sur PC */}
+            <div>
+              {/* Photo ou bandeau coloré */}
               {meta.photo ? (
-                <div className="h-[220px] md:h-auto" style={{ overflow:"hidden", position:"relative" }}>
+                <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.6) 0%, transparent 55%)" }} />
-                  <div style={{ position:"absolute", bottom:14, left:18 }}>
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
+                  <div style={{ position:"absolute", bottom:12, left:16 }}>
                     <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{(meta.label||cat).toUpperCase()}</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
                   </div>
                 </div>
               ) : (
-                <div className="h-[130px] md:h-auto" style={{ background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
-                  display:"flex", alignItems:"flex-end", padding:"0 1.25rem 1rem" }}>
+                <div style={{ height:80, background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
+                  display:"flex", alignItems:"center", padding:"0 1.25rem" }}>
                   <div>
                     <p style={{ fontSize:9, letterSpacing:".18em", color:COLORS.cream, opacity:.7 }}>{(meta.label||cat).toUpperCase()}</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
                   </div>
                 </div>
               )}
 
-              {/* DROITE — description + commande */}
-              <div className="border-t md:border-t-0 md:border-l border-[#D6DFE5]">
-                {/* Sous-titre et infos livraison */}
-                <div style={{ padding:"1.25rem 1.5rem .25rem" }}>
-                  {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:16 }}>{meta.sub}</p>}
-                  {meta.text && <p style={{ fontSize:15, color:COLORS.inkSoft, lineHeight:1.7, marginTop:6 }}>{meta.text}</p>}
-                  {deliveryRule?.notes && <p style={{ fontSize:13.5, color:COLORS.rust, marginTop:8, lineHeight:1.55 }}>{deliveryRule.notes}</p>}
-                </div>
+              {/* Sous-titre et infos livraison — une seule fois */}
+              <div style={{ padding:"1rem 1.25rem .5rem" }}>
+                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:16 }}>{meta.sub}</p>}
+                {meta.text && <p style={{ fontSize:15, color:COLORS.inkSoft, lineHeight:1.7, marginTop:6 }}>{meta.text}</p>}
+                {deliveryRule?.notes && <p style={{ fontSize:13.5, color:COLORS.rust, marginTop:8, lineHeight:1.55 }}>{deliveryRule.notes}</p>}
+              </div>
 
               {/* Produits — onglets de formules (style fin conservé) */}
-              <div style={{ padding:"1.1rem 1.5rem 1.5rem" }}>
+              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}`, padding:"0 1.5rem 1.5rem" }}>
                 {(() => {
                   const activeId = items.some(i => i.id === activeFormula) ? activeFormula : items[0]?.id;
                   const item = items.find(i => i.id === activeId);
@@ -1059,7 +1057,6 @@ export default function ContreTempsSite() {
                     </>
                   );
                 })()}
-              </div>
               </div>
             </div>
           </div>
