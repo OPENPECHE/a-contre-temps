@@ -887,9 +887,10 @@ export default function ContreTempsSite() {
       {/* MANIFESTO */}
       <section className="px-6 md:px-10 pb-10 md:pb-12 max-w-2xl mx-auto text-center">
         <p style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", fontWeight: 400, color: COLORS.blueDeep }} className="text-2xl md:text-3xl leading-snug">
-          Ingrédients locaux sélectionnés avec soin, levain naturel,
-          savoir-faire artisanal — ici tout est fait maison, parce que les
-          bonnes choses méritent du temps.
+          Ici, pas de raccourcis : matières premières brutes, de qualité et
+          locales autant que possible, levain naturel et savoir-faire
+          artisanal. Tout est fait maison. À contre-temps, nous faisons les
+          choses autrement.
         </p>
       </section>
 
