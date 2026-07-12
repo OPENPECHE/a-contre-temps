@@ -579,7 +579,7 @@ export default function ContreTempsSite() {
   }, []);
 
   const navLinks = [
-    { href: "#rythmes", label: "Nos box" },
+    { href: "#nos-instants", label: "Nos instants" },
     { href: "#biscuiterie", label: "Biscuiterie" },
     { href: "#entreprises", label: "Entreprises" },
     { href: "#marches", label: "Marchés" },
@@ -697,15 +697,15 @@ export default function ContreTempsSite() {
             à contre-temps
           </h1>
           <p className="tracked-lg text-[11px] md:text-xs mt-5" style={{ color: COLORS.cream, opacity: 0.85 }}>
-            FOURNIL VIVANT
+            FOURNIT LE VIVANT · CRÉATEUR D'INSTANTS
           </p>
           <p className="mt-10 max-w-md mx-auto text-[15px] md:text-base leading-loose" style={{ color: COLORS.cream, opacity: 0.88, fontWeight: 300 }}>
-            Le pain prend son temps. Nos fournées naissent la nuit, loin des
-            cadences, pour arriver fraîches à contre-temps de vos journées
+            Le pain prend son temps. Nous ne vendons pas des box — nous
+            composons des instants à partager, à contre-temps de vos journées
             pressées.
           </p>
-          <a href="#rythmes" className="mt-12 inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs tracked uppercase" style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep }}>
-            Découvrir nos box
+          <a href="#nos-instants" className="mt-12 inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs tracked uppercase" style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep }}>
+            Découvrir nos instants
             <ArrowRight size={14} />
           </a>
         </div>
@@ -740,14 +740,17 @@ export default function ContreTempsSite() {
         });
         // Trier par display_order dans chaque section
         Object.values(sections).forEach(arr => arr.sort((a,b) => a.order - b.order));
-        return Object.entries(sections).map(([sectionName, catItems]) => (
-          <section key={sectionName} id={sectionName.toLowerCase().replace(/\s+/g,"-")}
+        return Object.entries(sections).map(([sectionName, catItems]) => {
+          const displayName = sectionName === "Nos box" ? "Nos instants" : sectionName;
+          return (
+          <section key={sectionName} id={displayName.toLowerCase().replace(/\s+/g,"-")}
             className="px-6 md:px-10 py-20 md:py-28"
             style={{ backgroundColor: COLORS.paper }}>
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
-                <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl tracking-tight">
-                  {sectionName}
+                <Eyebrow>NOS INSTANTS</Eyebrow>
+                <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl tracking-tight mt-4">
+                  {displayName === "Nos instants" ? "Choisissez votre instant" : displayName}
                 </h2>
               </div>
               <div className={`grid gap-8 ${catItems.length === 1 ? "max-w-md mx-auto" : catItems.length === 2 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3"}`}>
@@ -888,7 +891,8 @@ export default function ContreTempsSite() {
               </div>
             </div>
           </section>
-        ));
+          );
+        });
       })()}
 
       {/* CHAPITRES À PART (biscuiterie + toute rubrique hors « Nos box ») — grand format pleine largeur */}
@@ -1061,7 +1065,7 @@ export default function ContreTempsSite() {
               <HeartMark size={18} tone="cream" />
               <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base">à contre-temps</span>
             </div>
-            <p className="text-[11px] mt-2 tracked" style={{ color: COLORS.cream, opacity: 0.65 }}>FOURNIL VIVANT</p>
+            <p className="text-[11px] mt-2 tracked" style={{ color: COLORS.cream, opacity: 0.65 }}>CRÉATEUR D'INSTANTS</p>
           </div>
 
           <div className="flex flex-col gap-2.5 text-sm" style={{ color: COLORS.cream, opacity: 0.9 }}>
@@ -1142,7 +1146,7 @@ export default function ContreTempsSite() {
             {orderStep === "cart" && (
               cartCount === 0 ? (
                 <p className="text-sm" style={{ color: COLORS.inkSoft }}>
-                  Rien pour l'instant. Ajoutez une box depuis "Nos box" pour composer votre sélection.
+                  Rien pour l'instant. Ajoutez un instant depuis « Nos instants » pour composer votre sélection.
                 </p>
               ) : (
                 <div className="flex flex-col gap-4">
