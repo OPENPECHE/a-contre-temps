@@ -919,7 +919,7 @@ export default function ContreTempsSite() {
                     style={{ display:"inline-flex", alignItems:"center", gap:8, background:"transparent", border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:".5rem 1.1rem", cursor:"pointer", fontFamily:"inherit", fontSize:11, letterSpacing:".12em", color:COLORS.inkSoft, textTransform:"uppercase", marginBottom:"2rem" }}>
                     ← Tous les instants
                   </button>
-                  <div className="grid gap-8 max-w-md mx-auto">
+                  <div className="grid gap-8 max-w-2xl mx-auto">
       {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
@@ -953,102 +953,88 @@ export default function ContreTempsSite() {
                 {deliveryRule?.notes && <p style={{ fontSize:11, color:COLORS.rust, marginTop:6 }}>{deliveryRule.notes}</p>}
               </div>
 
-              {/* Produits */}
-              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}` }}>
-                {items.map((item, idx) => {
+              {/* Produits — cartes (formules), options visibles, contenu au clic */}
+              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}`, padding:"1.1rem 1.25rem 1.35rem" }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(190px, 1fr))", gap:12 }}>
+                {items.map((item) => {
                   const contents = boxContents[item.id] || [];
                   const options = boxOptions[item.id] || [];
-                  const isOpen = hoveredItem === item.id || expandedItem === item.id;
+                  const isOpen = expandedItem === item.id;
                   const optSel = selectedOptions[item.id] || {};
                   const checkedOpts = options.filter(o => optSel[o.id]);
                   const extraPrice = checkedOpts.reduce((s, o) => s + Number(o.price), 0);
                   return (
-                    <div key={item.id}
-                      style={{ borderBottom: idx < items.length-1 ? `1px solid ${COLORS.blueSoft}` : "none" }}
-                      onMouseEnter={() => setHoveredItem(item.id)}
-                      onMouseLeave={() => setHoveredItem(null)}>
-                      <div className="py-3.5 px-6">
-                        {/* Nom + prix */}
-                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8,
-                          cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
-                          onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
-                          <p style={{ fontSize:13, lineHeight:1.35 }}>
-                            {item.name}
-                            {contents.length > 0 && (
-                              <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust, opacity:.7, marginLeft:5 }}>
-                                {isOpen ? "▲" : "▼"}
-                              </span>
-                            )}
-                          </p>
-                          <p style={{ fontSize:12, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
-                            {(item.price + extraPrice).toFixed(2)} €
-                            {extraPrice > 0 && <span style={{ color:COLORS.rust }}> +{extraPrice.toFixed(2)} €</span>}
-                          </p>
-                        </div>
+                    <div key={item.id} style={{ display:"flex", flexDirection:"column",
+                      background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"1rem 1.05rem" }}>
+                      {/* Nom + prix */}
+                      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
+                        <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.ink, lineHeight:1.25 }}>{item.name}</p>
+                        <p style={{ fontSize:13, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
+                          {(item.price + extraPrice).toFixed(2)} €
+                        </p>
+                      </div>
 
-                        {/* Stepper + Ajouter */}
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:8,
-                            border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
-                            <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
-                              style={{ border:"none", background:"transparent", cursor:"pointer",
-                                fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>−</button>
-                            <span style={{ fontSize:13, fontWeight:500, minWidth:16, textAlign:"center" }}>
-                              {itemQty[item.id] || 1}
-                            </span>
-                            <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
-                              style={{ border:"none", background:"transparent", cursor:"pointer",
-                                fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
-                          </div>
-                          <button onClick={() => {
-                              const qty = itemQty[item.id] || 1;
-                              for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
-                              setItemQty(q => ({ ...q, [item.id]: 1 }));
-                            }}
-                            style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream,
-                              borderRadius:7, padding:"6px 0", fontSize:10,
-                              letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
-                            AJOUTER
+                      {/* Voir le contenu — au clic (marche sur PC et mobile) */}
+                      {contents.length > 0 && (
+                        <div style={{ marginBottom:10 }}>
+                          <button onClick={() => setExpandedItem(isOpen ? null : item.id)}
+                            style={{ background:"transparent", border:"none", padding:0, cursor:"pointer", fontFamily:"inherit",
+                              fontSize:11, letterSpacing:".06em", color:COLORS.rust, display:"inline-flex", alignItems:"center", gap:5 }}>
+                            {isOpen ? "Masquer le contenu ▴" : "Voir le contenu ▾"}
                           </button>
+                          {isOpen && (
+                            <div style={{ marginTop:8, paddingTop:8, borderTop:`1px dashed ${COLORS.blueSoft}` }}>
+                              {contents.map((c, i) => (
+                                <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0", display:"flex", gap:6 }}>
+                                  <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
+                                </p>
+                              ))}
+                            </div>
+                          )}
                         </div>
+                      )}
 
-                        {/* Détail box au survol/clic */}
-                        {isOpen && (contents.length > 0 || options.length > 0) && (
-                          <div style={{ padding:".75rem 0 .25rem", borderTop:`1px dashed ${COLORS.blueSoft}`, marginTop:".75rem" }}>
-                            {contents.length > 0 && (
-                              <div style={{ marginBottom: options.length > 0 ? ".75rem" : 0 }}>
-                                <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.rust, marginBottom:".4rem" }}>CONTENU</p>
-                                {contents.map((c, i) => (
-                                  <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0", display:"flex", alignItems:"center", gap:6 }}>
-                                    <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-                            {options.length > 0 && (
-                              <div>
-                                <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".4rem" }}>OPTIONS</p>
-                                {options.map(opt => (
-                                  <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8,
-                                    padding:"3px 0", fontSize:12, cursor:"pointer" }}>
-                                    <input type="checkbox"
-                                      checked={!!optSel[opt.id]}
-                                      onChange={e => setSelectedOptions(so => ({
-                                        ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked }
-                                      }))}
-                                      style={{ accentColor: COLORS.blueDeep }} />
-                                    <span style={{ flex:1 }}>{opt.name}</span>
-                                    <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
-                                  </label>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                      {/* Options en supplément — toujours visibles */}
+                      {options.length > 0 && (
+                        <div style={{ marginBottom:12 }}>
+                          {options.map(opt => (
+                            <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px",
+                              fontSize:12.5, cursor:"pointer", border:`1px solid ${optSel[opt.id] ? COLORS.blueDeep : COLORS.blueSoft}`,
+                              borderRadius:8, marginBottom:6, backgroundColor: optSel[opt.id] ? COLORS.blueDeep+"11" : "transparent" }}>
+                              <input type="checkbox" checked={!!optSel[opt.id]}
+                                onChange={e => setSelectedOptions(so => ({ ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked } }))}
+                                style={{ accentColor: COLORS.blueDeep, width:15, height:15 }} />
+                              <span style={{ flex:1 }}>{opt.name}</span>
+                              <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Stepper + Ajouter */}
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:"auto" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10,
+                          border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"6px 10px" }}>
+                          <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) }))}
+                            style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>−</button>
+                          <span style={{ fontSize:13, fontWeight:500, minWidth:16, textAlign:"center" }}>{itemQty[item.id] || 1}</span>
+                          <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 }))}
+                            style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
+                        </div>
+                        <button onClick={() => {
+                            const qty = itemQty[item.id] || 1;
+                            for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
+                            setItemQty(q => ({ ...q, [item.id]: 1 }));
+                          }}
+                          style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream,
+                            borderRadius:7, padding:"9px 0", fontSize:10, letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
+                          AJOUTER
+                        </button>
                       </div>
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
           </div>
