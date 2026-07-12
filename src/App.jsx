@@ -940,34 +940,21 @@ export default function ContreTempsSite() {
       {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
+        const illustration = INSTANT_ILLUSTRATIONS[cat];
         return (
-          <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
+          <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12 }}>
             <div>
-              {/* Photo (bandeau) + pastille illustration en bas à droite */}
-              {meta.photo ? (
-                <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
-                  <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
-                  <div style={{ position:"absolute", bottom:12, left:16 }}>
-                    <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{(meta.label||cat).toUpperCase()}</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ height:80, background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
-                  display:"flex", alignItems:"center", padding:"0 1.25rem" }}>
-                  <div>
-                    <p style={{ fontSize:9, letterSpacing:".18em", color:COLORS.cream, opacity:.7 }}>{(meta.label||cat).toUpperCase()}</p>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Sous-titre et infos livraison — une seule fois */}
-              <div style={{ padding:"1rem 1.25rem .5rem" }}>
-                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:18 }}>{meta.sub}</p>}
-                {meta.text && <p style={{ fontSize:16.5, color:COLORS.inkSoft, lineHeight:1.7, marginTop:6 }}>{meta.text}</p>}
-                {deliveryRule?.notes && <p style={{ fontSize:15, color:COLORS.rust, marginTop:8, lineHeight:1.55 }}>{deliveryRule.notes}</p>}
+              {/* En-tête texte + pastille détourée (plus de photo) */}
+              <div style={{ position:"relative", padding:"1.6rem 1.5rem .75rem" }}>
+                {illustration && (
+                  <img src={illustration} alt={meta.title||cat}
+                    style={{ float:"right", width:134, height:134, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-22, marginRight:-16, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
+                )}
+                <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:8 }}>{(meta.label||cat).toUpperCase()}</p>
+                <p style={{ fontFamily:FONT_DISPLAY, fontSize:26, color:COLORS.blueDeep, marginBottom:12, lineHeight:1.15 }}>{meta.title||cat}</p>
+                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:18, marginBottom:6 }}>{meta.sub}</p>}
+                {meta.text && <p style={{ fontSize:16.5, color:COLORS.inkSoft, lineHeight:1.7, marginBottom:8 }}>{meta.text}</p>}
+                {deliveryRule?.notes && <p style={{ fontSize:15, color:COLORS.rust, lineHeight:1.55, clear:"both" }}>{deliveryRule.notes}</p>}
               </div>
 
               {/* Produits — onglets de formules (style fin conservé) */}
