@@ -359,6 +359,29 @@ export default function ContreTempsSite() {
   const [contactLoading, setContactLoading] = useState(false);
   const [contactError, setContactError] = useState("");
 
+  // Newsletter "menu de la semaine"
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterState, setNewsletterState] = useState("idle"); // idle | loading | done | error
+
+  async function submitNewsletter() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.trim())) {
+      setNewsletterState("error");
+      return;
+    }
+    setNewsletterState("loading");
+    try {
+      const r = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail.trim() }),
+      });
+      if (!r.ok) throw new Error();
+      setNewsletterState("done");
+    } catch {
+      setNewsletterState("error");
+    }
+  }
+
   async function submitContact() {
     if (!form.email || !form.message) {
       setContactError("Merci d'indiquer au moins votre email et votre message.");
@@ -1054,6 +1077,50 @@ export default function ContreTempsSite() {
               </button>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* NEWSLETTER — menu de la semaine */}
+      <section className="px-6 md:px-10 py-16 md:py-20" style={{ backgroundColor: COLORS.blueDeep }}>
+        <div className="max-w-md mx-auto text-center">
+          <Eyebrow color="rgba(243,231,218,0.55)">CHAQUE SEMAINE</Eyebrow>
+          <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400, color: COLORS.cream }} className="text-2xl md:text-4xl mt-4 tracking-tight">
+            Le menu de la semaine dans votre boîte mail
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed" style={{ color: COLORS.cream, opacity: 0.8, fontWeight: 300 }}>
+            Nouvelles fournées, instants du moment, dates de marché — on vous prévient.
+          </p>
+
+          {newsletterState === "done" ? (
+            <div className="mt-8 py-6" style={{ borderTop: `1px solid rgba(243,231,218,0.3)`, borderBottom: `1px solid rgba(243,231,218,0.3)` }}>
+              <HeartMark size={26} tone="cream" />
+              <p className="mt-3 text-sm" style={{ color: COLORS.cream, opacity: 0.9 }}>
+                Merci ! Vous êtes inscrit·e au menu de la semaine.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 items-stretch">
+              <input
+                type="email" placeholder="votre@email.fr" value={newsletterEmail}
+                onChange={e => { setNewsletterEmail(e.target.value); if (newsletterState === "error") setNewsletterState("idle"); }}
+                onKeyDown={e => { if (e.key === "Enter") submitNewsletter(); }}
+                className="flex-1 px-4 py-3 rounded-full text-sm outline-none"
+                style={{ backgroundColor: "rgba(243,231,218,0.12)", border: `1px solid rgba(243,231,218,0.35)`, color: COLORS.cream, fontFamily: "inherit" }} />
+              <button
+                onClick={submitNewsletter}
+                disabled={newsletterState === "loading"}
+                className="px-7 py-3 rounded-full text-xs tracked uppercase whitespace-nowrap"
+                style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep, opacity: newsletterState === "loading" ? 0.6 : 1 }}>
+                {newsletterState === "loading" ? "…" : "Je m'inscris"}
+              </button>
+            </div>
+          )}
+          {newsletterState === "error" && (
+            <p className="mt-3 text-xs" style={{ color: "#F3C0C0" }}>Vérifiez votre adresse email et réessayez.</p>
+          )}
+          <p className="mt-4 text-[11px]" style={{ color: COLORS.cream, opacity: 0.5 }}>
+            Pas de spam, désinscription à tout moment.
+          </p>
         </div>
       </section>
 

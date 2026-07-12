@@ -122,6 +122,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
         Livraison & Créneaux
       </button>
+      <button class="nb" onclick="goTab('annonces',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 11-5.8-1.6"/></svg>
+        Annonces
+      </button>
       <button class="nb" onclick="goTab('settings',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         Paramètres
@@ -221,6 +225,34 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       <h1>Livraison & Créneaux</h1>
       <p class="sub">Configurez les règles de livraison par catégorie de produits</p>
       <div id="delivery-list"></div>
+    </div>
+
+    <!-- ANNONCES / NEWSLETTER -->
+    <div id="page-annonces" class="page">
+      <h1>Annonces</h1>
+      <p class="sub">Envoyer le menu de la semaine et les nouvelles à vos inscrits</p>
+
+      <div class="card" style="max-width:560px;margin-bottom:1.1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <p class="sl-label" style="margin:0">RÉDIGER UN EMAIL</p>
+          <span id="news-count" style="font-size:12px;color:var(--is)">…</span>
+        </div>
+        <label style="font-size:11px;color:var(--is)">Objet *</label>
+        <input class="fi" id="news-subject" placeholder="Le menu de cette semaine 🥐" style="margin:4px 0 .9rem;width:100%">
+        <label style="font-size:11px;color:var(--is)">Message *</label>
+        <textarea class="fi" id="news-message" rows="7" placeholder="Bonjour,&#10;&#10;Cette semaine au fournil...&#10;&#10;À très vite !" style="margin:4px 0 .9rem;width:100%;resize:vertical;padding:.6rem .7rem"></textarea>
+        <label style="font-size:11px;color:var(--is)">Lien bouton (facultatif)</label>
+        <input class="fi" id="news-link" placeholder="https://fournilvivant.fr" style="margin:4px 0 .9rem;width:100%">
+        <label style="font-size:11px;color:var(--is)">Jeton d'envoi</label>
+        <input class="fi" id="news-token" type="password" placeholder="Ton code secret d'envoi" style="margin:4px 0 1rem;width:100%">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn bp" id="news-send-btn" onclick="sendNewsletter()">Envoyer à tous les inscrits</button>
+          <span id="news-result" style="font-size:12px"></span>
+        </div>
+        <p style="font-size:11px;color:var(--is);margin-top:.9rem;line-height:1.5">
+          L'email part depuis acontretemps@fournilvivant.fr. Le « jeton d'envoi » est ton code secret (défini dans Vercel) qui évite qu'un inconnu envoie à ta place.
+        </p>
+      </div>
     </div>
 
     <!-- SETTINGS -->
@@ -387,6 +419,51 @@ function goTab(name,btn){
   if(name==="pickup") loadPickups();
   if(name==="delivery") loadDelivery();
   if(name==="settings") loadSettings();
+  if(name==="annonces") loadAnnonces();
+}
+
+// ── Annonces / Newsletter ──────────────────────────────────────────────────────
+async function loadAnnonces(){
+  const tokenEl=document.getElementById("news-token");
+  if(tokenEl) tokenEl.value=localStorage.getItem("act_news_token")||"";
+  const countEl=document.getElementById("news-count");
+  const token=tokenEl?tokenEl.value:"";
+  if(!token){ countEl.textContent="Saisis ton jeton pour voir les inscrits"; return; }
+  countEl.textContent="…";
+  try{
+    const r=await fetch("/api/newsletter",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({token,action:"count"})});
+    const d=await r.json();
+    if(r.ok) countEl.textContent=`${d.count} inscrit${d.count>1?"s":""}`;
+    else countEl.textContent="Jeton invalide";
+  }catch{ countEl.textContent="—"; }
+}
+async function sendNewsletter(){
+  const subject=document.getElementById("news-subject").value.trim();
+  const message=document.getElementById("news-message").value.trim();
+  const link=document.getElementById("news-link").value.trim();
+  const token=document.getElementById("news-token").value.trim();
+  const result=document.getElementById("news-result");
+  const btn=document.getElementById("news-send-btn");
+  if(!token){ result.style.color="var(--rd)"; result.textContent="Jeton requis."; return; }
+  if(!subject||!message){ result.style.color="var(--rd)"; result.textContent="Objet et message requis."; return; }
+  localStorage.setItem("act_news_token",token);
+  if(!confirm("Envoyer cet email à tous les inscrits ?")) return;
+  btn.disabled=true; result.style.color="var(--is)"; result.textContent="Envoi en cours…";
+  try{
+    const r=await fetch("/api/newsletter",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({token,action:"send",subject,message,link})});
+    const d=await r.json();
+    if(r.ok){
+      result.style.color="var(--gn)"; result.textContent=`✓ Envoyé à ${d.sent} inscrit${d.sent>1?"s":""}`;
+      document.getElementById("news-subject").value="";
+      document.getElementById("news-message").value="";
+      document.getElementById("news-link").value="";
+    } else {
+      result.style.color="var(--rd)"; result.textContent=d.error||"Échec de l'envoi";
+    }
+  }catch(e){ result.style.color="var(--rd)"; result.textContent="Erreur : "+e.message; }
+  finally{ btn.disabled=false; }
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
