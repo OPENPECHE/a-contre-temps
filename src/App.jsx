@@ -833,7 +833,7 @@ export default function ContreTempsSite() {
             à contre-temps
           </h1>
           <p className="tracked-lg text-[11px] md:text-xs mt-5" style={{ color: COLORS.cream, opacity: 0.85 }}>
-            FOURNIT LE VIVANT · CRÉATEUR D'INSTANTS
+            FOURNIL VIVANT
           </p>
           <p className="mt-10 max-w-md mx-auto text-[15px] md:text-base leading-loose" style={{ color: COLORS.cream, opacity: 0.88, fontWeight: 300 }}>
             Tout commence dans notre atelier. Nous ne composons pas des box,

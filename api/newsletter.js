@@ -19,7 +19,7 @@ function buildHtml(subject, message, link, unsub) {
   <div style="max-width:560px;margin:40px auto;background:#FBF8F4;border-radius:12px;overflow:hidden;">
     <div style="background:#7C97AC;padding:2rem;text-align:center;">
       <p style="font-size:22px;color:#F3E7DA;margin:0;font-style:italic;">à contre-temps</p>
-      <p style="font-size:10px;letter-spacing:.2em;color:rgba(243,231,218,.65);margin:.3rem 0 0;">FOURNIT LE VIVANT · CRÉATEUR D'INSTANTS</p>
+      <p style="font-size:10px;letter-spacing:.2em;color:rgba(243,231,218,.65);margin:.3rem 0 0;">FOURNIL VIVANT</p>
     </div>
     <div style="padding:2rem;">
       <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 1.25rem;">${esc(subject)}</h1>
