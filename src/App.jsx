@@ -452,6 +452,20 @@ export default function ContreTempsSite() {
     localStorage.setItem("act_push_invite_dismissed", "1");
   }
 
+  // Installation de l'appli (Android / Chrome : on capte la proposition du navigateur)
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+  async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch { /* ignore */ }
+    setDeferredPrompt(null);
+  }
+
   async function submitNewsletter() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.trim())) {
       setNewsletterState("error");
@@ -1259,8 +1273,15 @@ export default function ContreTempsSite() {
             ) : (
               <>
                 <p className="text-sm mb-3" style={{ color: COLORS.cream, opacity: 0.8, fontWeight: 300 }}>
-                  Ou recevez une notification directement sur votre téléphone :
+                  Installez l'appli et soyez informé·e des nouveaux menus et des douceurs mises en ligne :
                 </p>
+                {deferredPrompt && (
+                  <button onClick={installApp}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs tracked uppercase mr-2 mb-2"
+                    style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep, border: "none", cursor: "pointer" }}>
+                    <ArrowRight size={14} /> Installer l'application
+                  </button>
+                )}
                 <button onClick={enablePush} disabled={pushState === "working"}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs tracked uppercase"
                   style={{ border: `1px solid ${COLORS.cream}`, color: COLORS.cream, background: "transparent", cursor: "pointer", opacity: pushState === "working" ? 0.6 : 1 }}>
@@ -1364,7 +1385,7 @@ export default function ContreTempsSite() {
           boxShadow: "0 6px 24px rgba(43,41,37,.28)", fontFamily: FONT_BODY }}>
           <Bell size={20} style={{ flexShrink: 0 }} />
           <p style={{ flex: 1, fontSize: 12.5, lineHeight: 1.4, opacity: 0.95 }}>
-            Recevez le <b>menu de la semaine</b> en notification.
+            Soyez informé·e des <b>nouveaux menus</b> et des <b>douceurs</b> mises en ligne.
           </p>
           <button onClick={() => { dismissPushInvite(); enablePush(); }}
             style={{ flexShrink: 0, backgroundColor: COLORS.cream, color: COLORS.blueDeep, border: "none",

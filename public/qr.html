@@ -33,10 +33,11 @@ p.note{font-size:.7rem;color:rgba(43,41,37,.45);margin-top:1rem;line-height:1.6;
     <path d="M16 11.5C13.8 6.8 6 7.6 5 13.5C4.1 18.8 11 23.6 16 27.5C21 23.6 27.9 18.8 27 13.5C26 7.6 18.2 6.8 16 11.5Z" stroke="#7C97AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
   <h1>à contre-temps</h1>
-  <p class="sub">FOURNIL VIVANT</p>
+  <p class="sub">CRÉATEUR D'INSTANTS</p>
 
+  <p style="font-family:'Fraunces',serif;font-size:1rem;color:#A6713F;margin-bottom:1rem;">Installez notre application</p>
   <div id="qr"></div>
-  <p class="url" id="url-display">fournilvivant.fr/vitrine</p>
+  <p class="url" id="url-display">fournilvivant.fr</p>
 
   <div class="no-print" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem">
     <button class="btn" onclick="window.print()">
@@ -49,12 +50,12 @@ p.note{font-size:.7rem;color:rgba(43,41,37,.45);margin-top:1rem;line-height:1.6;
     </button>
   </div>
 
-  <p class="note">Scannez ce QR code pour découvrir nos box et commander en ligne.</p>
+  <p class="note">Scannez pour installer notre application et être informé·e des nouveaux menus et des douceurs mises en ligne.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const URL = "https://fournilvivant.fr/vitrine";
+const URL = "https://fournilvivant.fr";
 document.getElementById('url-display').textContent = URL;
 
 const qr = new QRCode(document.getElementById("qr"), {
