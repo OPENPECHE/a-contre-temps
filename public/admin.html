@@ -116,7 +116,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       </button>
       <button class="nb" onclick="goTab('products',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-        Articles & box
+        Articles & instants
       </button>
       <button class="nb" onclick="goTab('pickup',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -181,7 +181,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
     <!-- PRODUCTS -->
     <div id="page-products" class="page">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-        <h1 style="margin-bottom:0">Articles & box</h1>
+        <h1 style="margin-bottom:0">Articles & instants</h1>
         <button class="btn bp bsm" onclick="toggleNewProd()">+ NOUVEL ARTICLE</button>
       </div>
       <div id="new-prod-form" style="display:none" class="nf">
@@ -1233,7 +1233,7 @@ function deliveryCard(r){
           <input class="fi" id="label-${r.id}" value="${(r.label||"").replace(/"/g,"&quot;")}" style="margin-top:6px;width:100%">
         </div>
         <div>
-          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">TITRE (ex: Box petit-déjeuner)</label>
+          <label style="font-size:10px;letter-spacing:.12em;color:var(--is)">TITRE (ex: L'instant petit-déjeuner)</label>
           <input class="fi" id="title-${r.id}" value="${(r.title||"").replace(/"/g,"&quot;")}" style="margin-top:6px;width:100%">
         </div>
         <div>
@@ -1394,7 +1394,7 @@ async function exportCSV(){
     </div>
 
     <!-- Contenu -->
-    <p class="sl-label">CONTENU DE LA BOX</p>
+    <p class="sl-label">CONTENU DE L'INSTANT</p>
     <div id="box-contents-list" style="margin-bottom:.75rem"></div>
     <div style="display:flex;gap:8px;margin-bottom:1.5rem">
       <input class="fi" id="new-content-inp" placeholder="ex: Croissant beurre du fournil" style="flex:1" onkeydown="if(event.key==='Enter')addContent()" />
@@ -1409,7 +1409,7 @@ async function exportCSV(){
       <input class="fi" id="new-opt-price" type="number" step="0.5" placeholder="Prix €" style="width:80px" />
       <button class="btn bp bsm" onclick="addOption()">+ Ajouter</button>
     </div>
-    <p style="font-size:11px;color:var(--is);margin-top:.75rem">Prix 0 € = option gratuite incluse dans la box</p>
+    <p style="font-size:11px;color:var(--is);margin-top:.75rem">Prix 0 € = option gratuite incluse dans l'instant</p>
   </div>
 </div>
 

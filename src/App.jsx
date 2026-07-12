@@ -129,28 +129,28 @@ const CATEGORY_META = {
   "Petit-déjeuner entreprises": {
     photo: PHOTOS.matin,
     label: "Le matin",
-    title: "Box petit-déjeuner",
+    title: "L'instant petit-déjeuner",
     sub: "Pour les entreprises",
     text: "Viennoiseries du fournil, pains spéciaux, confitures de producteurs et jus pressés.",
   },
   "Traiteur midi": {
     photo: PHOTOS.midi,
     label: "Le midi",
-    title: "Pain & traiteur léger",
+    title: "L'instant lunch",
     sub: "Pour les bureaux",
     text: "Sandwiches au levain, salades composées, pains à partager. Une pause déjeuner sans file d'attente.",
   },
   "Brunch & apéritif": {
     photo: PHOTOS.soir,
     label: "Soir & week-end",
-    title: "Box apéritif",
+    title: "L'instant apéritif",
     sub: "Pour recevoir",
     text: "Planches à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
   },
   "Brunch week-end": {
     photo: PHOTOS.soir,
     label: "Week-end",
-    title: "Box brunch",
+    title: "L'instant brunch",
     sub: "Pour recevoir",
     text: "Mini-viennoiseries sucrées-salées, confitures et accompagnements de producteurs locaux.",
   },
@@ -836,7 +836,7 @@ export default function ContreTempsSite() {
             FOURNIT LE VIVANT · CRÉATEUR D'INSTANTS
           </p>
           <p className="mt-10 max-w-md mx-auto text-[15px] md:text-base leading-loose" style={{ color: COLORS.cream, opacity: 0.88, fontWeight: 300 }}>
-            Le pain prend son temps. Nous ne vendons pas des box — nous
+            Le pain prend son temps. Nous ne vendons pas des produits — nous
             composons des instants à partager, à contre-temps de vos journées
             pressées.
           </p>
@@ -1134,7 +1134,7 @@ export default function ContreTempsSite() {
           </h2>
           <p className="mt-6 leading-loose text-[15px]" style={{ color: COLORS.cream, opacity: 0.8, fontWeight: 300 }}>
             Petit-déjeuner récurrent, séminaire, pause déjeuner : décrivez
-            votre besoin, nous composons une box sur mesure, livrée à
+            votre besoin, nous composons un instant sur mesure, livré à
             l'heure qui vous arrange.
           </p>
           <a href="#contact" className="mt-10 inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs tracked uppercase" style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep }}>
