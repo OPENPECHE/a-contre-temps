@@ -905,7 +905,7 @@ export default function ContreTempsSite() {
                     );
                   })}
                   <a href="#entreprises" style={{ textDecoration:"none", background:COLORS.blueDeep, borderRadius:12, padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column" }}>
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.cream, marginBottom:6 }}>Instant sur mesure</p>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.cream, marginBottom:6 }}>L'instant sur mesure</p>
                     <p style={{ fontSize:13, color:"rgba(243,231,218,.8)", lineHeight:1.55, flex:1 }}>Un événement, une équipe à nourrir ? On compose le vôtre.</p>
                     <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.cream, opacity:.85 }}>DEMANDER →</span>
                   </a>
