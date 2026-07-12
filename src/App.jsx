@@ -836,9 +836,8 @@ export default function ContreTempsSite() {
             FOURNIT LE VIVANT · CRÉATEUR D'INSTANTS
           </p>
           <p className="mt-10 max-w-md mx-auto text-[15px] md:text-base leading-loose" style={{ color: COLORS.cream, opacity: 0.88, fontWeight: 300 }}>
-            Le pain prend son temps. Nous ne vendons pas des produits — nous
-            composons des instants à partager, à contre-temps de vos journées
-            pressées.
+            Tout commence dans notre atelier. Nous ne composons pas des box,
+            nous créons des instants.
           </p>
           <a href="#nos-instants" className="mt-12 inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs tracked uppercase" style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep }}>
             Découvrir nos instants
