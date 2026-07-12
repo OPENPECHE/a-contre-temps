@@ -949,9 +949,9 @@ export default function ContreTempsSite() {
 
               {/* Sous-titre et infos livraison — une seule fois */}
               <div style={{ padding:"1rem 1.25rem .5rem" }}>
-                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:13 }}>{meta.sub}</p>}
-                {meta.text && <p style={{ fontSize:12, color:COLORS.inkSoft, lineHeight:1.6, marginTop:4 }}>{meta.text}</p>}
-                {deliveryRule?.notes && <p style={{ fontSize:11, color:COLORS.rust, marginTop:6 }}>{deliveryRule.notes}</p>}
+                {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:16 }}>{meta.sub}</p>}
+                {meta.text && <p style={{ fontSize:15, color:COLORS.inkSoft, lineHeight:1.7, marginTop:6 }}>{meta.text}</p>}
+                {deliveryRule?.notes && <p style={{ fontSize:13.5, color:COLORS.rust, marginTop:8, lineHeight:1.55 }}>{deliveryRule.notes}</p>}
               </div>
 
               {/* Produits — onglets de formules (style fin conservé) */}
@@ -976,7 +976,7 @@ export default function ContreTempsSite() {
                             return (
                               <button key={f.id} onClick={() => setActiveFormula(f.id)}
                                 style={{ flex:1, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit",
-                                  padding:".2rem .4rem .6rem", fontSize:12, letterSpacing:".02em",
+                                  padding:".2rem .4rem .7rem", fontSize:14, letterSpacing:".02em",
                                   color: isActive ? COLORS.blueDeep : COLORS.inkSoft, fontWeight: isActive ? 500 : 400,
                                   borderBottom: isActive ? `2px solid ${COLORS.rust}` : "2px solid transparent", marginBottom:-1 }}>
                                 {label}
@@ -990,8 +990,8 @@ export default function ContreTempsSite() {
                       <div style={{ paddingTop:"1.1rem" }}>
                         {/* Nom + prix */}
                         <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:8, marginBottom:".9rem" }}>
-                          <p style={{ fontSize:13, lineHeight:1.35 }}>{item.name}</p>
-                          <p style={{ fontSize:13, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
+                          <p style={{ fontSize:15.5, lineHeight:1.35 }}>{item.name}</p>
+                          <p style={{ fontSize:15, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
                             {(item.price + extraPrice).toFixed(2)} €
                             {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)})</span>}
                           </p>
@@ -1000,9 +1000,9 @@ export default function ContreTempsSite() {
                         {/* CONTENU — visible (fin) */}
                         {contents.length > 0 && (
                           <div style={{ marginBottom:"1rem" }}>
-                            <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.rust, marginBottom:".4rem" }}>CONTENU</p>
+                            <p style={{ fontSize:11, letterSpacing:".14em", color:COLORS.rust, marginBottom:".5rem" }}>CONTENU</p>
                             {contents.map((c, i) => (
-                              <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0", display:"flex", alignItems:"center", gap:6 }}>
+                              <p key={i} style={{ fontSize:14.5, color:COLORS.inkSoft, padding:"3px 0", display:"flex", alignItems:"center", gap:7 }}>
                                 <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
                               </p>
                             ))}
@@ -1012,12 +1012,12 @@ export default function ContreTempsSite() {
                         {/* OPTIONS — fin */}
                         {options.length > 0 && (
                           <div style={{ marginBottom:"1.1rem" }}>
-                            <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".4rem" }}>OPTIONS</p>
+                            <p style={{ fontSize:11, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".5rem" }}>OPTIONS</p>
                             {options.map(opt => (
-                              <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"3px 0", fontSize:12, cursor:"pointer" }}>
+                              <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", fontSize:14.5, cursor:"pointer" }}>
                                 <input type="checkbox" checked={!!optSel[opt.id]}
                                   onChange={e => setSelectedOptions(so => ({ ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked } }))}
-                                  style={{ accentColor: COLORS.blueDeep }} />
+                                  style={{ accentColor: COLORS.blueDeep, width:16, height:16 }} />
                                 <span style={{ flex:1 }}>{opt.name}</span>
                                 <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
                               </label>
