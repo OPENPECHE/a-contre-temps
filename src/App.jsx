@@ -387,6 +387,7 @@ export default function ContreTempsSite() {
     }
   }, []);
   const [cart, setCart] = useState({});
+  const [cartOptions, setCartOptions] = useState({}); // { optionId: quantité } — suppléments indépendants
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ nom: "", email: "", message: "" });
   const [contactLoading, setContactLoading] = useState(false);
@@ -568,7 +569,6 @@ export default function ContreTempsSite() {
   const [deliveryRules, setDeliveryRules] = useState([]);
   const [boxContents, setBoxContents] = useState({});   // { productId: [...items] }
   const [boxOptions, setBoxOptions] = useState({});     // { productId: [...options] }
-  const [selectedOptions, setSelectedOptions] = useState({}); // { productId: { optionId: bool } }
   const [hoveredItem, setHoveredItem] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
   const [itemQty, setItemQty] = useState({});  // { itemId: quantity }
@@ -633,19 +633,11 @@ export default function ContreTempsSite() {
     }),
   [cart, sbProducts, deliveryRules]);
 
-  const addToCart = (id, extraPrice = 0, optionLabels = []) => {
+  const addToCart = (id) => {
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
     const item = allItems.find(i => i.id === id);
     const name = item?.name?.split("—")[0]?.trim() || id;
-    const opts = optionLabels.length > 0 ? ` + ${optionLabels.join(", ")}` : "";
-    toast(`${name}${opts} ajouté`, "cart");
-    // Stocker les options sélectionnées pour cet article
-    if (extraPrice > 0 || optionLabels.length > 0) {
-      setSelectedOptions(so => ({
-        ...so,
-        [id]: { extraPrice, optionLabels }
-      }));
-    }
+    toast(`${name} ajouté`, "cart");
     setHoveredItem(null);
     setExpandedItem(null);
   };
@@ -658,18 +650,46 @@ export default function ContreTempsSite() {
       return next;
     });
 
-  const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
-  const cartTotal = Object.entries(cart).reduce((sum, [id, qty]) => {
-    const item = allItems.find((i) => i.id === id);
-    return sum + (item ? item.price * qty : 0);
-  }, 0);
+  // Suppléments (options) — quantités indépendantes de la formule
+  const allOptions = useMemo(() => {
+    const map = {};
+    Object.values(boxOptions).forEach(list => (list || []).forEach(o => {
+      map[o.id] = { name: o.name, price: Number(o.price) };
+    }));
+    return map;
+  }, [boxOptions]);
+  const addOption = (optId, name) => {
+    setCartOptions((o) => ({ ...o, [optId]: (o[optId] || 0) + 1 }));
+    toast(`${name || "Supplément"} ajouté`, "cart");
+  };
+  const removeOption = (optId) =>
+    setCartOptions((o) => {
+      const next = { ...o };
+      if (!next[optId]) return next;
+      next[optId] -= 1;
+      if (next[optId] <= 0) delete next[optId];
+      return next;
+    });
+
+  const cartCount =
+    Object.values(cart).reduce((a, b) => a + b, 0) +
+    Object.values(cartOptions).reduce((a, b) => a + b, 0);
+  const cartTotal =
+    Object.entries(cart).reduce((sum, [id, qty]) => {
+      const item = allItems.find((i) => i.id === id);
+      return sum + (item ? item.price * qty : 0);
+    }, 0) +
+    Object.entries(cartOptions).reduce((sum, [optId, qty]) => {
+      const o = allOptions[optId];
+      return sum + (o ? o.price * qty : 0);
+    }, 0);
 
   // Paiement direct possible uniquement pour 1 seul produit en quantité 1,
   // si un lien Revolut a été renseigné dans PAYMENT_LINKS ci-dessus.
   const cartIds = Object.keys(cart);
   const singleId = cartIds.length === 1 ? cartIds[0] : null;
   const directPaymentLink =
-    singleId && cart[singleId] === 1 && PAYMENT_LINKS[singleId] ? PAYMENT_LINKS[singleId] : null;
+    singleId && cart[singleId] === 1 && Object.keys(cartOptions).length === 0 && PAYMENT_LINKS[singleId] ? PAYMENT_LINKS[singleId] : null;
 
   // Points relais triés du plus proche au plus loin selon le code postal du client
   const sortedPickupPoints = useMemo(() => {
@@ -967,9 +987,6 @@ export default function ContreTempsSite() {
                   if (!item) return null;
                   const contents = boxContents[item.id] || [];
                   const options = boxOptions[item.id] || [];
-                  const optSel = selectedOptions[item.id] || {};
-                  const checkedOpts = options.filter(o => optSel[o.id]);
-                  const extraPrice = checkedOpts.reduce((s, o) => s + Number(o.price), 0);
                   return (
                     <>
                       {/* Onglets (si plusieurs formules) */}
@@ -1020,30 +1037,26 @@ export default function ContreTempsSite() {
                           </div>
                         )}
 
-                        {/* OPTIONS — fin */}
+                        {/* SUPPLÉMENTS — quantité indépendante de la formule */}
                         {options.length > 0 && (
                           <div style={{ marginBottom:"1.1rem" }}>
-                            <p style={{ fontSize:11, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".5rem" }}>OPTIONS</p>
-                            {options.map(opt => (
-                              <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", fontSize:16, cursor:"pointer" }}>
-                                <input type="checkbox" checked={!!optSel[opt.id]}
-                                  onChange={e => setSelectedOptions(so => ({ ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked } }))}
-                                  style={{ accentColor: COLORS.blueDeep, width:16, height:16 }} />
-                                <span style={{ flex:1 }}>{opt.name}</span>
-                                <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Total avec options — explicite */}
-                        {extraPrice > 0 && (
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
-                            padding:".7rem 0 .8rem", borderTop:`1px dashed ${COLORS.blueSoft}`, marginBottom:".3rem" }}>
-                            <span style={{ fontSize:14, color:COLORS.inkSoft }}>Total avec options</span>
-                            <span style={{ fontFamily:FONT_DISPLAY, fontSize:21, fontWeight:500, color:COLORS.blueDeep }}>
-                              {(item.price + extraPrice).toFixed(2)} €
-                            </span>
+                            <p style={{ fontSize:11, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".5rem" }}>SUPPLÉMENTS (à la carte)</p>
+                            {options.map(opt => {
+                              const oq = cartOptions[opt.id] || 0;
+                              return (
+                                <div key={opt.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", fontSize:16 }}>
+                                  <span style={{ flex:1 }}>{opt.name}</span>
+                                  <span style={{ color:COLORS.inkSoft, whiteSpace:"nowrap" }}>+{Number(opt.price).toFixed(2)} €</span>
+                                  <div style={{ display:"flex", alignItems:"center", gap:8, border:`1px solid ${oq > 0 ? COLORS.blueDeep : COLORS.blueSoft}`, borderRadius:7, padding:"3px 8px", marginLeft:6 }}>
+                                    <button onClick={() => removeOption(opt.id)}
+                                      style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:17, color:COLORS.blue, lineHeight:1, padding:0, width:16 }}>−</button>
+                                    <span style={{ fontSize:14, fontWeight:500, minWidth:14, textAlign:"center" }}>{oq}</span>
+                                    <button onClick={() => addOption(opt.id, opt.name)}
+                                      style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:17, color:COLORS.blue, lineHeight:1, padding:0, width:16 }}>+</button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
 
@@ -1058,7 +1071,7 @@ export default function ContreTempsSite() {
                           </div>
                           <button onClick={() => {
                               const qty = itemQty[item.id] || 1;
-                              for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
+                              for (let i = 0; i < qty; i++) addToCart(item.id);
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
                             }}
                             style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream, borderRadius:7, padding:"6px 0", fontSize:10, letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
@@ -1521,6 +1534,24 @@ export default function ContreTempsSite() {
                     );
                   })}
 
+                  {Object.entries(cartOptions).map(([optId, qty]) => {
+                    const o = allOptions[optId];
+                    if (!o) return null;
+                    return (
+                      <div key={optId} className="flex items-center justify-between gap-3 pb-4" style={{ borderBottom: `1px solid ${COLORS.blueSoft}` }}>
+                        <div>
+                          <p className="text-sm">{o.name} <span style={{ color: COLORS.rust, fontSize: 11 }}>· supplément</span></p>
+                          <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{o.price.toFixed(2)} €</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => removeOption(optId)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ border: `1px solid ${COLORS.blue}` }}><Minus size={12} /></button>
+                          <span className="text-sm w-4 text-center">{qty}</span>
+                          <button onClick={() => addOption(optId, o.name)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ border: `1px solid ${COLORS.blue}` }}><Plus size={12} /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
                   <div className="flex items-center justify-between mt-3 pt-4" style={{ borderTop: `1px solid ${COLORS.ink}` }}>
                     <span className="text-sm" style={{ color: COLORS.inkSoft }}>Total indicatif</span>
                     <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 500 }} className="text-xl">{cartTotal.toFixed(2)} €</span>
@@ -1846,10 +1877,16 @@ export default function ContreTempsSite() {
                       if (!orderForm.nom || !orderForm.email || !deliveryReady) return;
                       setOrderLoading(true);
                       try {
-                        const items = Object.entries(cart).map(([id, qty]) => {
-                          const item = allItems.find(i => i.id === id);
-                          return { id, name: item?.name || id, price: item?.price || 0, qty };
-                        });
+                        const items = [
+                          ...Object.entries(cart).map(([id, qty]) => {
+                            const item = allItems.find(i => i.id === id);
+                            return { id, name: item?.name || id, price: item?.price || 0, qty };
+                          }),
+                          ...Object.entries(cartOptions).map(([optId, qty]) => {
+                            const o = allOptions[optId];
+                            return { id: "opt-" + optId, name: (o?.name || "Supplément") + " (supplément)", price: o?.price || 0, qty };
+                          }),
+                        ];
                         const total = items.reduce((s, i) => s + i.price * i.qty, 0);
                         const pickup = pickupPoints.find(p => p.id===orderForm.pickupPointId);
                         let noteDetails = orderForm.note;
@@ -1880,6 +1917,7 @@ export default function ContreTempsSite() {
                         } catch (e) { console.warn("Email non envoyé:", e); }
                         setOrderStep("done");
                         setCart({});
+                        setCartOptions({});
                         toast("Commande envoyée avec succès !", "success");
                       } catch (e) {
                         alert("Erreur lors de l'envoi, veuillez réessayer.");
