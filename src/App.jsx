@@ -948,7 +948,7 @@ export default function ContreTempsSite() {
               <div style={{ position:"relative", padding:"1.6rem 1.5rem .75rem" }}>
                 {illustration && (
                   <img src={illustration} alt={meta.title||cat}
-                    style={{ float:"right", width:134, height:134, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-22, marginRight:-16, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
+                    style={{ float:"right", width:134, height:134, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-46, marginRight:-32, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
                 )}
                 <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:8 }}>{(meta.label||cat).toUpperCase()}</p>
                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:26, color:COLORS.blueDeep, marginBottom:12, lineHeight:1.15 }}>{meta.title||cat}</p>
@@ -1092,7 +1092,7 @@ export default function ContreTempsSite() {
                                   background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"0.9rem 1rem" }}>
                                 {illustration && (
                                   <img src={illustration} alt={m.title || cat}
-                                    style={{ float:"right", width:78, height:78, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-30, marginRight:-22, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
+                                    style={{ float:"right", width:82, height:82, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-40, marginRight:-28, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
                                 )}
                                 <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:4 }}>{m.label || cat}</p>
                                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.blueDeep }}>{m.title || cat}</p>
