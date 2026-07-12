@@ -913,7 +913,9 @@ export default function ContreTempsSite() {
                               <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:360, objectFit:"contain", display:"block" }} />
                             </div>
                             <div style={{ textAlign:"left", padding:"0 1.4rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
-                              {meta.text && <p style={{ fontSize:13.5, color:COLORS.inkSoft, lineHeight:1.55, flex:1 }}>{meta.text}</p>}
+                              {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:14, marginBottom:6 }}>{meta.sub}</p>}
+                              {meta.text && <p style={{ fontSize:13.5, color:COLORS.inkSoft, lineHeight:1.55, marginBottom:8 }}>{meta.text}</p>}
+                              {rule?.notes && <p style={{ fontSize:12.5, color:COLORS.rust, lineHeight:1.5, flex:1 }}>{rule.notes}</p>}
                               <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
                             </div>
                           </>
