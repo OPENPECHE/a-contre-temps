@@ -910,9 +910,12 @@ export default function ContreTempsSite() {
                         {illustration ? (
                           <>
                             <div style={{ backgroundColor:COLORS.paper }}>
-                              <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:280, objectFit:"contain", display:"block" }} />
+                              <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:360, objectFit:"contain", display:"block" }} />
                             </div>
-                            <span style={{ textAlign:"center", padding:"0.85rem", fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                            <div style={{ textAlign:"left", padding:"0 1.4rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
+                              {meta.text && <p style={{ fontSize:13.5, color:COLORS.inkSoft, lineHeight:1.55, flex:1 }}>{meta.text}</p>}
+                              <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                            </div>
                           </>
                         ) : (
                           <div style={{ textAlign:"left", padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
@@ -950,8 +953,8 @@ export default function ContreTempsSite() {
             <div>
               {/* Illustration de marque, sinon photo, sinon bandeau */}
               {illustration ? (
-                <div style={{ backgroundColor:COLORS.paper, display:"flex", justifyContent:"center", padding:"1rem 1rem 0" }}>
-                  <img src={illustration} alt={meta.title||cat} style={{ maxHeight:340, width:"auto", maxWidth:"100%", objectFit:"contain", display:"block" }} />
+                <div style={{ backgroundColor:COLORS.paper, display:"flex", justifyContent:"center", padding:"1.25rem 1rem 0" }}>
+                  <img src={illustration} alt={meta.title||cat} style={{ maxHeight:420, width:"auto", maxWidth:"100%", objectFit:"contain", display:"block" }} />
                 </div>
               ) : meta.photo ? (
                 <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
