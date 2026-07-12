@@ -1377,8 +1377,8 @@ export default function ContreTempsSite() {
         </div>
       )}
 
-      {/* INVITATION NOTIFICATIONS */}
-      {showPushInvite && (
+      {/* INVITATION NOTIFICATIONS — masquée si déjà activées */}
+      {showPushInvite && pushState !== "done" && (
         <div style={{ position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 70,
           maxWidth: 520, margin: "0 auto", backgroundColor: COLORS.blueDeep, color: COLORS.cream,
           borderRadius: 12, padding: ".85rem 1rem", display: "flex", alignItems: "center", gap: 10,
