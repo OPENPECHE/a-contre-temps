@@ -122,6 +122,14 @@ const PHOTOS = {
   biscuiterie: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80",
 };
 
+// Illustrations de marque par instant (fichiers dans public/instants/)
+const INSTANT_ILLUSTRATIONS = {
+  "Petit-déjeuner entreprises": "/instants/petit-dejeuner.png",
+  "Traiteur midi": "/instants/lunch.png",
+  "Brunch & apéritif": "/instants/apero.png",
+  "Brunch week-end": "/instants/brunch.png",
+};
+
 // Métadonnées visuelles par catégorie — REPLI pour les 5 catégories historiques.
 // La source de vérité est désormais la table delivery_rules (colonnes photo/label/
 // title/subtitle/description), éditable depuis le back-office.
@@ -894,14 +902,26 @@ export default function ContreTempsSite() {
                 <div className="grid gap-6 md:grid-cols-3">
                   {catItems.map(({ cat, rule }) => {
                     const meta = metaFromRule(cat, rule);
+                    const illustration = INSTANT_ILLUSTRATIONS[cat];
                     return (
                       <button key={cat} type="button"
                         onClick={() => { setSelectedInstant(cat); setTimeout(() => document.getElementById("nos-instants")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}
-                        style={{ textAlign:"left", cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", fontFamily:"inherit" }}>
-                        <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
-                        <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
-                        <p style={{ fontSize:13, color:COLORS.inkSoft, lineHeight:1.55, flex:1 }}>{meta.text}</p>
-                        <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                        style={{ cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden", display:"flex", flexDirection:"column", fontFamily:"inherit", padding:0 }}>
+                        {illustration ? (
+                          <>
+                            <div style={{ backgroundColor:COLORS.paper }}>
+                              <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:280, objectFit:"contain", display:"block" }} />
+                            </div>
+                            <span style={{ textAlign:"center", padding:"0.85rem", fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                          </>
+                        ) : (
+                          <div style={{ textAlign:"left", padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
+                            <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
+                            <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
+                            <p style={{ fontSize:13, color:COLORS.inkSoft, lineHeight:1.55, flex:1 }}>{meta.text}</p>
+                            <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -924,11 +944,16 @@ export default function ContreTempsSite() {
       {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
+        const illustration = INSTANT_ILLUSTRATIONS[cat];
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
             <div>
-              {/* Photo ou bandeau coloré */}
-              {meta.photo ? (
+              {/* Illustration de marque, sinon photo, sinon bandeau */}
+              {illustration ? (
+                <div style={{ backgroundColor:COLORS.paper, display:"flex", justifyContent:"center", padding:"1rem 1rem 0" }}>
+                  <img src={illustration} alt={meta.title||cat} style={{ maxHeight:340, width:"auto", maxWidth:"100%", objectFit:"contain", display:"block" }} />
+                </div>
+              ) : meta.photo ? (
                 <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
