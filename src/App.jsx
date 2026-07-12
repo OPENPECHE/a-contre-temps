@@ -920,13 +920,14 @@ export default function ContreTempsSite() {
                     style={{ display:"inline-flex", alignItems:"center", gap:8, background:"transparent", border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:".5rem 1.1rem", cursor:"pointer", fontFamily:"inherit", fontSize:11, letterSpacing:".12em", color:COLORS.inkSoft, textTransform:"uppercase", marginBottom:"2rem" }}>
                     ← Tous les instants
                   </button>
-                  <div className="grid gap-8 max-w-md mx-auto">
+                  <div className="grid gap-8 max-w-3xl mx-auto">
       {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
-            <div>
+            <div className="md:grid md:grid-cols-2">
+              <div>
               {/* Photo ou bandeau coloré */}
               {meta.photo ? (
                 <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
@@ -953,9 +954,10 @@ export default function ContreTempsSite() {
                 {meta.text && <p style={{ fontSize:15, color:COLORS.inkSoft, lineHeight:1.7, marginTop:6 }}>{meta.text}</p>}
                 {deliveryRule?.notes && <p style={{ fontSize:13.5, color:COLORS.rust, marginTop:8, lineHeight:1.55 }}>{deliveryRule.notes}</p>}
               </div>
+              </div>
 
               {/* Produits — onglets de formules (style fin conservé) */}
-              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}`, padding:"0 1.5rem 1.5rem" }}>
+              <div className="border-t md:border-t-0 md:border-l border-[#D6DFE5]" style={{ padding:"1.25rem 1.5rem 1.5rem" }}>
                 {(() => {
                   const activeId = items.some(i => i.id === activeFormula) ? activeFormula : items[0]?.id;
                   const item = items.find(i => i.id === activeId);
