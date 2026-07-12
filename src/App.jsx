@@ -415,6 +415,43 @@ export default function ContreTempsSite() {
     }
   }
 
+  async function disablePush() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe();
+    } catch { /* ignore */ }
+    setPushState("idle");
+  }
+
+  // Reflète l'abonnement réel au chargement (déjà activé ?)
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    navigator.serviceWorker.ready
+      .then(reg => reg.pushManager.getSubscription())
+      .then(sub => { if (sub) setPushState("done"); })
+      .catch(() => {});
+  }, []);
+
+  // Invitation proactive à activer les notifications (le clic reste obligatoire)
+  const [showPushInvite, setShowPushInvite] = useState(false);
+  useEffect(() => {
+    const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    if (!supported) return;
+    if (Notification.permission !== "default") return; // déjà accepté ou refusé
+    if (localStorage.getItem("act_push_invite_dismissed")) return;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iphone|ipad|ipod/i.test(ua);
+    const standalone = navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+    if (isIOS && !standalone) return; // sur iPhone non installé, la bannière d'installation s'en charge
+    const t = setTimeout(() => setShowPushInvite(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+  function dismissPushInvite() {
+    setShowPushInvite(false);
+    localStorage.setItem("act_push_invite_dismissed", "1");
+  }
+
   async function submitNewsletter() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.trim())) {
       setNewsletterState("error");
@@ -1210,9 +1247,15 @@ export default function ContreTempsSite() {
           {/* Notifications push sur le téléphone */}
           <div style={{ marginTop: "1.75rem", paddingTop: "1.75rem", borderTop: "1px solid rgba(243,231,218,0.2)" }}>
             {pushState === "done" ? (
-              <p className="text-sm inline-flex items-center gap-2" style={{ color: COLORS.cream, opacity: 0.9 }}>
-                <Bell size={15} /> Notifications activées sur ce téléphone.
-              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-sm inline-flex items-center gap-2" style={{ color: COLORS.cream, opacity: 0.9 }}>
+                  <Bell size={15} /> Notifications activées.
+                </p>
+                <button onClick={disablePush}
+                  style={{ background: "transparent", border: "none", color: COLORS.cream, opacity: 0.7, textDecoration: "underline", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>
+                  Désactiver
+                </button>
+              </div>
             ) : (
               <>
                 <p className="text-sm mb-3" style={{ color: COLORS.cream, opacity: 0.8, fontWeight: 300 }}>
@@ -1306,6 +1349,29 @@ export default function ContreTempsSite() {
             puis « <b>Sur l'écran d'accueil</b> » pour recevoir nos notifications.
           </p>
           <button onClick={() => { setShowIosBanner(false); localStorage.setItem("act_ios_dismissed", "1"); }}
+            style={{ background: "transparent", border: "none", color: COLORS.cream, cursor: "pointer", flexShrink: 0, padding: 2 }}
+            aria-label="Fermer">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* INVITATION NOTIFICATIONS */}
+      {showPushInvite && (
+        <div style={{ position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 70,
+          maxWidth: 520, margin: "0 auto", backgroundColor: COLORS.blueDeep, color: COLORS.cream,
+          borderRadius: 12, padding: ".85rem 1rem", display: "flex", alignItems: "center", gap: 10,
+          boxShadow: "0 6px 24px rgba(43,41,37,.28)", fontFamily: FONT_BODY }}>
+          <Bell size={20} style={{ flexShrink: 0 }} />
+          <p style={{ flex: 1, fontSize: 12.5, lineHeight: 1.4, opacity: 0.95 }}>
+            Recevez le <b>menu de la semaine</b> en notification.
+          </p>
+          <button onClick={() => { dismissPushInvite(); enablePush(); }}
+            style={{ flexShrink: 0, backgroundColor: COLORS.cream, color: COLORS.blueDeep, border: "none",
+              borderRadius: 999, padding: ".4rem .9rem", fontSize: 11, letterSpacing: ".08em", cursor: "pointer", textTransform: "uppercase" }}>
+            Activer
+          </button>
+          <button onClick={dismissPushInvite}
             style={{ background: "transparent", border: "none", color: COLORS.cream, cursor: "pointer", flexShrink: 0, padding: 2 }}
             aria-label="Fermer">
             <X size={16} />
