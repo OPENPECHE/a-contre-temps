@@ -854,7 +854,7 @@ export default function ContreTempsSite() {
       </div>
 
       {/* MANIFESTO */}
-      <section className="px-6 md:px-10 pb-6 md:pb-8 max-w-2xl mx-auto text-center">
+      <section className="px-6 md:px-10 pb-7 max-w-2xl mx-auto text-center">
         <p style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", fontWeight: 400, color: COLORS.blueDeep }} className="text-2xl md:text-3xl leading-snug">
           Farines locales, levain vivant, circuits courts — un fournil qui
           respire au rythme des producteurs, pas des horloges.
@@ -880,7 +880,7 @@ export default function ContreTempsSite() {
           const displayName = sectionName === "Nos box" ? "Nos instants" : sectionName;
           return (
           <section key={sectionName} id={displayName.toLowerCase().replace(/\s+/g,"-")}
-            className="px-6 md:px-10 pt-6 md:pt-8 pb-20 md:pb-28"
+            className="px-6 md:px-10 pt-7 pb-20 md:pb-28"
             style={{ backgroundColor: COLORS.paper }}>
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
