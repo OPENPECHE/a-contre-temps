@@ -992,8 +992,7 @@ export default function ContreTempsSite() {
                         <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:8, marginBottom:".9rem" }}>
                           <p style={{ fontSize:15.5, lineHeight:1.35 }}>{item.name}</p>
                           <p style={{ fontSize:15, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
-                            {(item.price + extraPrice).toFixed(2)} €
-                            {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)})</span>}
+                            {item.price.toFixed(2)} €
                           </p>
                         </div>
 
@@ -1022,6 +1021,17 @@ export default function ContreTempsSite() {
                                 <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
                               </label>
                             ))}
+                          </div>
+                        )}
+
+                        {/* Total avec options — explicite */}
+                        {extraPrice > 0 && (
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
+                            padding:".7rem 0 .8rem", borderTop:`1px dashed ${COLORS.blueSoft}`, marginBottom:".3rem" }}>
+                            <span style={{ fontSize:13, color:COLORS.inkSoft }}>Total avec options</span>
+                            <span style={{ fontFamily:FONT_DISPLAY, fontSize:19, fontWeight:500, color:COLORS.blueDeep }}>
+                              {(item.price + extraPrice).toFixed(2)} €
+                            </span>
                           </div>
                         )}
 
