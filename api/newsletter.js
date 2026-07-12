@@ -9,7 +9,7 @@ const FROM = "à contre-temps <acontretemps@fournilvivant.fr>";
 
 const esc = (s) => String(s || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function buildHtml(subject, message, link) {
+function buildHtml(subject, message, link, unsub) {
   const paragraphs = String(message || "").split(/\n{2,}/)
     .map(p => `<p style="font-size:15px;color:#2B2925;line-height:1.7;margin:0 0 1rem;">${esc(p).replace(/\n/g, "<br>")}</p>`)
     .join("");
@@ -29,7 +29,7 @@ function buildHtml(subject, message, link) {
     <div style="padding:1.25rem 2rem;border-top:1px solid #D6DFE5;text-align:center;">
       <p style="font-size:11px;color:rgba(43,41,37,.45);line-height:1.7;">
         à contre-temps — Fournil vivant · <a href="https://fournilvivant.fr" style="color:#7C97AC;">fournilvivant.fr</a><br>
-        Vous recevez cet email car vous êtes inscrit au menu de la semaine.
+        Vous recevez cet email car vous êtes inscrit au menu de la semaine.${unsub ? `<br><a href="${unsub}" style="color:#7C97AC;">Se désinscrire</a>` : ""}
       </p>
     </div>
   </div>
@@ -69,16 +69,24 @@ export default async function handler(req, res) {
   if (!RESEND_API_KEY) return res.status(500).json({ error: "Resend API key manquante" });
   if (subscribers.length === 0) return res.status(200).json({ sent: 0 });
 
-  const html = buildHtml(subject, message, link);
-  const text = `${subject}\n\n${message}${link ? `\n\n${link}` : ""}\n\n— à contre-temps · fournilvivant.fr`;
+  const unsubBase = "https://fournilvivant.fr/api/unsubscribe?email=";
 
-  // Envoi par lots de 100 (limite de l'API batch Resend), un destinataire par message
+  // Envoi par lots de 100 (limite de l'API batch Resend), un destinataire par message,
+  // avec lien + en-tête de désinscription personnalisés (bon pour la délivrabilité + RGPD)
   let sent = 0;
   for (let i = 0; i < subscribers.length; i += 100) {
-    const chunk = subscribers.slice(i, i + 100).map(s => ({
-      from: FROM, to: [s.email], reply_to: "acontretemps@fournilvivant.fr",
-      subject, html, text,
-    }));
+    const chunk = subscribers.slice(i, i + 100).map(s => {
+      const unsub = unsubBase + encodeURIComponent(s.email);
+      return {
+        from: FROM, to: [s.email], reply_to: "acontretemps@fournilvivant.fr",
+        subject,
+        html: buildHtml(subject, message, link, unsub),
+        text: `${subject}\n\n${message}${link ? `\n\n${link}` : ""}\n\n— à contre-temps · fournilvivant.fr\nSe désinscrire : ${unsub}`,
+        headers: {
+          "List-Unsubscribe": `<${unsub}>, <mailto:acontretemps@fournilvivant.fr?subject=Desinscription>`,
+        },
+      };
+    });
     try {
       const r = await fetch("https://api.resend.com/emails/batch", {
         method: "POST",
