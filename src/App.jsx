@@ -1084,14 +1084,19 @@ export default function ContreTempsSite() {
                         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:12 }}>
                           {others.map(({ cat, rule }) => {
                             const m = metaFromRule(cat, rule);
+                            const illustration = INSTANT_ILLUSTRATIONS[cat];
                             return (
                               <button key={cat} type="button"
                                 onClick={() => { setSelectedInstant(cat); setTimeout(() => document.getElementById("nos-instants")?.scrollIntoView({ behavior:"smooth", block:"start" }), 60); }}
-                                style={{ textAlign:"left", cursor:"pointer", fontFamily:"inherit",
+                                style={{ position:"relative", display:"block", textAlign:"left", cursor:"pointer", fontFamily:"inherit",
                                   background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"0.9rem 1rem" }}>
+                                {illustration && (
+                                  <img src={illustration} alt={m.title || cat}
+                                    style={{ float:"right", width:66, height:66, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-20, marginRight:-14, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
+                                )}
                                 <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:4 }}>{m.label || cat}</p>
                                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.blueDeep }}>{m.title || cat}</p>
-                                <span style={{ fontSize:10, letterSpacing:".1em", color:COLORS.rust, marginTop:8, display:"inline-block" }}>VOIR →</span>
+                                <span style={{ display:"block", clear:"both", fontSize:10, letterSpacing:".1em", color:COLORS.rust, marginTop:8 }}>VOIR →</span>
                               </button>
                             );
                           })}
