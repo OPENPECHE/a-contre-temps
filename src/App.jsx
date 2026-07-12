@@ -855,7 +855,7 @@ export default function ContreTempsSite() {
 
       {/* HERO */}
       <section className="relative overflow-hidden px-6 md:px-10 pt-44 pb-28 md:pt-56 md:pb-40 text-center flex flex-col items-center" style={{ backgroundColor: COLORS.blue }}>
-        <img src={PHOTOS.hero} alt="fournil" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.2 }} />
+        <div aria-hidden="true" style={{ position:"absolute", inset:0, backgroundImage:`url(${PHOTOS.hero})`, backgroundSize:"cover", backgroundPosition:"center", opacity:0.2 }} />
         <GrainOverlay />
         <div className="relative">
           <div style={{ display: "flex", justifyContent: "center" }}>
@@ -932,8 +932,8 @@ export default function ContreTempsSite() {
                         style={{ position:"relative", cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, display:"block", textAlign:"left", fontFamily:"inherit", padding:0 }}>
                         <div style={{ padding:"1.35rem 1.4rem" }}>
                           {illustration && (
-                            <img src={illustration} alt={meta.title || cat}
-                              style={{ float:"right", width:118, height:118, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-40, marginRight:-24, marginLeft:12, marginBottom:4, pointerEvents:"none" }} />
+                            <div role="img" aria-label={meta.title || cat}
+                              style={{ float:"right", width:118, height:118, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-40, marginRight:-24, marginLeft:12, marginBottom:4, pointerEvents:"none" }} />
                           )}
                           <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
                           <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
@@ -970,8 +970,8 @@ export default function ContreTempsSite() {
               {/* En-tête texte + pastille détourée (plus de photo) */}
               <div style={{ position:"relative", padding:"1.6rem 1.5rem .75rem" }}>
                 {illustration && (
-                  <img src={illustration} alt={meta.title||cat}
-                    style={{ float:"right", width:134, height:134, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-46, marginRight:-32, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
+                  <div role="img" aria-label={meta.title||cat}
+                    style={{ float:"right", width:134, height:134, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-46, marginRight:-32, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
                 )}
                 <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:8 }}>{(meta.label||cat).toUpperCase()}</p>
                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:26, color:COLORS.blueDeep, marginBottom:12, lineHeight:1.15 }}>{meta.title||cat}</p>
@@ -1004,8 +1004,8 @@ export default function ContreTempsSite() {
                                   color: isActive ? COLORS.blueDeep : COLORS.inkSoft, fontWeight: isActive ? 500 : 400,
                                   borderBottom: isActive ? `2px solid ${COLORS.rust}` : "2px solid transparent", marginBottom:-1 }}>
                                 {f.photo && (
-                                  <img src={f.photo} alt={label}
-                                    style={{ width:56, height:56, objectFit:"cover", borderRadius:10,
+                                  <div role="img" aria-label={label}
+                                    style={{ width:56, height:56, borderRadius:10, backgroundImage:`url(${f.photo})`, backgroundSize:"cover", backgroundPosition:"center",
                                       border: isActive ? `2px solid ${COLORS.rust}` : "2px solid transparent",
                                       opacity: isActive ? 1 : 0.7, transition:"opacity .2s" }} />
                                 )}
@@ -1129,8 +1129,8 @@ export default function ContreTempsSite() {
                                 style={{ position:"relative", display:"block", textAlign:"left", cursor:"pointer", fontFamily:"inherit",
                                   background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"0.9rem 1rem" }}>
                                 {illustration && (
-                                  <img src={illustration} alt={m.title || cat}
-                                    style={{ float:"right", width:82, height:82, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-40, marginRight:-28, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
+                                  <div role="img" aria-label={m.title || cat}
+                                    style={{ float:"right", width:82, height:82, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-40, marginRight:-28, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
                                 )}
                                 <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:4 }}>{m.label || cat}</p>
                                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.blueDeep }}>{m.title || cat}</p>
@@ -1168,8 +1168,7 @@ export default function ContreTempsSite() {
                   style={{ margin:"0 auto 1.5rem", width:"100%", maxWidth:400, height:400,
                     backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center" }} />
               ) : meta.photo ? (
-                <div style={{ height:280, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
-                  <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                <div role="img" aria-label={cat} style={{ height:280, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative", backgroundImage:`url(${meta.photo})`, backgroundSize:"cover", backgroundPosition:"center" }}>
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
                   <div style={{ position:"absolute", bottom:28, left:32 }}>
                     <p style={{ fontSize:10, letterSpacing:".18em", color:COLORS.cream, opacity:.8 }}>{(meta.label||cat).toUpperCase()}</p>
@@ -1187,9 +1186,7 @@ export default function ContreTempsSite() {
                 {items.map(item => (
                   <div key={item.id} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, overflow:"hidden" }}>
                     {/* Photo d'illustration du produit (colonne products.photo) */}
-                    <div style={{ height:150, background:`linear-gradient(135deg, ${COLORS.blueSoft}, ${COLORS.cream})` }}>
-                      {item.photo && <img src={item.photo} alt={item.name} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />}
-                    </div>
+                    <div role="img" aria-label={item.name} style={{ height:150, backgroundImage: item.photo ? `url(${item.photo})` : `linear-gradient(135deg, ${COLORS.blueSoft}, ${COLORS.cream})`, backgroundSize:"cover", backgroundPosition:"center" }} />
                     <div style={{ padding:"1.25rem" }}>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:17, marginBottom:4 }}>{item.name}</p>
                     <p style={{ color:COLORS.inkSoft, fontSize:13, marginBottom:"1rem" }}>{Number(item.price).toFixed(2)} €</p>
