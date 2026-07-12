@@ -906,24 +906,18 @@ export default function ContreTempsSite() {
                     return (
                       <button key={cat} type="button"
                         onClick={() => { setSelectedInstant(cat); setTimeout(() => document.getElementById("nos-instants")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}
-                        style={{ cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden", display:"flex", flexDirection:"column", fontFamily:"inherit", padding:0 }}>
-                        {illustration ? (
-                          <>
-                            <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:"auto", display:"block" }} />
-                            <div style={{ textAlign:"left", padding:"1.15rem 1.4rem 1.4rem", display:"flex", flexDirection:"column", flex:1, borderTop:`1px solid ${COLORS.blueSoft}` }}>
-                              {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:14, marginBottom:6 }}>{meta.sub}</p>}
-                              {meta.text && <p style={{ fontSize:13.5, color:COLORS.inkSoft, lineHeight:1.55, marginBottom:8 }}>{meta.text}</p>}
-                              {rule?.notes && <p style={{ fontSize:12.5, color:COLORS.rust, lineHeight:1.5, flex:1 }}>{rule.notes}</p>}
-                              <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ textAlign:"left", padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
-                            <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
-                            <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
-                            <p style={{ fontSize:13, color:COLORS.inkSoft, lineHeight:1.55, flex:1 }}>{meta.text}</p>
-                            <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
-                          </div>
+                        style={{ position:"relative", cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, display:"flex", flexDirection:"column", fontFamily:"inherit", padding:0 }}>
+                        <div style={{ textAlign:"left", padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
+                          <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
+                          <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
+                          {meta.text && <p style={{ fontSize:13, color:COLORS.inkSoft, lineHeight:1.55, marginBottom:8 }}>{meta.text}</p>}
+                          {rule?.notes && <p style={{ fontSize:12.5, color:COLORS.rust, lineHeight:1.5 }}>{rule.notes}</p>}
+                          <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                        </div>
+                        {illustration && (
+                          <img src={illustration} alt={meta.title || cat}
+                            style={{ position:"absolute", bottom:12, right:12, width:76, height:76, objectFit:"contain",
+                              borderRadius:14, backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, boxShadow:"0 2px 8px rgba(43,41,37,.12)" }} />
                         )}
                       </button>
                     );
@@ -951,12 +945,8 @@ export default function ContreTempsSite() {
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
             <div>
-              {/* Illustration de marque, sinon photo, sinon bandeau */}
-              {illustration ? (
-                <div style={{ backgroundColor:COLORS.paper, display:"flex", justifyContent:"center", padding:"1.25rem 1rem 0" }}>
-                  <img src={illustration} alt={meta.title||cat} style={{ maxHeight:420, width:"auto", maxWidth:"100%", objectFit:"contain", display:"block" }} />
-                </div>
-              ) : meta.photo ? (
+              {/* Photo (bandeau) + pastille illustration en bas à droite */}
+              {meta.photo ? (
                 <div style={{ height:180, overflow:"hidden", position:"relative", flexShrink:0 }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(62,90,112,.55) 0%, transparent 60%)" }} />
@@ -964,6 +954,11 @@ export default function ContreTempsSite() {
                     <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{(meta.label||cat).toUpperCase()}</p>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
                   </div>
+                  {illustration && (
+                    <img src={illustration} alt={meta.title||cat}
+                      style={{ position:"absolute", bottom:12, right:12, width:88, height:88, objectFit:"contain",
+                        borderRadius:14, backgroundColor:COLORS.paper, border:`2px solid ${COLORS.cream}`, boxShadow:"0 3px 10px rgba(43,41,37,.25)" }} />
+                  )}
                 </div>
               ) : (
                 <div style={{ height:80, background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
