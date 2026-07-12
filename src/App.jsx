@@ -1161,12 +1161,12 @@ export default function ContreTempsSite() {
         const illustration = INSTANT_ILLUSTRATIONS[cat];
         const anchorId = meta.isChronopost ? "biscuiterie" : cat.toLowerCase().replace(/\s+/g,"-");
         return (
-          <section key={cat} id={anchorId} className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
+          <section key={cat} id={anchorId} className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: illustration ? "#FBF5EF" : COLORS.cream }}>
             <div className="max-w-5xl mx-auto">
               {illustration ? (
-                <div style={{ display:"flex", justifyContent:"center", marginBottom:"1.5rem" }}>
-                  <img src={illustration} alt={meta.title||cat} style={{ maxHeight:380, width:"auto", maxWidth:"100%", objectFit:"contain", display:"block" }} />
-                </div>
+                <div role="img" aria-label={meta.title||cat}
+                  style={{ margin:"0 auto 1.5rem", width:"100%", maxWidth:400, height:400,
+                    backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center" }} />
               ) : meta.photo ? (
                 <div style={{ height:280, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
