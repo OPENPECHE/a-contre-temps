@@ -899,7 +899,7 @@ export default function ContreTempsSite() {
               </div>
               {/* NIVEAU 1 — aperçu des instants */}
               {!selectedInstant && (
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-3 items-start">
                   {catItems.map(({ cat, rule }) => {
                     const meta = metaFromRule(cat, rule);
                     const illustration = INSTANT_ILLUSTRATIONS[cat];
@@ -909,10 +909,8 @@ export default function ContreTempsSite() {
                         style={{ cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden", display:"flex", flexDirection:"column", fontFamily:"inherit", padding:0 }}>
                         {illustration ? (
                           <>
-                            <div style={{ backgroundColor:COLORS.paper }}>
-                              <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:360, objectFit:"contain", display:"block" }} />
-                            </div>
-                            <div style={{ textAlign:"left", padding:"0 1.4rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
+                            <img src={illustration} alt={meta.title || cat} style={{ width:"100%", height:"auto", display:"block" }} />
+                            <div style={{ textAlign:"left", padding:"1.15rem 1.4rem 1.4rem", display:"flex", flexDirection:"column", flex:1, borderTop:`1px solid ${COLORS.blueSoft}` }}>
                               {meta.sub && <p style={{ fontFamily:FONT_DISPLAY, fontStyle:"italic", color:COLORS.inkSoft, fontSize:14, marginBottom:6 }}>{meta.sub}</p>}
                               {meta.text && <p style={{ fontSize:13.5, color:COLORS.inkSoft, lineHeight:1.55, marginBottom:8 }}>{meta.text}</p>}
                               {rule?.notes && <p style={{ fontSize:12.5, color:COLORS.rust, lineHeight:1.5, flex:1 }}>{rule.notes}</p>}
