@@ -365,6 +365,17 @@ export default function ContreTempsSite() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedInstant, setSelectedInstant] = useState(null); // catégorie ouverte dans "Nos instants"
+
+  // Bannière d'installation iOS (Apple ne propose jamais l'installation tout seul)
+  const [showIosBanner, setShowIosBanner] = useState(false);
+  useEffect(() => {
+    const ua = window.navigator.userAgent || "";
+    const isIOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
+    const standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+    if (isIOS && !standalone && !localStorage.getItem("act_ios_dismissed")) {
+      setShowIosBanner(true);
+    }
+  }, []);
   const [cart, setCart] = useState({});
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ nom: "", email: "", message: "" });
@@ -1281,6 +1292,26 @@ export default function ContreTempsSite() {
           © {new Date().getFullYear()} à contre-temps — fournil vivant
         </p>
       </footer>
+
+      {/* BANNIÈRE INSTALLATION iOS */}
+      {showIosBanner && (
+        <div style={{ position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 70,
+          maxWidth: 520, margin: "0 auto", backgroundColor: COLORS.blueDeep, color: COLORS.cream,
+          borderRadius: 12, padding: ".85rem 1rem", display: "flex", alignItems: "center", gap: 12,
+          boxShadow: "0 6px 24px rgba(43,41,37,.28)", fontFamily: FONT_BODY }}>
+          <span style={{ flexShrink: 0 }}><HeartMark size={22} tone="cream" /></span>
+          <p style={{ flex: 1, fontSize: 12.5, lineHeight: 1.45, opacity: 0.95 }}>
+            Installez l'appli : appuyez sur <b>Partager</b>{" "}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: "inline", verticalAlign: "-2px" }}><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>{" "}
+            puis « <b>Sur l'écran d'accueil</b> » pour recevoir nos notifications.
+          </p>
+          <button onClick={() => { setShowIosBanner(false); localStorage.setItem("act_ios_dismissed", "1"); }}
+            style={{ background: "transparent", border: "none", color: COLORS.cream, cursor: "pointer", flexShrink: 0, padding: 2 }}
+            aria-label="Fermer">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* TOASTS */}
       <ToastContainer toasts={toasts} />
