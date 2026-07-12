@@ -353,6 +353,7 @@ export default function ContreTempsSite() {
   const [showAccount, setShowAccount] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [selectedInstant, setSelectedInstant] = useState(null); // catégorie ouverte dans "Nos instants"
   const [cart, setCart] = useState({});
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ nom: "", email: "", message: "" });
@@ -776,8 +777,39 @@ export default function ContreTempsSite() {
                   {displayName === "Nos instants" ? "Choisissez votre instant" : displayName}
                 </h2>
               </div>
-              <div className={`grid gap-8 ${catItems.length === 1 ? "max-w-md mx-auto" : catItems.length === 2 ? "md:grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-3"}`}>
-      {catItems.map(({ cat, items, rule }) => {
+              {/* NIVEAU 1 — aperçu des instants */}
+              {!selectedInstant && (
+                <div className="grid gap-6 md:grid-cols-3">
+                  {catItems.map(({ cat, rule }) => {
+                    const meta = metaFromRule(cat, rule);
+                    return (
+                      <button key={cat} type="button"
+                        onClick={() => { setSelectedInstant(cat); setTimeout(() => document.getElementById("nos-instants")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}
+                        style={{ textAlign:"left", cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", fontFamily:"inherit" }}>
+                        <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
+                        <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
+                        <p style={{ fontSize:13, color:COLORS.inkSoft, lineHeight:1.55, flex:1 }}>{meta.text}</p>
+                        <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                      </button>
+                    );
+                  })}
+                  <a href="#entreprises" style={{ textDecoration:"none", background:COLORS.blueDeep, borderRadius:12, padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column" }}>
+                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.cream, marginBottom:6 }}>Instant sur mesure</p>
+                    <p style={{ fontSize:13, color:"rgba(243,231,218,.8)", lineHeight:1.55, flex:1 }}>Un événement, une équipe à nourrir ? On compose le vôtre.</p>
+                    <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.cream, opacity:.85 }}>DEMANDER →</span>
+                  </a>
+                </div>
+              )}
+
+              {/* NIVEAU 2 — détail de l'instant choisi */}
+              {selectedInstant && (
+                <div>
+                  <button type="button" onClick={() => setSelectedInstant(null)}
+                    style={{ display:"inline-flex", alignItems:"center", gap:8, background:"transparent", border:`1px solid ${COLORS.blueSoft}`, borderRadius:999, padding:".5rem 1.1rem", cursor:"pointer", fontFamily:"inherit", fontSize:11, letterSpacing:".12em", color:COLORS.inkSoft, textTransform:"uppercase", marginBottom:"2rem" }}>
+                    ← Tous les instants
+                  </button>
+                  <div className="grid gap-8 max-w-md mx-auto">
+      {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
         return (
@@ -911,7 +943,9 @@ export default function ContreTempsSite() {
           </div>
         );
       })}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
           );
