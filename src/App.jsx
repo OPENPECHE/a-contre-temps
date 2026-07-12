@@ -704,6 +704,13 @@ export default function ContreTempsSite() {
     } else { setTimeSlots([]); setSchedules([]); }
   }, []);
 
+  // Retour à l'accueil : ferme le détail d'un instant, referme le menu, remonte en haut
+  function goHome() {
+    setSelectedInstant(null);
+    setMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   const navLinks = [
     { href: "#nos-instants", label: "Nos instants" },
     { href: "#biscuiterie", label: "Biscuiterie" },
@@ -733,7 +740,10 @@ export default function ContreTempsSite() {
         }}
       >
         <div className="max-w-6xl mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5" role="button" tabIndex={0}
+            onClick={goHome}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") goHome(); }}
+            style={{ cursor: "pointer" }} aria-label="Retour à l'accueil">
             <HeartMark size={30} tone="cream" />
             <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base tracking-tight">
               à contre-temps
@@ -742,7 +752,7 @@ export default function ContreTempsSite() {
 
           <nav className="hidden md:flex items-center gap-10">
             {navLinks.map((l) => (
-              <a key={l.href} href={l.href} className="tracked text-[11px] uppercase" style={{ color: COLORS.cream, opacity: 0.85 }}>
+              <a key={l.href} href={l.href} onClick={() => setSelectedInstant(null)} className="tracked text-[11px] uppercase" style={{ color: COLORS.cream, opacity: 0.85 }}>
                 {l.label}
               </a>
             ))}
@@ -796,7 +806,7 @@ export default function ContreTempsSite() {
         {menuOpen && (
           <div className="md:hidden px-6 pb-6 flex flex-col gap-5" style={{ backgroundColor: COLORS.blueDeep }}>
             {navLinks.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)} className="tracked text-xs uppercase" style={{ color: COLORS.cream }}>
+              <a key={l.href} href={l.href} onClick={() => { setMenuOpen(false); setSelectedInstant(null); }} className="tracked text-xs uppercase" style={{ color: COLORS.cream }}>
                 {l.label}
               </a>
             ))}
