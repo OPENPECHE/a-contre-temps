@@ -244,7 +244,11 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <label style="font-size:11px;color:var(--is)">Lien bouton (facultatif)</label>
         <input class="fi" id="news-link" placeholder="https://fournilvivant.fr" style="margin:4px 0 .9rem;width:100%">
         <label style="font-size:11px;color:var(--is)">Jeton d'envoi</label>
-        <input class="fi" id="news-token" type="password" placeholder="Ton code secret d'envoi" style="margin:4px 0 1rem;width:100%">
+        <input class="fi" id="news-token" type="password" placeholder="Ton code secret d'envoi" style="margin:4px 0 .9rem;width:100%">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:1rem;cursor:pointer">
+          <input type="checkbox" id="news-push" checked style="width:16px;height:16px;accent-color:var(--bd)">
+          Envoyer aussi en notification push (<span id="push-count">…</span>)
+        </label>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn bp" id="news-send-btn" onclick="sendNewsletter()">Envoyer à tous les inscrits</button>
           <span id="news-result" style="font-size:12px"></span>
@@ -437,6 +441,15 @@ async function loadAnnonces(){
     if(r.ok) countEl.textContent=`${d.count} inscrit${d.count>1?"s":""}`;
     else countEl.textContent="Jeton invalide";
   }catch{ countEl.textContent="—"; }
+  // Compteur d'abonnés push
+  const pc=document.getElementById("push-count");
+  if(pc){
+    try{
+      const rp=await fetch("/api/send-push",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,action:"count"})});
+      const dp=await rp.json();
+      pc.textContent=rp.ok?`${dp.count} téléphone${dp.count>1?"s":""}`:"0";
+    }catch{ pc.textContent="0"; }
+  }
 }
 async function sendNewsletter(){
   const subject=document.getElementById("news-subject").value.trim();
@@ -454,13 +467,23 @@ async function sendNewsletter(){
     const r=await fetch("/api/newsletter",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({token,action:"send",subject,message,link})});
     const d=await r.json();
-    if(r.ok){
-      result.style.color="var(--gn)"; result.textContent=`✓ Envoyé à ${d.sent} inscrit${d.sent>1?"s":""}`;
+    let ok=r.ok;
+    let msg=r.ok?`✓ Email : ${d.sent} inscrit${d.sent>1?"s":""}`:(d.error||"Échec email");
+    // Notification push (si la case est cochée)
+    if(document.getElementById("news-push").checked){
+      try{
+        const rp=await fetch("/api/send-push",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({token,action:"send",title:subject,body:message,url:link||"https://fournilvivant.fr"})});
+        const dp=await rp.json();
+        msg+=rp.ok?` · Push : ${dp.sent} tél.`:` · Push échoué`;
+      }catch{ msg+=" · Push échoué"; }
+    }
+    result.style.color=ok?"var(--gn)":"var(--rd)";
+    result.textContent=msg;
+    if(ok){
       document.getElementById("news-subject").value="";
       document.getElementById("news-message").value="";
       document.getElementById("news-link").value="";
-    } else {
-      result.style.color="var(--rd)"; result.textContent=d.error||"Échec de l'envoi";
     }
   }catch(e){ result.style.color="var(--rd)"; result.textContent="Erreur : "+e.message; }
   finally{ btn.disabled=false; }

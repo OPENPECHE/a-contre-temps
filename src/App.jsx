@@ -19,7 +19,18 @@ async function sbFetch(path, opts = {}) {
   const t = await r.text();
   return t ? JSON.parse(t) : [];
 }
-import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck, User, ChevronLeft, ChevronRight, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { Heart, ShoppingBag, MapPin, Mail, Phone, Plus, Minus, X, Menu, ArrowRight, Truck, User, ChevronLeft, ChevronRight, CreditCard, Banknote, Smartphone, Bell } from "lucide-react";
+
+// ─── Notifications push (clé publique VAPID — publique, sans risque) ──────────
+const VAPID_PUBLIC_KEY = "BBrivWX-JP0LwBH2DQJcwRugFpDL3bpyYqWJOz8ZQCvgclNL9c_mjo7VvAXl_HvrQg3JC6apQRdLzODXyzVQX9Q";
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
 
 // ─── Zone de livraison : géolocalisation code postal (API gratuite data.gouv) ──
 async function geocodePostal(cp) {
@@ -363,6 +374,35 @@ export default function ContreTempsSite() {
   // Newsletter "menu de la semaine"
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterState, setNewsletterState] = useState("idle"); // idle | loading | done | error
+
+  // Notifications push
+  const [pushState, setPushState] = useState("idle"); // idle | working | done | denied | unsupported
+
+  async function enablePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      setPushState("unsupported");
+      return;
+    }
+    try {
+      setPushState("working");
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setPushState("denied"); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      const r = await fetch("/api/save-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub }),
+      });
+      if (!r.ok) throw new Error();
+      setPushState("done");
+    } catch {
+      setPushState("denied");
+    }
+  }
 
   async function submitNewsletter() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.trim())) {
@@ -1155,6 +1195,35 @@ export default function ContreTempsSite() {
           <p className="mt-4 text-[11px]" style={{ color: COLORS.cream, opacity: 0.5 }}>
             Pas de spam, désinscription à tout moment.
           </p>
+
+          {/* Notifications push sur le téléphone */}
+          <div style={{ marginTop: "1.75rem", paddingTop: "1.75rem", borderTop: "1px solid rgba(243,231,218,0.2)" }}>
+            {pushState === "done" ? (
+              <p className="text-sm inline-flex items-center gap-2" style={{ color: COLORS.cream, opacity: 0.9 }}>
+                <Bell size={15} /> Notifications activées sur ce téléphone.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm mb-3" style={{ color: COLORS.cream, opacity: 0.8, fontWeight: 300 }}>
+                  Ou recevez une notification directement sur votre téléphone :
+                </p>
+                <button onClick={enablePush} disabled={pushState === "working"}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs tracked uppercase"
+                  style={{ border: `1px solid ${COLORS.cream}`, color: COLORS.cream, background: "transparent", cursor: "pointer", opacity: pushState === "working" ? 0.6 : 1 }}>
+                  <Bell size={14} />
+                  {pushState === "working" ? "Activation…" : "Activer les notifications"}
+                </button>
+                {(pushState === "denied" || pushState === "unsupported") && (
+                  <p className="mt-2 text-xs" style={{ color: "#F3C0C0" }}>
+                    Notifications indisponibles ou refusées sur ce navigateur.
+                  </p>
+                )}
+                <p className="mt-3 text-[11px]" style={{ color: COLORS.cream, opacity: 0.5, lineHeight: 1.5 }}>
+                  Sur iPhone : ajoutez d'abord le site à votre écran d'accueil (Partager → « Sur l'écran d'accueil »), puis activez.
+                </p>
+              </>
+            )}
+          </div>
         </div>
       </section>
 
