@@ -976,10 +976,17 @@ export default function ContreTempsSite() {
                             return (
                               <button key={f.id} onClick={() => setActiveFormula(f.id)}
                                 style={{ flex:1, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit",
-                                  padding:".2rem .4rem .7rem", fontSize:15.5, letterSpacing:".02em",
+                                  display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+                                  padding:".6rem .4rem .7rem", fontSize:15.5, letterSpacing:".02em",
                                   color: isActive ? COLORS.blueDeep : COLORS.inkSoft, fontWeight: isActive ? 500 : 400,
                                   borderBottom: isActive ? `2px solid ${COLORS.rust}` : "2px solid transparent", marginBottom:-1 }}>
-                                {label}
+                                {f.photo && (
+                                  <img src={f.photo} alt={label}
+                                    style={{ width:56, height:56, objectFit:"cover", borderRadius:10,
+                                      border: isActive ? `2px solid ${COLORS.rust}` : "2px solid transparent",
+                                      opacity: isActive ? 1 : 0.7, transition:"opacity .2s" }} />
+                                )}
+                                <span>{label}</span>
                               </button>
                             );
                           })}
