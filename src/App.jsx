@@ -1092,7 +1092,7 @@ export default function ContreTempsSite() {
                                   background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"0.9rem 1rem" }}>
                                 {illustration && (
                                   <img src={illustration} alt={m.title || cat}
-                                    style={{ float:"right", width:66, height:66, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-20, marginRight:-14, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
+                                    style={{ float:"right", width:78, height:78, objectFit:"contain", backgroundColor:COLORS.paper, marginTop:-30, marginRight:-22, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
                                 )}
                                 <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:4 }}>{m.label || cat}</p>
                                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.blueDeep }}>{m.title || cat}</p>
