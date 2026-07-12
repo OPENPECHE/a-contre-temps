@@ -1063,6 +1063,32 @@ export default function ContreTempsSite() {
         );
       })}
                   </div>
+
+                  {/* Suggestions — nos autres instants */}
+                  {(() => {
+                    const others = catItems.filter(ci => ci.cat !== selectedInstant);
+                    if (others.length === 0) return null;
+                    return (
+                      <div className="max-w-3xl mx-auto mt-14">
+                        <p className="text-center tracked text-[11px] mb-6" style={{ color: COLORS.inkSoft }}>NOS AUTRES INSTANTS</p>
+                        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:12 }}>
+                          {others.map(({ cat, rule }) => {
+                            const m = metaFromRule(cat, rule);
+                            return (
+                              <button key={cat} type="button"
+                                onClick={() => { setSelectedInstant(cat); setTimeout(() => document.getElementById("nos-instants")?.scrollIntoView({ behavior:"smooth", block:"start" }), 60); }}
+                                style={{ textAlign:"left", cursor:"pointer", fontFamily:"inherit",
+                                  background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"0.9rem 1rem" }}>
+                                <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:4 }}>{m.label || cat}</p>
+                                <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.blueDeep }}>{m.title || cat}</p>
+                                <span style={{ fontSize:10, letterSpacing:".1em", color:COLORS.rust, marginTop:8, display:"inline-block" }}>VOIR →</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
