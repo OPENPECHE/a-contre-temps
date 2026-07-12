@@ -168,9 +168,13 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <h1 style="margin-bottom:0">Clients</h1>
         <button class="btn bg bsm" onclick="loadClients()">↻ Actualiser</button>
       </div>
-      <p class="sub">Toutes les personnes ayant passé commande</p>
+      <p class="sub">Comptes et clients ayant commandé — clique une fiche pour la modifier</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;max-width:420px">
+        <input class="fi" id="clients-token" type="password" placeholder="Jeton d'envoi (même que Annonces)" style="flex:1" onkeydown="if(event.key==='Enter')loadClients()">
+        <button class="btn bp bsm" onclick="loadClients()">Charger</button>
+      </div>
       <div class="stats" id="clients-stats"></div>
-      <input class="fi" id="clients-search" placeholder="Rechercher un nom, email, téléphone…" style="max-width:360px;margin-bottom:1rem" oninput="renderClients()">
+      <input class="fi" id="clients-search" placeholder="Rechercher un nom, email, téléphone…" style="max-width:360px;margin-bottom:1rem;display:none" oninput="renderClients()">
       <div id="clients-list"></div>
     </div>
 
@@ -594,30 +598,38 @@ async function updateStatus(id,status){
   renderOrders();
 }
 
-// ── Clients (agrégés depuis les commandes) ─────────────────────────────────────
+// ── Clients (comptes + invités, via /api/clients) ──────────────────────────────
 let allClients=[];
+let clientsToken="";
+let expandedClient=null;
+const escAttr=s=>String(s||"").replace(/"/g,"&quot;");
+const escJs=s=>String(s||"").replace(/'/g,"\\'");
+
 async function loadClients(){
-  document.getElementById("clients-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
-  const orders=await sbFetch("orders?order=created_at.desc");
-  const map={};
-  (orders||[]).forEach(o=>{
-    const key=((o.email||"").toLowerCase())||o.id;
-    if(!map[key]) map[key]={name:o.name||"",email:o.email||"",phone:o.phone||"",count:0,total:0,last:o.created_at};
-    const c=map[key];
-    c.count++; c.total+=Number(o.total)||0;
-    if(!c.name&&o.name) c.name=o.name;
-    if(!c.phone&&o.phone) c.phone=o.phone;
-    if(new Date(o.created_at)>new Date(c.last)) c.last=o.created_at;
-  });
-  allClients=Object.values(map).sort((a,b)=>new Date(b.last)-new Date(a.last));
-  renderClientsStats(); renderClients();
+  const tokEl=document.getElementById("clients-token");
+  if(tokEl && !tokEl.value) tokEl.value=localStorage.getItem("act_news_token")||"";
+  clientsToken=(tokEl?tokEl.value:"").trim();
+  const listEl=document.getElementById("clients-list");
+  if(!clientsToken){ listEl.innerHTML=`<p style="font-size:13px;color:var(--is)">Saisis ton jeton d'envoi (le même que dans Annonces) puis clique Charger.</p>`; return; }
+  localStorage.setItem("act_news_token",clientsToken);
+  listEl.innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
+  try{
+    const r=await fetch("/api/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:clientsToken,action:"list"})});
+    const d=await r.json();
+    if(!r.ok){ listEl.innerHTML=`<p style="font-size:13px;color:var(--rd)">${d.error||"Erreur"} — vérifie ton jeton.</p>`; document.getElementById("clients-stats").innerHTML=""; return; }
+    allClients=d.clients||[];
+    document.getElementById("clients-search").style.display="";
+    renderClientsStats(); renderClients();
+  }catch(e){ listEl.innerHTML=`<p style="color:var(--rd)">Erreur : ${e.message}</p>`; }
 }
 function renderClientsStats(){
-  const total=allClients.reduce((s,c)=>s+c.total,0);
-  const fideles=allClients.filter(c=>c.count>1).length;
+  const total=allClients.reduce((s,c)=>s+(c.total||0),0);
+  const comptes=allClients.filter(c=>c.hasAccount).length;
+  const news=allClients.filter(c=>c.newsletter).length;
   document.getElementById("clients-stats").innerHTML=`
     <div class="stat"><div class="sl">CLIENTS</div><div class="sv">${allClients.length}</div></div>
-    <div class="stat"><div class="sl">FIDÈLES (2+ CMD)</div><div class="sv">${fideles}</div></div>
+    <div class="stat"><div class="sl">AVEC COMPTE</div><div class="sv">${comptes}</div></div>
+    <div class="stat"><div class="sl">NEWSLETTER</div><div class="sv">${news}</div></div>
     <div class="stat acc"><div class="sl">CA TOTAL</div><div class="sv">${total.toFixed(2)} €</div></div>`;
 }
 function renderClients(){
@@ -625,18 +637,86 @@ function renderClients(){
   const list=allClients.filter(c=>!q||`${c.name} ${c.email} ${c.phone}`.toLowerCase().includes(q));
   const el=document.getElementById("clients-list");
   if(!list.length){ el.innerHTML=`<p style="font-size:13px;color:var(--is)">Aucun client.</p>`; return; }
-  el.innerHTML=`<div class="card card0">${list.map(c=>`
-    <div class="prow">
-      <div style="width:34px;height:34px;border-radius:50%;background:var(--bs);color:var(--bd);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">${((c.name||c.email||"?").trim()[0]||"?").toUpperCase()}</div>
+  el.innerHTML=`<div class="card card0">${list.map(c=>clientRow(c)).join("")}</div>`;
+}
+function clientRow(c){
+  const open=expandedClient===c.email;
+  return `<div class="orow">
+    <div class="ohead" onclick="toggleClient('${escJs(c.email)}')">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--bs);color:var(--bd);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0;margin-right:10px">${((c.name||c.email||"?").trim()[0]||"?").toUpperCase()}</div>
       <div style="flex:1;min-width:0">
-        <p style="font-size:14px;font-weight:500">${c.name||"—"}</p>
-        <p style="font-size:12px;color:var(--is)">${c.email||"—"}${c.phone?" · "+c.phone:""}</p>
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <span style="font-weight:500;font-size:14px">${c.name||"—"}</span>
+          ${c.hasAccount?`<span class="badge" style="background:#7C97AC22;color:#7C97AC">Compte</span>`:`<span class="badge" style="background:var(--bs);color:var(--is)">Invité</span>`}
+          ${c.newsletter?`<span class="badge" style="background:#4A7C5922;color:#4A7C59">Newsletter</span>`:""}
+        </div>
+        <p style="font-size:12px;color:var(--is);margin-top:2px">${c.email||"—"}${c.phone?" · "+c.phone:""} · ${c.orders} cmd${c.orders>1?"s":""} · ${(c.total||0).toFixed(2)} €</p>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <p style="font-size:13px">${c.count} cmd${c.count>1?"s":""}</p>
-        <p style="font-size:12px;color:var(--is)">${c.total.toFixed(2)} €</p>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="${open?"18 15 12 9 6 15":"6 9 12 15 18 9"}"/></svg>
+    </div>
+    ${open?clientFiche(c):""}
+  </div>`;
+}
+function clientFiche(c){
+  const id=c.email, ro=c.hasAccount?"":"disabled";
+  return `<div class="obody on">
+    <div class="drow">
+      <div><label style="font-size:11px;color:var(--is)">Nom</label><input class="fi" id="cf-name-${id}" value="${escAttr(c.name)}" style="width:100%;margin-top:3px" ${ro}></div>
+      <div><label style="font-size:11px;color:var(--is)">Téléphone</label><input class="fi" id="cf-phone-${id}" value="${escAttr(c.phone)}" style="width:100%;margin-top:3px" ${ro}></div>
+      <div><label style="font-size:11px;color:var(--is)">Adresse</label><input class="fi" id="cf-address-${id}" value="${escAttr(c.address)}" style="width:100%;margin-top:3px" ${ro}></div>
+      <div><label style="font-size:11px;color:var(--is)">Ville</label><input class="fi" id="cf-city-${id}" value="${escAttr(c.city)}" style="width:100%;margin-top:3px" ${ro}></div>
+      <div><label style="font-size:11px;color:var(--is)">Code postal</label><input class="fi" id="cf-zip-${id}" value="${escAttr(c.zip)}" style="width:100%;margin-top:3px" ${ro}></div>
+      <div><label style="font-size:11px;color:var(--is)">Email</label><input class="fi" value="${escAttr(c.email)}" style="width:100%;margin-top:3px" disabled></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:.5rem 0 1rem;cursor:pointer">
+      <input type="checkbox" ${c.newsletter?"checked":""} style="width:16px;height:16px;accent-color:var(--bd)" onchange="toggleClientNews('${escJs(id)}',this.checked)">
+      Inscrit à la newsletter
+    </label>
+    ${c.hasAccount?`
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:.85rem">
+        <button class="btn bp bsm" onclick="saveClient('${escJs(id)}')">Enregistrer les infos</button>
+        <span id="cf-msg-${id}" style="font-size:12px"></span>
       </div>
-    </div>`).join("")}</div>`;
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:.85rem;border-top:1px solid var(--bs)">
+        <input class="fi" id="cf-pwd-${id}" type="text" placeholder="Nouveau mot de passe (min 6)" style="width:220px">
+        <button class="btn bg bsm" onclick="setClientPwd('${escJs(id)}')">Changer le mot de passe</button>
+        <span id="cf-pwdmsg-${id}" style="font-size:12px"></span>
+      </div>
+    `:`<p style="font-size:12px;color:var(--is)">Client invité (sans compte) : édition des infos et mot de passe indisponibles. Tu peux quand même l'inscrire à la newsletter ci-dessus.</p>`}
+  </div>`;
+}
+function toggleClient(email){ expandedClient=expandedClient===email?null:email; renderClients(); }
+function findClient(email){ return allClients.find(c=>c.email===email); }
+async function saveClient(email){
+  const c=findClient(email); if(!c) return;
+  const msg=document.getElementById("cf-msg-"+email);
+  const body={token:clientsToken,action:"update",id:c.id,
+    name:document.getElementById("cf-name-"+email).value,
+    phone:document.getElementById("cf-phone-"+email).value,
+    address:document.getElementById("cf-address-"+email).value,
+    city:document.getElementById("cf-city-"+email).value,
+    zip:document.getElementById("cf-zip-"+email).value};
+  msg.style.color="var(--is)"; msg.textContent="…";
+  const r=await fetch("/api/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(r.ok){ Object.assign(c,{name:body.name,phone:body.phone,address:body.address,city:body.city,zip:body.zip}); msg.style.color="var(--gn)"; msg.textContent="✓ Enregistré"; }
+  else { msg.style.color="var(--rd)"; msg.textContent=d.error||"Erreur"; }
+}
+async function setClientPwd(email){
+  const c=findClient(email); if(!c) return;
+  const pwd=document.getElementById("cf-pwd-"+email).value;
+  const msg=document.getElementById("cf-pwdmsg-"+email);
+  if(!pwd||pwd.length<6){ msg.style.color="var(--rd)"; msg.textContent="Min 6 caractères."; return; }
+  msg.style.color="var(--is)"; msg.textContent="…";
+  const r=await fetch("/api/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:clientsToken,action:"password",id:c.id,password:pwd})});
+  const d=await r.json();
+  if(r.ok){ msg.style.color="var(--gn)"; msg.textContent="✓ Mot de passe changé"; document.getElementById("cf-pwd-"+email).value=""; }
+  else { msg.style.color="var(--rd)"; msg.textContent=d.error||"Erreur"; }
+}
+async function toggleClientNews(email,checked){
+  const c=findClient(email);
+  const r=await fetch("/api/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:clientsToken,action:"newsletter",email,subscribe:checked})});
+  if(r.ok && c){ c.newsletter=checked; renderClientsStats(); }
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
