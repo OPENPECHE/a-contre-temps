@@ -916,8 +916,7 @@ export default function ContreTempsSite() {
                         </div>
                         {illustration && (
                           <img src={illustration} alt={meta.title || cat}
-                            style={{ position:"absolute", bottom:12, right:12, width:76, height:76, objectFit:"contain",
-                              borderRadius:14, backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, boxShadow:"0 2px 8px rgba(43,41,37,.12)" }} />
+                            style={{ position:"absolute", top:-16, right:-16, width:118, height:118, objectFit:"contain", pointerEvents:"none" }} />
                         )}
                       </button>
                     );
@@ -941,7 +940,6 @@ export default function ContreTempsSite() {
       {catItems.filter(ci => ci.cat === selectedInstant).map(({ cat, items, rule }) => {
         const meta = metaFromRule(cat, rule);
         const deliveryRule = rule;
-        const illustration = INSTANT_ILLUSTRATIONS[cat];
         return (
           <div key={cat} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, overflow:"hidden" }}>
             <div>
@@ -954,11 +952,6 @@ export default function ContreTempsSite() {
                     <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.cream, opacity:.85 }}>{(meta.label||cat).toUpperCase()}</p>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:18, fontWeight:500, color:COLORS.cream, marginTop:2 }}>{meta.title||cat}</p>
                   </div>
-                  {illustration && (
-                    <img src={illustration} alt={meta.title||cat}
-                      style={{ position:"absolute", bottom:12, right:12, width:88, height:88, objectFit:"contain",
-                        borderRadius:14, backgroundColor:COLORS.paper, border:`2px solid ${COLORS.cream}`, boxShadow:"0 3px 10px rgba(43,41,37,.25)" }} />
-                  )}
                 </div>
               ) : (
                 <div style={{ height:80, background:`linear-gradient(135deg, ${COLORS.blueDeep}, ${COLORS.blue})`,
