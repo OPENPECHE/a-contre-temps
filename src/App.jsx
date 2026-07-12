@@ -562,6 +562,7 @@ export default function ContreTempsSite() {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
   const [itemQty, setItemQty] = useState({});  // { itemId: quantity }
+  const [activeFormula, setActiveFormula] = useState(null); // onglet de formule actif (détail d'un instant)
 
   useEffect(() => {
     Promise.all([
@@ -953,102 +954,99 @@ export default function ContreTempsSite() {
                 {deliveryRule?.notes && <p style={{ fontSize:11, color:COLORS.rust, marginTop:6 }}>{deliveryRule.notes}</p>}
               </div>
 
-              {/* Produits */}
-              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}` }}>
-                {items.map((item, idx) => {
+              {/* Produits — onglets de formules (style fin conservé) */}
+              <div style={{ borderTop:`1px solid ${COLORS.blueSoft}`, padding:"0 1.5rem 1.5rem" }}>
+                {(() => {
+                  const activeId = items.some(i => i.id === activeFormula) ? activeFormula : items[0]?.id;
+                  const item = items.find(i => i.id === activeId);
+                  if (!item) return null;
                   const contents = boxContents[item.id] || [];
                   const options = boxOptions[item.id] || [];
-                  const isOpen = hoveredItem === item.id || expandedItem === item.id;
                   const optSel = selectedOptions[item.id] || {};
                   const checkedOpts = options.filter(o => optSel[o.id]);
                   const extraPrice = checkedOpts.reduce((s, o) => s + Number(o.price), 0);
                   return (
-                    <div key={item.id}
-                      style={{ borderBottom: idx < items.length-1 ? `1px solid ${COLORS.blueSoft}` : "none" }}
-                      onMouseEnter={() => setHoveredItem(item.id)}
-                      onMouseLeave={() => setHoveredItem(null)}>
-                      <div className="py-3.5 px-6">
+                    <>
+                      {/* Onglets (si plusieurs formules) */}
+                      {items.length > 1 && (
+                        <div style={{ display:"flex", marginTop:"1rem", borderBottom:`1px solid ${COLORS.blueSoft}` }}>
+                          {items.map(f => {
+                            const isActive = f.id === activeId;
+                            const label = f.name.includes("—") ? f.name.split("—").pop().trim() : f.name;
+                            return (
+                              <button key={f.id} onClick={() => setActiveFormula(f.id)}
+                                style={{ flex:1, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit",
+                                  padding:".2rem .4rem .6rem", fontSize:12, letterSpacing:".02em",
+                                  color: isActive ? COLORS.blueDeep : COLORS.inkSoft, fontWeight: isActive ? 500 : 400,
+                                  borderBottom: isActive ? `2px solid ${COLORS.rust}` : "2px solid transparent", marginBottom:-1 }}>
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Formule active — style fin de l'ancienne présentation */}
+                      <div style={{ paddingTop:"1.1rem" }}>
                         {/* Nom + prix */}
-                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8,
-                          cursor: contents.length > 0 ? "pointer" : "default", marginBottom:".5rem" }}
-                          onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
-                          <p style={{ fontSize:13, lineHeight:1.35 }}>
-                            {item.name}
-                            {contents.length > 0 && (
-                              <span style={{ fontSize:9, letterSpacing:".1em", color:COLORS.rust, opacity:.7, marginLeft:5 }}>
-                                {isOpen ? "▲" : "▼"}
-                              </span>
-                            )}
-                          </p>
-                          <p style={{ fontSize:12, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
+                        <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:8, marginBottom:".9rem" }}>
+                          <p style={{ fontSize:13, lineHeight:1.35 }}>{item.name}</p>
+                          <p style={{ fontSize:13, color:COLORS.inkSoft, whiteSpace:"nowrap", flexShrink:0 }}>
                             {(item.price + extraPrice).toFixed(2)} €
-                            {extraPrice > 0 && <span style={{ color:COLORS.rust }}> +{extraPrice.toFixed(2)} €</span>}
+                            {extraPrice > 0 && <span style={{ color:COLORS.rust }}> (+{extraPrice.toFixed(2)})</span>}
                           </p>
                         </div>
 
+                        {/* CONTENU — visible (fin) */}
+                        {contents.length > 0 && (
+                          <div style={{ marginBottom:"1rem" }}>
+                            <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.rust, marginBottom:".4rem" }}>CONTENU</p>
+                            {contents.map((c, i) => (
+                              <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0", display:"flex", alignItems:"center", gap:6 }}>
+                                <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* OPTIONS — fin */}
+                        {options.length > 0 && (
+                          <div style={{ marginBottom:"1.1rem" }}>
+                            <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".4rem" }}>OPTIONS</p>
+                            {options.map(opt => (
+                              <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"3px 0", fontSize:12, cursor:"pointer" }}>
+                                <input type="checkbox" checked={!!optSel[opt.id]}
+                                  onChange={e => setSelectedOptions(so => ({ ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked } }))}
+                                  style={{ accentColor: COLORS.blueDeep }} />
+                                <span style={{ flex:1 }}>{opt.name}</span>
+                                <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
                         {/* Stepper + Ajouter */}
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:8,
-                            border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
-                            <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) })); }}
-                              style={{ border:"none", background:"transparent", cursor:"pointer",
-                                fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>−</button>
-                            <span style={{ fontSize:13, fontWeight:500, minWidth:16, textAlign:"center" }}>
-                              {itemQty[item.id] || 1}
-                            </span>
-                            <button onClick={e => { e.stopPropagation(); setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 })); }}
-                              style={{ border:"none", background:"transparent", cursor:"pointer",
-                                fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, border:`1px solid ${COLORS.blueSoft}`, borderRadius:7, padding:"4px 10px" }}>
+                            <button onClick={() => setItemQty(q => ({ ...q, [item.id]: Math.max(1, (q[item.id]||1) - 1) }))}
+                              style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>−</button>
+                            <span style={{ fontSize:13, fontWeight:500, minWidth:16, textAlign:"center" }}>{itemQty[item.id] || 1}</span>
+                            <button onClick={() => setItemQty(q => ({ ...q, [item.id]: (q[item.id]||1) + 1 }))}
+                              style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:18, color:COLORS.blue, lineHeight:1, padding:0, width:18 }}>+</button>
                           </div>
                           <button onClick={() => {
                               const qty = itemQty[item.id] || 1;
                               for (let i = 0; i < qty; i++) addToCart(item.id, extraPrice, checkedOpts.map(o => o.name));
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
                             }}
-                            style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream,
-                              borderRadius:7, padding:"6px 0", fontSize:10,
-                              letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
+                            style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream, borderRadius:7, padding:"6px 0", fontSize:10, letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
                             AJOUTER
                           </button>
                         </div>
-
-                        {/* Détail box au survol/clic */}
-                        {isOpen && (contents.length > 0 || options.length > 0) && (
-                          <div style={{ padding:".75rem 0 .25rem", borderTop:`1px dashed ${COLORS.blueSoft}`, marginTop:".75rem" }}>
-                            {contents.length > 0 && (
-                              <div style={{ marginBottom: options.length > 0 ? ".75rem" : 0 }}>
-                                <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.rust, marginBottom:".4rem" }}>CONTENU</p>
-                                {contents.map((c, i) => (
-                                  <p key={i} style={{ fontSize:12, color:COLORS.inkSoft, padding:"2px 0", display:"flex", alignItems:"center", gap:6 }}>
-                                    <span style={{ color:COLORS.rust, opacity:.6 }}>·</span> {c.item}
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-                            {options.length > 0 && (
-                              <div>
-                                <p style={{ fontSize:10, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".4rem" }}>OPTIONS</p>
-                                {options.map(opt => (
-                                  <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8,
-                                    padding:"3px 0", fontSize:12, cursor:"pointer" }}>
-                                    <input type="checkbox"
-                                      checked={!!optSel[opt.id]}
-                                      onChange={e => setSelectedOptions(so => ({
-                                        ...so, [item.id]: { ...(so[item.id]||{}), [opt.id]: e.target.checked }
-                                      }))}
-                                      style={{ accentColor: COLORS.blueDeep }} />
-                                    <span style={{ flex:1 }}>{opt.name}</span>
-                                    <span style={{ color:COLORS.inkSoft }}>+{Number(opt.price).toFixed(2)} €</span>
-                                  </label>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             </div>
           </div>
