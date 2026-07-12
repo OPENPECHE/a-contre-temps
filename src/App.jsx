@@ -887,8 +887,9 @@ export default function ContreTempsSite() {
       {/* MANIFESTO */}
       <section className="px-6 md:px-10 pb-10 md:pb-12 max-w-2xl mx-auto text-center">
         <p style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", fontWeight: 400, color: COLORS.blueDeep }} className="text-2xl md:text-3xl leading-snug">
-          Farines locales, levain vivant, circuits courts — un fournil qui
-          respire au rythme des producteurs, pas des horloges.
+          Ingrédients locaux sélectionnés avec soin, levain naturel,
+          savoir-faire artisanal — ici tout est fait maison, parce que les
+          bonnes choses méritent du temps.
         </p>
       </section>
 
