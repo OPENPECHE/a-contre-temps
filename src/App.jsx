@@ -128,6 +128,7 @@ const INSTANT_ILLUSTRATIONS = {
   "Traiteur midi": "/instants/lunch.png",
   "Brunch & apéritif": "/instants/apero.png",
   "Brunch week-end": "/instants/brunch.png",
+  "Biscuiterie (expédition)": "/instants/biscuiterie.png",
 };
 
 // Métadonnées visuelles par catégorie — REPLI pour les 5 catégories historiques.
@@ -1120,11 +1121,16 @@ export default function ContreTempsSite() {
       }).map(([cat, items]) => {
         const deliveryRule = deliveryRules.find(r => r.category === cat);
         const meta = metaFromRule(cat, deliveryRule);
+        const illustration = INSTANT_ILLUSTRATIONS[cat];
         const anchorId = meta.isChronopost ? "biscuiterie" : cat.toLowerCase().replace(/\s+/g,"-");
         return (
           <section key={cat} id={anchorId} className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.cream }}>
             <div className="max-w-5xl mx-auto">
-              {meta.photo && (
+              {illustration ? (
+                <div style={{ display:"flex", justifyContent:"center", marginBottom:"1.5rem" }}>
+                  <img src={illustration} alt={meta.title||cat} style={{ maxHeight:380, width:"auto", maxWidth:"100%", objectFit:"contain", display:"block" }} />
+                </div>
+              ) : meta.photo ? (
                 <div style={{ height:280, borderRadius:12, overflow:"hidden", marginBottom:"2rem", position:"relative" }}>
                   <img src={meta.photo} alt={cat} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(62,90,112,.65) 0%, transparent 65%)" }} />
@@ -1134,10 +1140,10 @@ export default function ContreTempsSite() {
                     <p style={{ fontSize:13, color:COLORS.cream, opacity:.85, marginTop:6, maxWidth:340, lineHeight:1.65 }}>{meta.text}</p>
                   </div>
                 </div>
-              )}
+              ) : null}
               <div className="text-center mb-8">
-                <Eyebrow>{(meta.label||cat).toUpperCase()}</Eyebrow>
-                <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">{meta.title||cat}</h2>
+                {!illustration && <Eyebrow>{(meta.label||cat).toUpperCase()}</Eyebrow>}
+                {!illustration && <h2 style={{ fontFamily:FONT_DISPLAY, fontWeight:400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">{meta.title||cat}</h2>}
                 <p className="max-w-md mx-auto mt-5 text-[15px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>
               </div>
               <div className="grid sm:grid-cols-3 gap-6 mt-12">
