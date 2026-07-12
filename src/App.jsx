@@ -129,6 +129,7 @@ const INSTANT_ILLUSTRATIONS = {
   "Brunch & apéritif": "/instants/apero.png",
   "Brunch week-end": "/instants/brunch.png",
   "Biscuiterie (expédition)": "/instants/biscuiterie.png",
+  "Produits signature": "/instants/produits-signature.png",
 };
 
 // Métadonnées visuelles par catégorie — REPLI pour les 5 catégories historiques.
