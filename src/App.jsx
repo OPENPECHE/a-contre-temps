@@ -906,18 +906,18 @@ export default function ContreTempsSite() {
                     return (
                       <button key={cat} type="button"
                         onClick={() => { setSelectedInstant(cat); setTimeout(() => document.getElementById("nos-instants")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}
-                        style={{ position:"relative", cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, display:"flex", flexDirection:"column", fontFamily:"inherit", padding:0 }}>
-                        <div style={{ textAlign:"left", padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column", flex:1 }}>
+                        style={{ position:"relative", cursor:"pointer", background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:12, display:"block", textAlign:"left", fontFamily:"inherit", padding:0 }}>
+                        <div style={{ padding:"1.35rem 1.4rem" }}>
+                          {illustration && (
+                            <img src={illustration} alt={meta.title || cat}
+                              style={{ float:"right", width:120, height:120, objectFit:"contain", marginTop:-34, marginRight:-30, marginLeft:12, marginBottom:4, pointerEvents:"none" }} />
+                          )}
                           <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
                           <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
                           {meta.text && <p style={{ fontSize:13, color:COLORS.inkSoft, lineHeight:1.55, marginBottom:8 }}>{meta.text}</p>}
                           {rule?.notes && <p style={{ fontSize:12.5, color:COLORS.rust, lineHeight:1.5 }}>{rule.notes}</p>}
-                          <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
+                          <span style={{ display:"block", clear:"both", marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.rust }}>VOIR L'INSTANT →</span>
                         </div>
-                        {illustration && (
-                          <img src={illustration} alt={meta.title || cat}
-                            style={{ position:"absolute", top:-16, right:-16, width:118, height:118, objectFit:"contain", pointerEvents:"none" }} />
-                        )}
                       </button>
                     );
                   })}
