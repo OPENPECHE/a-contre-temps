@@ -118,6 +118,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
         Articles & instants
       </button>
+      <button class="nb" onclick="goTab('categories',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Catégories
+      </button>
       <button class="nb" onclick="goTab('pickup',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Points relais
@@ -209,6 +213,13 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         </div>
       </div>
       <div id="products-list"></div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div id="page-categories" class="page">
+      <h1>Catégories</h1>
+      <p class="sub">Renommer ou supprimer une catégorie (avec tous ses produits)</p>
+      <div id="categories-list"></div>
     </div>
 
     <!-- PICKUP POINTS -->
@@ -441,6 +452,7 @@ function goTab(name,btn){
   if(name==="orders") loadOrders();
   if(name==="clients") loadClients();
   if(name==="products") loadProducts();
+  if(name==="categories") loadCategories();
   if(name==="pickup") loadPickups();
   if(name==="delivery") loadDelivery();
   if(name==="settings") loadSettings();
@@ -850,6 +862,52 @@ async function deleteProd(id){
   if(!confirm("Supprimer cet article ?"))return;
   await sbFetch(`products?id=eq.${id}`,{method:"DELETE",headers:{"Prefer":""}});
   allProducts=allProducts.filter(p=>p.id!==id);renderProducts();
+}
+
+// ── Catégories ─────────────────────────────────────────────────────────────────
+async function loadCategories(){
+  document.getElementById("categories-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
+  const [prods, rules] = await Promise.all([
+    sbFetch("products?select=cat"),
+    sbFetch("delivery_rules?select=category")
+  ]);
+  const counts={};
+  (prods||[]).forEach(p=>{ counts[p.cat]=(counts[p.cat]||0)+1; });
+  (rules||[]).forEach(r=>{ if(!(r.category in counts)) counts[r.category]=0; });
+  const cats=Object.keys(counts).sort();
+  const el=document.getElementById("categories-list");
+  if(!cats.length){ el.innerHTML=`<p style="font-size:13px;color:var(--is)">Aucune catégorie.</p>`; return; }
+  el.innerHTML=`<div class="card card0">${cats.map(cat=>`
+    <div class="prow">
+      <div style="flex:1">
+        <p style="font-size:14px;font-weight:500">${cat}</p>
+        <p style="font-size:12px;color:var(--is)">${counts[cat]} produit${counts[cat]>1?"s":""}</p>
+      </div>
+      <button class="btn bg bsm" onclick="renameCategoryFull(this.getAttribute('data-cat'))" data-cat="${cat.replace(/"/g,'&quot;')}">✏ Renommer</button>
+      <button class="btn bsm" style="border:1px solid var(--rd);background:transparent;color:var(--rd)" onclick="deleteCategoryFull(this.getAttribute('data-cat'))" data-cat="${cat.replace(/"/g,'&quot;')}">Supprimer</button>
+    </div>`).join("")}</div>
+    <p style="font-size:11px;color:var(--is);margin-top:.6rem">Supprimer une catégorie efface aussi tous ses produits et sa règle de livraison.</p>`;
+}
+async function renameCategoryFull(cat){
+  const nn=prompt(`Nouveau nom pour la catégorie « ${cat} » :`, cat);
+  if(!nn || nn.trim()===cat) return;
+  const v=nn.trim();
+  await sbFetch(`products?cat=eq.${encodeURIComponent(cat)}`,{method:"PATCH",body:JSON.stringify({cat:v})});
+  await sbFetch(`delivery_rules?category=eq.${encodeURIComponent(cat)}`,{method:"PATCH",body:JSON.stringify({category:v})});
+  loadCategories();
+}
+async function deleteCategoryFull(cat){
+  if(!confirm(`Supprimer la catégorie « ${cat} » ET tous ses produits ?\n\nCette action est irréversible.`)) return;
+  const prods=await sbFetch(`products?cat=eq.${encodeURIComponent(cat)}&select=id`);
+  const ids=(prods||[]).map(p=>p.id);
+  if(ids.length){
+    const inList=`in.(${ids.join(",")})`;
+    await sbFetch(`box_contents?product_id=${inList}`,{method:"DELETE",headers:{"Prefer":""}});
+    await sbFetch(`box_options?product_id=${inList}`,{method:"DELETE",headers:{"Prefer":""}});
+  }
+  await sbFetch(`products?cat=eq.${encodeURIComponent(cat)}`,{method:"DELETE",headers:{"Prefer":""}});
+  await sbFetch(`delivery_rules?category=eq.${encodeURIComponent(cat)}`,{method:"DELETE",headers:{"Prefer":""}});
+  loadCategories();
 }
 
 // ── Pickup Points ─────────────────────────────────────────────────────────────
