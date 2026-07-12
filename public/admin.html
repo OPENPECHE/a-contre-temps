@@ -110,6 +110,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         Commandes
       </button>
+      <button class="nb" onclick="goTab('clients',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Clients
+      </button>
       <button class="nb" onclick="goTab('products',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
         Articles & box
@@ -156,6 +160,18 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       </div>
       <div class="fbar" id="filter-bar"></div>
       <div id="orders-list"></div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div id="page-clients" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+        <h1 style="margin-bottom:0">Clients</h1>
+        <button class="btn bg bsm" onclick="loadClients()">↻ Actualiser</button>
+      </div>
+      <p class="sub">Toutes les personnes ayant passé commande</p>
+      <div class="stats" id="clients-stats"></div>
+      <input class="fi" id="clients-search" placeholder="Rechercher un nom, email, téléphone…" style="max-width:360px;margin-bottom:1rem" oninput="renderClients()">
+      <div id="clients-list"></div>
     </div>
 
     <!-- PRODUCTS -->
@@ -419,6 +435,7 @@ function goTab(name,btn){
   btn.classList.add("on");
   if(name==="dashboard") loadDashboard();
   if(name==="orders") loadOrders();
+  if(name==="clients") loadClients();
   if(name==="products") loadProducts();
   if(name==="pickup") loadPickups();
   if(name==="delivery") loadDelivery();
@@ -575,6 +592,51 @@ async function updateStatus(id,status){
   await sbFetch(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({status})});
   allOrders=allOrders.map(o=>o.id===id?{...o,status}:o);
   renderOrders();
+}
+
+// ── Clients (agrégés depuis les commandes) ─────────────────────────────────────
+let allClients=[];
+async function loadClients(){
+  document.getElementById("clients-list").innerHTML=`<div class="ldr"><div class="spin"></div> Chargement…</div>`;
+  const orders=await sbFetch("orders?order=created_at.desc");
+  const map={};
+  (orders||[]).forEach(o=>{
+    const key=((o.email||"").toLowerCase())||o.id;
+    if(!map[key]) map[key]={name:o.name||"",email:o.email||"",phone:o.phone||"",count:0,total:0,last:o.created_at};
+    const c=map[key];
+    c.count++; c.total+=Number(o.total)||0;
+    if(!c.name&&o.name) c.name=o.name;
+    if(!c.phone&&o.phone) c.phone=o.phone;
+    if(new Date(o.created_at)>new Date(c.last)) c.last=o.created_at;
+  });
+  allClients=Object.values(map).sort((a,b)=>new Date(b.last)-new Date(a.last));
+  renderClientsStats(); renderClients();
+}
+function renderClientsStats(){
+  const total=allClients.reduce((s,c)=>s+c.total,0);
+  const fideles=allClients.filter(c=>c.count>1).length;
+  document.getElementById("clients-stats").innerHTML=`
+    <div class="stat"><div class="sl">CLIENTS</div><div class="sv">${allClients.length}</div></div>
+    <div class="stat"><div class="sl">FIDÈLES (2+ CMD)</div><div class="sv">${fideles}</div></div>
+    <div class="stat acc"><div class="sl">CA TOTAL</div><div class="sv">${total.toFixed(2)} €</div></div>`;
+}
+function renderClients(){
+  const q=(document.getElementById("clients-search").value||"").toLowerCase();
+  const list=allClients.filter(c=>!q||`${c.name} ${c.email} ${c.phone}`.toLowerCase().includes(q));
+  const el=document.getElementById("clients-list");
+  if(!list.length){ el.innerHTML=`<p style="font-size:13px;color:var(--is)">Aucun client.</p>`; return; }
+  el.innerHTML=`<div class="card card0">${list.map(c=>`
+    <div class="prow">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--bs);color:var(--bd);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">${((c.name||c.email||"?").trim()[0]||"?").toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <p style="font-size:14px;font-weight:500">${c.name||"—"}</p>
+        <p style="font-size:12px;color:var(--is)">${c.email||"—"}${c.phone?" · "+c.phone:""}</p>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <p style="font-size:13px">${c.count} cmd${c.count>1?"s":""}</p>
+        <p style="font-size:12px;color:var(--is)">${c.total.toFixed(2)} €</p>
+      </div>
+    </div>`).join("")}</div>`;
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
