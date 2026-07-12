@@ -572,6 +572,7 @@ export default function ContreTempsSite() {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
   const [itemQty, setItemQty] = useState({});  // { itemId: quantity }
+  const [pendingOpt, setPendingOpt] = useState({}); // suppléments en cours de composition avant "Ajouter"
   const [activeFormula, setActiveFormula] = useState(null); // onglet de formule actif (détail d'un instant)
 
   useEffect(() => {
@@ -1042,16 +1043,16 @@ export default function ContreTempsSite() {
                           <div style={{ marginBottom:"1.1rem" }}>
                             <p style={{ fontSize:11, letterSpacing:".14em", color:COLORS.blueDeep, marginBottom:".5rem" }}>SUPPLÉMENTS (à la carte)</p>
                             {options.map(opt => {
-                              const oq = cartOptions[opt.id] || 0;
+                              const oq = pendingOpt[opt.id] || 0;
                               return (
                                 <div key={opt.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", fontSize:16 }}>
                                   <span style={{ flex:1 }}>{opt.name}</span>
                                   <span style={{ color:COLORS.inkSoft, whiteSpace:"nowrap" }}>+{Number(opt.price).toFixed(2)} €</span>
                                   <div style={{ display:"flex", alignItems:"center", gap:8, border:`1px solid ${oq > 0 ? COLORS.blueDeep : COLORS.blueSoft}`, borderRadius:7, padding:"3px 8px", marginLeft:6 }}>
-                                    <button onClick={() => removeOption(opt.id)}
+                                    <button onClick={() => setPendingOpt(p => ({ ...p, [opt.id]: Math.max(0, (p[opt.id]||0) - 1) }))}
                                       style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:17, color:COLORS.blue, lineHeight:1, padding:0, width:16 }}>−</button>
                                     <span style={{ fontSize:14, fontWeight:500, minWidth:14, textAlign:"center" }}>{oq}</span>
-                                    <button onClick={() => addOption(opt.id, opt.name)}
+                                    <button onClick={() => setPendingOpt(p => ({ ...p, [opt.id]: (p[opt.id]||0) + 1 }))}
                                       style={{ border:"none", background:"transparent", cursor:"pointer", fontSize:17, color:COLORS.blue, lineHeight:1, padding:0, width:16 }}>+</button>
                                   </div>
                                 </div>
@@ -1059,6 +1060,20 @@ export default function ContreTempsSite() {
                             })}
                           </div>
                         )}
+
+                        {/* Total de cette sélection (formule × qté + suppléments) */}
+                        {(() => {
+                          const fq = itemQty[item.id] || 1;
+                          const optTotal = options.reduce((s, o) => s + (pendingOpt[o.id] || 0) * Number(o.price), 0);
+                          const sel = item.price * fq + optTotal;
+                          return (
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
+                              padding:".7rem 0 .8rem", borderTop:`1px dashed ${COLORS.blueSoft}`, marginBottom:".3rem" }}>
+                              <span style={{ fontSize:14, color:COLORS.inkSoft }}>Total de cette sélection</span>
+                              <span style={{ fontFamily:FONT_DISPLAY, fontSize:21, fontWeight:500, color:COLORS.blueDeep }}>{sel.toFixed(2)} €</span>
+                            </div>
+                          );
+                        })()}
 
                         {/* Stepper + Ajouter */}
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -1071,8 +1086,16 @@ export default function ContreTempsSite() {
                           </div>
                           <button onClick={() => {
                               const qty = itemQty[item.id] || 1;
-                              for (let i = 0; i < qty; i++) addToCart(item.id);
+                              setCart(c => ({ ...c, [item.id]: (c[item.id] || 0) + qty }));
+                              setCartOptions(c => {
+                                const next = { ...c };
+                                Object.entries(pendingOpt).forEach(([optId, oq]) => { if (oq > 0) next[optId] = (next[optId] || 0) + oq; });
+                                return next;
+                              });
+                              const nm = item.name?.split("—")[0]?.trim() || item.id;
+                              toast(`${nm} ajouté à la sélection`, "cart");
                               setItemQty(q => ({ ...q, [item.id]: 1 }));
+                              setPendingOpt({});
                             }}
                             style={{ flex:1, border:"none", background:COLORS.blueDeep, color:COLORS.cream, borderRadius:7, padding:"6px 0", fontSize:10, letterSpacing:".12em", cursor:"pointer", fontFamily:"inherit" }}>
                             AJOUTER
