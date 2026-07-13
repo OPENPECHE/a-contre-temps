@@ -935,7 +935,7 @@ export default function ContreTempsSite() {
                         <div style={{ padding:"1.35rem 1.4rem" }}>
                           {illustration && (
                             <div role="img" aria-label={meta.title || cat}
-                              style={{ float:"right", width:104, height:104, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-12, marginRight:-14, marginLeft:12, marginBottom:4, pointerEvents:"none" }} />
+                              style={{ float:"right", width:118, height:118, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-40, marginRight:-24, marginLeft:12, marginBottom:4, pointerEvents:"none" }} />
                           )}
                           <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:6 }}>{meta.label || cat}</p>
                           <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.blueDeep, marginBottom:6 }}>{meta.title || cat}</p>
@@ -978,7 +978,7 @@ export default function ContreTempsSite() {
               <div style={{ position:"relative", padding:"1.6rem 1.5rem .75rem" }}>
                 {illustration && (
                   <div role="img" aria-label={meta.title||cat}
-                    style={{ float:"right", width:120, height:120, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-14, marginRight:-16, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
+                    style={{ float:"right", width:134, height:134, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-46, marginRight:-32, marginLeft:14, marginBottom:6, pointerEvents:"none" }} />
                 )}
                 <p style={{ fontSize:10, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:8 }}>{(meta.label||cat).toUpperCase()}</p>
                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:26, color:COLORS.blueDeep, marginBottom:12, lineHeight:1.15 }}>{meta.title||cat}</p>
@@ -1137,7 +1137,7 @@ export default function ContreTempsSite() {
                                   background:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, padding:"0.9rem 1rem" }}>
                                 {illustration && (
                                   <div role="img" aria-label={m.title || cat}
-                                    style={{ float:"right", width:78, height:78, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-8, marginRight:-12, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
+                                    style={{ float:"right", width:82, height:82, backgroundColor:COLORS.paper, backgroundImage:`url(${illustration})`, backgroundSize:"contain", backgroundRepeat:"no-repeat", backgroundPosition:"center", marginTop:-40, marginRight:-28, marginLeft:8, marginBottom:2, pointerEvents:"none" }} />
                                 )}
                                 <p style={{ fontSize:9, letterSpacing:".16em", color:COLORS.rust, textTransform:"uppercase", marginBottom:4 }}>{m.label || cat}</p>
                                 <p style={{ fontFamily:FONT_DISPLAY, fontSize:15, color:COLORS.blueDeep }}>{m.title || cat}</p>
