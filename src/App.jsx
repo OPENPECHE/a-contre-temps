@@ -946,15 +946,17 @@ export default function ContreTempsSite() {
                       </button>
                     );
                   })}
-                  <a href="#entreprises" style={{ position:"relative", textDecoration:"none", background:COLORS.blueDeep, borderRadius:12, padding:"1.35rem 1.4rem", display:"flex", flexDirection:"column" }}>
+                  <a href="#entreprises" style={{ textDecoration:"none", background:COLORS.blueDeep, borderRadius:12, padding:"1.35rem 1.4rem", display:"flex", flexDirection:"row", alignItems:"center", gap:14 }}>
+                    <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
+                      <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.cream, marginBottom:6 }}>L'instant sur mesure</p>
+                      <p style={{ fontSize:13, color:"rgba(243,231,218,.8)", lineHeight:1.55 }}>Un événement, une équipe à nourrir ? On compose le vôtre.</p>
+                      <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.cream, opacity:.85 }}>DEMANDER →</span>
+                    </div>
                     <div role="img" aria-label="L'instant sur mesure"
-                      style={{ position:"absolute", top:-8, right:-8, width:98, height:98, borderRadius:"50%",
+                      style={{ flexShrink:0, width:92, height:92, borderRadius:"50%",
                         backgroundColor:COLORS.paper, backgroundImage:"url(/instants/sur-mesure.png)", backgroundSize:"86%",
                         backgroundRepeat:"no-repeat", backgroundPosition:"center", border:`1px solid ${COLORS.blueSoft}`,
                         boxShadow:"0 6px 16px rgba(0,0,0,.20)", pointerEvents:"none" }} />
-                    <p style={{ fontFamily:FONT_DISPLAY, fontSize:20, color:COLORS.cream, marginBottom:6, paddingRight:72 }}>L'instant sur mesure</p>
-                    <p style={{ fontSize:13, color:"rgba(243,231,218,.8)", lineHeight:1.55, flex:1 }}>Un événement, une équipe à nourrir ? On compose le vôtre.</p>
-                    <span style={{ marginTop:14, fontSize:10, letterSpacing:".12em", color:COLORS.cream, opacity:.85 }}>DEMANDER →</span>
                   </a>
                 </div>
               )}
