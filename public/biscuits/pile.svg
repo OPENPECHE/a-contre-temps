@@ -1,0 +1,29 @@
+<svg viewBox="0 0 440 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="440" height="200" fill="#F3E7DA"/>
+  <!-- pile de biscuits (3 galets empiles) -->
+  <!-- galet bas -->
+  <path d="M158 150 L158 168 A62 15 0 0 0 282 168 L282 150 Z" fill="#D8B586" stroke="#3E5A70" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="220" cy="150" rx="62" ry="15" fill="#E7CBA0" stroke="#3E5A70" stroke-width="3"/>
+  <!-- galet milieu -->
+  <path d="M156 124 L156 141 A58 14 0 0 0 272 141 L272 124 Z" fill="#D8B586" stroke="#3E5A70" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="214" cy="124" rx="58" ry="14" fill="#E7CBA0" stroke="#3E5A70" stroke-width="3"/>
+  <!-- galet haut + pepites -->
+  <path d="M172 99 L172 115 A54 13 0 0 0 280 115 L280 99 Z" fill="#D8B586" stroke="#3E5A70" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="226" cy="99" rx="54" ry="13" fill="#E7CBA0" stroke="#3E5A70" stroke-width="3"/>
+  <g fill="#6E4B2E">
+    <circle cx="206" cy="97" r="4.5"/><circle cx="232" cy="101" r="4.5"/>
+    <circle cx="246" cy="95" r="4"/><circle cx="218" cy="103" r="4"/>
+  </g>
+  <!-- cookie appuye devant -->
+  <circle cx="120" cy="140" r="40" fill="#E3C59A" stroke="#3E5A70" stroke-width="3"/>
+  <g fill="#6E4B2E">
+    <circle cx="110" cy="130" r="5"/><circle cx="132" cy="140" r="5"/>
+    <circle cx="116" cy="152" r="4.5"/><circle cx="128" cy="123" r="4"/>
+  </g>
+  <!-- brindille -->
+  <g stroke="#7C8B5E" stroke-width="3" fill="#8B9A6A" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 158 q16 -8 34 -4" fill="none"/>
+    <path d="M316 152 q-7 -10 0 -20 q10 5 8 18 z"/>
+    <path d="M332 154 q10 -7 21 -3 q-7 12 -21 7 z"/>
+  </g>
+</svg>

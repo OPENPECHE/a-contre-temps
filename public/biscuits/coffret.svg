@@ -1,0 +1,30 @@
+<svg viewBox="0 0 440 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="440" height="200" fill="#F3E7DA"/>
+  <!-- corps du coffret -->
+  <rect x="158" y="100" width="150" height="78" rx="4" fill="#E0BE93" stroke="#3E5A70" stroke-width="3"/>
+  <!-- couvercle -->
+  <rect x="148" y="82" width="170" height="26" rx="4" fill="#D8B586" stroke="#3E5A70" stroke-width="3"/>
+  <!-- ruban vertical -->
+  <rect x="225" y="82" width="16" height="96" fill="#A6713F" stroke="#3E5A70" stroke-width="3"/>
+  <!-- noeud -->
+  <path d="M233 80 C210 58 182 66 190 82 C184 96 214 92 233 84 Z" fill="#A6713F" stroke="#3E5A70" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M233 80 C256 58 284 66 276 82 C282 96 252 92 233 84 Z" fill="#A6713F" stroke="#3E5A70" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="233" cy="82" r="8" fill="#8A5A31" stroke="#3E5A70" stroke-width="3"/>
+  <!-- etiquette avec coeur -->
+  <g transform="rotate(-14 300 128)">
+    <rect x="286" y="112" width="40" height="30" rx="5" fill="#FBF8F4" stroke="#3E5A70" stroke-width="3"/>
+    <circle cx="290" cy="118" r="2.5" fill="#3E5A70"/>
+    <path d="M306 132 C306 132 297 126 297 120 C297 116 301 115 304 118 C305 119 306 121 306 121 C306 121 307 119 308 118 C311 115 315 116 315 120 C315 126 306 132 306 132 Z" fill="#B4483A"/>
+  </g>
+  <!-- cookie appuye -->
+  <circle cx="118" cy="150" r="38" fill="#E3C59A" stroke="#3E5A70" stroke-width="3"/>
+  <g fill="#6E4B2E">
+    <circle cx="108" cy="141" r="5"/><circle cx="130" cy="150" r="5"/>
+    <circle cx="114" cy="161" r="4.5"/><circle cx="126" cy="135" r="4"/>
+  </g>
+  <!-- brindille -->
+  <g stroke="#7C8B5E" stroke-width="3" fill="#8B9A6A" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M322 168 q16 -6 33 -1" fill="none"/>
+    <path d="M338 163 q-6 -10 2 -19 q9 6 6 18 z"/>
+  </g>
+</svg>

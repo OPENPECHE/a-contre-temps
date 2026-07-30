@@ -1192,10 +1192,22 @@ export default function ContreTempsSite() {
                 <p className="max-w-md mx-auto mt-5 text-[15px] leading-loose" style={{ color:COLORS.inkSoft }}>{meta.text}</p>
               </div>
               <div className="grid sm:grid-cols-3 gap-6 mt-12">
-                {items.map(item => (
+                {items.map((item, idx) => {
+                  // Illustration de secours (biscuiterie uniquement) quand le produit n'a pas de photo
+                  const nm = (item.name || "").toLowerCase();
+                  const biscuitIllu = meta.isChronopost
+                    ? (nm.includes("cadeau") ? "/biscuits/coffret.svg"
+                      : nm.includes("500") ? "/biscuits/pile.svg"
+                      : nm.includes("250") ? "/biscuits/sables.svg"
+                      : ["/biscuits/sables.svg", "/biscuits/pile.svg", "/biscuits/coffret.svg"][idx % 3])
+                    : null;
+                  const cardBg = item.photo ? `url(${item.photo})`
+                    : biscuitIllu ? `url(${biscuitIllu})`
+                    : `linear-gradient(135deg, ${COLORS.blueSoft}, ${COLORS.cream})`;
+                  return (
                   <div key={item.id} style={{ backgroundColor:COLORS.paper, border:`1px solid ${COLORS.blueSoft}`, borderRadius:10, overflow:"hidden" }}>
-                    {/* Photo d'illustration du produit (colonne products.photo) */}
-                    <div role="img" aria-label={item.name} style={{ height:150, backgroundImage: item.photo ? `url(${item.photo})` : `linear-gradient(135deg, ${COLORS.blueSoft}, ${COLORS.cream})`, backgroundSize:"cover", backgroundPosition:"center" }} />
+                    {/* Photo produit (products.photo) ou illustration de secours */}
+                    <div role="img" aria-label={item.name} style={{ height:150, backgroundImage: cardBg, backgroundSize:"cover", backgroundPosition:"center" }} />
                     <div style={{ padding:"1.25rem" }}>
                     <p style={{ fontFamily:FONT_DISPLAY, fontSize:17, marginBottom:4 }}>{item.name}</p>
                     <p style={{ color:COLORS.inkSoft, fontSize:13, marginBottom:"1rem" }}>{Number(item.price).toFixed(2)} €</p>
@@ -1214,7 +1226,8 @@ export default function ContreTempsSite() {
                     </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </section>
