@@ -24,12 +24,23 @@ create policy "pickup_points back-office"
   using (true)
   with check (true);
 
--- MARCHÉS (jours & horaires) ---------------------------------------------------
+-- MARCHÉS (jours) --------------------------------------------------------------
 alter table public.market_schedules enable row level security;
 
 drop policy if exists "market_schedules back-office" on public.market_schedules;
 create policy "market_schedules back-office"
   on public.market_schedules
+  for all
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+-- CRÉNEAUX HORAIRES ------------------------------------------------------------
+alter table public.time_slots enable row level security;
+
+drop policy if exists "time_slots back-office" on public.time_slots;
+create policy "time_slots back-office"
+  on public.time_slots
   for all
   to anon, authenticated
   using (true)
