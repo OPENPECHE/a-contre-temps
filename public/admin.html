@@ -387,7 +387,18 @@ async function sbFetch(path, opts={}) {
       ...(opts.headers||{})}
   });
   const t = await r.text();
-  return t ? JSON.parse(t) : [];
+  let data = [];
+  try { data = t ? JSON.parse(t) : []; } catch { data = t; }
+  if(!r.ok){
+    console.error("Supabase", r.status, path, data);
+    const isWrite = ["POST","PATCH","PUT","DELETE"].includes((opts.method||"GET").toUpperCase());
+    if(isWrite){
+      const msg = (data && data.message) ? data.message : ("HTTP "+r.status);
+      const rls = data && data.code === "42501";
+      alert("Enregistrement impossible ("+r.status+").\n"+msg+(rls?"\n\n→ Droits d'écriture manquants sur cette table (voir supabase-points-marches-rls.sql).":""));
+    }
+  }
+  return data;
 }
 
 // ── Géolocalisation code postal (API gratuite data.gouv) ───────────────────────
