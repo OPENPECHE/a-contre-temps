@@ -77,6 +77,14 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
 .pickup-body.on{display:block;}
 .tag-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;}
 .sel{padding:.4rem .7rem;border:1px solid var(--bs);border-radius:6px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;}
+.ac-list{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--pp);border:1px solid var(--bs);border-radius:8px;margin-top:3px;box-shadow:0 8px 20px rgba(0,0,0,.12);max-height:210px;overflow-y:auto;}
+.ac-item{padding:.5rem .7rem;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--bs);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--cr);}
+.ac-item b{color:var(--bd);font-weight:600;}
+.ac-item span{color:var(--is);font-size:11px;}
+.ac-empty{padding:.5rem .7rem;font-size:11.5px;color:var(--is);}
+.np-picked{font-size:11.5px;color:var(--gn);margin-top:4px;min-height:15px;}
 </style>
 </head>
 <body>
@@ -238,9 +246,18 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
               <option value="market">Marché</option>
             </select>
           </div>
-          <div><label style="font-size:11px;color:var(--is)">Adresse</label><input class="fi" id="np-address" placeholder="12 rue du Fournil" style="margin-top:4px"></div>
-          <div><label style="font-size:11px;color:var(--is)">Code postal <span style="color:var(--ru)">(pour le tri par distance)</span></label><input class="fi" id="np-postal" inputmode="numeric" maxlength="5" placeholder="63000" style="margin-top:4px"></div>
-          <div><label style="font-size:11px;color:var(--is)">Note</label><input class="fi" id="np-notes" placeholder="Stand allée B…" style="margin-top:4px"></div>
+          <div style="grid-column:1/3;position:relative">
+            <label style="font-size:11px;color:var(--is)">Commune <span style="color:var(--ru)">(tape le code postal, puis choisis la commune)</span></label>
+            <input class="fi" id="np-postal" inputmode="numeric" maxlength="5" placeholder="63200" autocomplete="off" style="margin-top:4px" oninput="onNpPostal()">
+            <div id="np-commune-list" class="ac-list" style="display:none"></div>
+            <div id="np-commune-picked" class="np-picked"></div>
+          </div>
+          <div style="grid-column:1/3;position:relative">
+            <label style="font-size:11px;color:var(--is)">Lieu / adresse précise <span style="color:var(--ru)">(optionnel — place, rue…)</span></label>
+            <input class="fi" id="np-address" placeholder="Place du village, rue du Fournil…" autocomplete="off" style="margin-top:4px" oninput="onNpAddress()">
+            <div id="np-address-list" class="ac-list" style="display:none"></div>
+          </div>
+          <div style="grid-column:1/3"><label style="font-size:11px;color:var(--is)">Note</label><input class="fi" id="np-notes" placeholder="Stand allée B…" style="margin-top:4px"></div>
         </div>
         <div style="display:flex;gap:7px">
           <button class="btn bp bsm" onclick="addPickup()">Ajouter</button>
@@ -385,6 +402,82 @@ async function geocodePostal(cp){
     return {lat,lng,city:f.properties.city,label:f.properties.label};
   }catch{ return null; }
 }
+
+// ── Recherche commune (code postal) + adresse (nouveau point) ──────────────────
+let npGeo=null;              // {postal, city, lat, lng, code}
+let npPostalTimer=null, npAddrTimer=null;
+function hideAc(id){ const e=document.getElementById(id); if(e) e.style.display="none"; }
+
+function onNpPostal(){
+  const cp=document.getElementById("np-postal").value.trim();
+  const list=document.getElementById("np-commune-list");
+  npGeo=null;
+  document.getElementById("np-commune-picked").textContent="";
+  document.getElementById("np-address").value=""; hideAc("np-address-list");
+  if(!/^\d{5}$/.test(cp)){ hideAc("np-commune-list"); return; }
+  list.innerHTML='<div class="ac-empty">Recherche des communes…</div>'; list.style.display="block";
+  clearTimeout(npPostalTimer);
+  npPostalTimer=setTimeout(async()=>{
+    try{
+      const r=await fetch(`https://geo.api.gouv.fr/communes?codePostal=${cp}&fields=nom,centre,code&format=json`);
+      const arr=await r.json();
+      if(!Array.isArray(arr)||!arr.length){ list.innerHTML='<div class="ac-empty">Aucune commune pour ce code postal.</div>'; return; }
+      list.innerHTML="";
+      arr.sort((a,b)=>a.nom.localeCompare(b.nom,"fr")).forEach(c=>{
+        const d=document.createElement("div"); d.className="ac-item";
+        d.innerHTML=`<b>${c.nom}</b> <span>${cp}</span>`;
+        d.onclick=()=>pickCommune(c,cp);
+        list.appendChild(d);
+      });
+    }catch{ list.innerHTML='<div class="ac-empty">Erreur de recherche.</div>'; }
+  },250);
+}
+function pickCommune(c,cp){
+  const [lng,lat]=c.centre.coordinates;
+  npGeo={postal:cp,city:c.nom,lat,lng,code:c.code};
+  document.getElementById("np-commune-picked").textContent="✓ "+c.nom+" ("+cp+")";
+  hideAc("np-commune-list");
+}
+function onNpAddress(){
+  const q=document.getElementById("np-address").value.trim();
+  const list=document.getElementById("np-address-list");
+  if(q.length<3){ hideAc("np-address-list"); return; }
+  clearTimeout(npAddrTimer);
+  npAddrTimer=setTimeout(async()=>{
+    let url=`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=6&autocomplete=1`;
+    if(npGeo&&npGeo.code) url+=`&citycode=${npGeo.code}`;
+    else if(npGeo&&npGeo.postal) url+=`&postcode=${npGeo.postal}`;
+    try{
+      const j=await (await fetch(url)).json();
+      const feats=j.features||[];
+      if(!feats.length){ list.innerHTML='<div class="ac-empty">Aucune adresse trouvée.</div>'; list.style.display="block"; return; }
+      list.innerHTML="";
+      feats.forEach(f=>{
+        const p=f.properties; const d=document.createElement("div"); d.className="ac-item";
+        d.innerHTML=`<b>${p.name||p.label}</b> <span>${p.postcode||""} ${p.city||""}</span>`;
+        d.onclick=()=>pickAddress(f);
+        list.appendChild(d);
+      });
+      list.style.display="block";
+    }catch{ hideAc("np-address-list"); }
+  },250);
+}
+function pickAddress(f){
+  const p=f.properties; const [lng,lat]=f.geometry.coordinates;
+  document.getElementById("np-address").value=p.name||p.label;
+  npGeo=npGeo||{};
+  npGeo.lat=lat; npGeo.lng=lng;
+  if(p.postcode) npGeo.postal=p.postcode;
+  if(p.city) npGeo.city=p.city;
+  if(p.citycode) npGeo.code=p.citycode;
+  document.getElementById("np-postal").value=npGeo.postal||"";
+  document.getElementById("np-commune-picked").textContent="✓ "+(npGeo.city||"")+" ("+(npGeo.postal||"")+")";
+  hideAc("np-address-list");
+}
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#np-commune-list")&&e.target.id!=="np-postal") hideAc("np-commune-list");
+  if(!e.target.closest("#np-address-list")&&e.target.id!=="np-address") hideAc("np-address-list");
+});
 
 // ── Zone de livraison ───────────────────────────────────────────────────────────
 let zoneData=null;
@@ -1014,13 +1107,11 @@ async function togglePickupActive(id){
 async function addPickup(){
   const name=document.getElementById("np-name").value.trim();
   if(!name){alert("Nom obligatoire.");return;}
-  const postal=document.getElementById("np-postal").value.trim();
   const pos=Math.max(0,...allPickups.map(p=>p.position||0))+1;
   const row={name,address:document.getElementById("np-address").value,type:document.getElementById("np-type").value,notes:document.getElementById("np-notes").value,active:true,position:pos};
-  if(/^\d{5}$/.test(postal)){
-    row.postal=postal;
-    const g=await geocodePostal(postal);
-    if(g){ row.lat=g.lat; row.lng=g.lng; }
+  if(npGeo){
+    if(npGeo.postal) row.postal=npGeo.postal;
+    if(npGeo.lat!=null){ row.lat=npGeo.lat; row.lng=npGeo.lng; }
   }
   const data=await sbFetch("pickup_points",{method:"POST",body:JSON.stringify(row)});
   allPickups.push(Array.isArray(data)?data[0]:data);
@@ -1028,6 +1119,8 @@ async function addPickup(){
   document.getElementById("np-address").value="";
   document.getElementById("np-postal").value="";
   document.getElementById("np-notes").value="";
+  document.getElementById("np-commune-picked").textContent="";
+  npGeo=null;
   toggleNewPickup();renderPickups();
 }
 async function setPickupPostal(id){
