@@ -794,7 +794,7 @@ export default function ContreTempsSite() {
               style={{ border: `1px solid ${COLORS.cream}`, color: COLORS.cream }}
             >
               <ShoppingBag size={14} />
-              {cartCount > 0 ? `Sélection (${cartCount})` : "Composer"}
+              {cartCount > 0 ? `Mon panier (${cartCount})` : "Mon panier"}
             </button>
             <button
               onClick={() => user ? setShowAccount(true) : setShowAuth(true)}
@@ -818,7 +818,7 @@ export default function ContreTempsSite() {
           </nav>
 
           <div className="md:hidden flex items-center gap-4">
-            <button onClick={() => setCartOpen(true)} className="relative" aria-label="Voir la sélection">
+            <button onClick={() => setCartOpen(true)} className="relative" aria-label="Mon panier">
               <ShoppingBag size={20} color={COLORS.cream} />
               {cartCount > 0 && (
                 <span
