@@ -225,6 +225,8 @@ const MARKETS = [
   { city: "Marché de producteurs", day: "Jour à préciser" },
 ];
 
+const JOURS_SEMAINE = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
 // ─── Système de notifications toast ──────────────────────────────────────────
 function ToastContainer({ toasts }) {
   return (
@@ -565,6 +567,7 @@ export default function ContreTempsSite() {
   const [pickupPoints, setPickupPoints] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [marketDays, setMarketDays] = useState([]); // tous les jours de marché actifs (pour la section "Sur les marchés")
   const [selectedDate, setSelectedDate] = useState(null);
   const [deliveryRules, setDeliveryRules] = useState([]);
   const [boxContents, setBoxContents] = useState({});   // { productId: [...items] }
@@ -601,6 +604,9 @@ export default function ContreTempsSite() {
     sbFetch("pickup_points?active=eq.true&order=position.asc")
       .then(d => setPickupPoints(d || []))
       .catch(() => {});
+    sbFetch("market_schedules?active=eq.true")
+      .then(d => setMarketDays(d || []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -623,6 +629,31 @@ export default function ContreTempsSite() {
     });
     return cats;
   }, [sbProducts]);
+
+  // Marchés réels (back-office) : points de type "market" actifs + leurs jours
+  const markets = useMemo(() => {
+    return pickupPoints
+      .filter(p => p.type === "market")
+      .map(p => {
+        const scs = marketDays.filter(s => s.pickup_point_id === p.id);
+        const labels = scs.map(s => {
+          if (s.type === "specific" && s.specific_date) {
+            try {
+              return new Date(s.specific_date + "T00:00:00")
+                .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+            } catch { return null; }
+          }
+          if (s.day_of_week != null) return "Le " + JOURS_SEMAINE[s.day_of_week].toLowerCase();
+          return null;
+        }).filter(Boolean);
+        const uniq = [...new Set(labels)];
+        return {
+          city: p.name,
+          day: uniq.length ? uniq.join(" · ") : "Jour à préciser",
+          address: p.address || "",
+        };
+      });
+  }, [pickupPoints, marketDays]);
 
   // Détecter si le panier contient des articles Chronopost (via la règle de catégorie)
   const hasBiscuiterie = useMemo(() =>
@@ -1263,13 +1294,14 @@ export default function ContreTempsSite() {
           </h2>
         </div>
         <div className="grid sm:grid-cols-3 gap-px md:gap-6">
-          {MARKETS.map((m, i) => (
+          {(markets.length ? markets : MARKETS).map((m, i) => (
             <div key={i} className="p-7 text-center" style={{ border: `1px solid ${COLORS.blueSoft}` }}>
               <MapPin size={15} color={COLORS.rust} className="mx-auto" strokeWidth={1.6} />
               <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 500 }} className="mt-3 text-lg">
                 {m.city}
               </p>
               <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>{m.day}</p>
+              {m.address ? <p className="text-xs mt-1" style={{ color: COLORS.inkSoft, opacity: .8 }}>{m.address}</p> : null}
             </div>
           ))}
         </div>
