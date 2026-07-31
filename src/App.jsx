@@ -648,6 +648,7 @@ export default function ContreTempsSite() {
         }).filter(Boolean);
         const uniq = [...new Set(labels)];
         return {
+          id: p.id,
           city: p.name,
           day: uniq.length ? uniq.join(" · ") : "Jour à préciser",
           address: p.address || "",
@@ -766,6 +767,20 @@ export default function ContreTempsSite() {
       setSchedules(sc || []);
     } else { setTimeSlots([]); setSchedules([]); }
   }, []);
+
+  // Clic sur un marché : présélectionne ce point de retrait pour la réservation
+  const reserveAtMarket = (m) => {
+    if (!m || !m.id) return;
+    setOrderForm(f => ({ ...f, deliveryMode: "pickup" }));
+    selectPickup(m.id);
+    if (cartCount > 0) {
+      setCartOpen(true);
+      setOrderStep("form");
+    } else {
+      toast(`Retrait à « ${m.city} » enregistré — choisissez vos produits`, "cart");
+      document.getElementById("nos-instants")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   // Retour à l'accueil : ferme le détail d'un instant, referme le menu, remonte en haut
   function goHome() {
@@ -1292,18 +1307,35 @@ export default function ContreTempsSite() {
           <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
             Sur les marchés
           </h2>
+          {markets.length ? (
+            <p className="max-w-md mx-auto mt-5 text-[15px] leading-loose" style={{ color: COLORS.inkSoft }}>
+              Cliquez sur un marché pour y réserver vos produits à retirer sur place.
+            </p>
+          ) : null}
         </div>
         <div className="grid sm:grid-cols-3 gap-px md:gap-6">
-          {(markets.length ? markets : MARKETS).map((m, i) => (
-            <div key={i} className="p-7 text-center" style={{ border: `1px solid ${COLORS.blueSoft}` }}>
+          {(markets.length ? markets : MARKETS).map((m, i) => {
+            const clickable = !!m.id;
+            return (
+            <div key={i}
+              role={clickable ? "button" : undefined}
+              tabIndex={clickable ? 0 : undefined}
+              onClick={clickable ? () => reserveAtMarket(m) : undefined}
+              onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reserveAtMarket(m); } } : undefined}
+              onMouseEnter={clickable ? (e) => { e.currentTarget.style.backgroundColor = COLORS.cream; } : undefined}
+              onMouseLeave={clickable ? (e) => { e.currentTarget.style.backgroundColor = "transparent"; } : undefined}
+              className="p-7 text-center transition-colors"
+              style={{ border: `1px solid ${COLORS.blueSoft}`, cursor: clickable ? "pointer" : "default" }}>
               <MapPin size={15} color={COLORS.rust} className="mx-auto" strokeWidth={1.6} />
               <p style={{ fontFamily: FONT_DISPLAY, fontWeight: 500 }} className="mt-3 text-lg">
                 {m.city}
               </p>
               <p className="text-sm mt-1" style={{ color: COLORS.inkSoft }}>{m.day}</p>
               {m.address ? <p className="text-xs mt-1" style={{ color: COLORS.inkSoft, opacity: .8 }}>{m.address}</p> : null}
+              {clickable ? <p className="mt-4 text-[10px] tracked uppercase" style={{ color: COLORS.rust }}>Réserver un retrait →</p> : null}
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
