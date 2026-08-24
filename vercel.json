@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/vitrine", "destination": "/vitrine.html" },
     { "source": "/qr", "destination": "/qr.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/traiteur-clermont-ferrand", "destination": "/traiteur-clermont-ferrand.html" }
   ]
 }

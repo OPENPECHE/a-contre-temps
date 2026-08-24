@@ -1556,6 +1556,9 @@ export default function ContreTempsSite() {
             <div className="flex items-center gap-2.5"><MapPin size={13} strokeWidth={1.6} /> Gerzat (63360)</div>
             <div className="flex items-center gap-2.5"><Phone size={13} strokeWidth={1.6} /> [Votre téléphone]</div>
             <div className="flex items-center gap-2.5"><Mail size={13} strokeWidth={1.6} /> acontretemps@fournilvivant.fr</div>
+            <a href="/traiteur-clermont-ferrand" className="flex items-center gap-2.5 mt-1" style={{ color: COLORS.cream, opacity: 0.9, textDecoration: "underline" }}>
+              <MapPin size={13} strokeWidth={1.6} /> Traiteur à Clermont-Ferrand
+            </a>
           </div>
 
           {/* Réseaux sociaux */}
