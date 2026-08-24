@@ -917,6 +917,10 @@ export default function ContreTempsSite() {
             Tout commence dans notre atelier. Nous ne composons pas des box,
             nous créons des instants.
           </p>
+          <p className="mt-6 max-w-lg mx-auto text-[13px] md:text-sm leading-relaxed" style={{ color: COLORS.cream, opacity: 0.8 }}>
+            Artisan boulanger à Clermont-Ferrand — petits-déjeuners d'entreprise, brunchs, lunchs,
+            apéritifs, cafés gourmands et biscuiterie. Livraison &amp; retrait sur les marchés.
+          </p>
           <a href="#nos-instants" className="mt-12 inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs tracked uppercase" style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep }}>
             Découvrir nos instants
             <ArrowRight size={14} />
