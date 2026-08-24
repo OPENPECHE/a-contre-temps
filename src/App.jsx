@@ -227,6 +227,29 @@ const MARKETS = [
 
 const JOURS_SEMAINE = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
+const FAQ = [
+  {
+    q: "Livrez-vous des petits-déjeuners et plateaux traiteur à Clermont-Ferrand ?",
+    a: "Oui. Nous livrons petits-déjeuners d'entreprise, brunchs, lunchs et plateaux apéritif à Clermont-Ferrand et dans sa métropole (Gerzat, Riom et alentours), du fait maison au levain, en circuit court.",
+  },
+  {
+    q: "Proposez-vous des petits-déjeuners pour les entreprises ?",
+    a: "Oui, nous composons des petits-déjeuners d'entreprise récurrents ou ponctuels (séminaires, réunions, événements), livrés à l'heure qui vous arrange.",
+  },
+  {
+    q: "Où peut-on vous retrouver sur les marchés ?",
+    a: "Nous sommes présents sur plusieurs marchés de la région clermontoise. Vous pouvez réserver vos produits en ligne et les retirer directement sur place.",
+  },
+  {
+    q: "Peut-on commander de la biscuiterie en ligne ?",
+    a: "Oui, notre biscuiterie artisanale (sablés au beurre, biscuits du fournil, mendiants) est expédiée partout en France en Chronopost.",
+  },
+  {
+    q: "Proposez-vous des cafés gourmands et des plateaux apéritif ?",
+    a: "Oui : cafés gourmands, planches à composer, charcuterie, fromages et accompagnements de producteurs locaux font partie de nos instants à partager.",
+  },
+];
+
 // ─── Système de notifications toast ──────────────────────────────────────────
 function ToastContainer({ toasts }) {
   return (
@@ -794,6 +817,7 @@ export default function ContreTempsSite() {
     { href: "#biscuiterie", label: "Biscuiterie" },
     { href: "#entreprises", label: "Entreprises" },
     { href: "#marches", label: "Marchés" },
+    { href: "#faq", label: "FAQ" },
     { href: "#contact", label: "Contact" },
   ];
 
@@ -1340,6 +1364,33 @@ export default function ContreTempsSite() {
             </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="px-6 md:px-10 py-20 md:py-28" style={{ backgroundColor: COLORS.paper }}>
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-12">
+            <Eyebrow>BON À SAVOIR</Eyebrow>
+            <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 400 }} className="text-3xl md:text-5xl mt-4 tracking-tight">
+              Questions fréquentes
+            </h2>
+          </div>
+          <div style={{ borderTop: `1px solid ${COLORS.blueSoft}` }}>
+            {FAQ.map((f, i) => (
+              <details key={i} style={{ borderBottom: `1px solid ${COLORS.blueSoft}` }}>
+                <summary
+                  style={{ cursor: "pointer", listStyle: "none", padding: "1.15rem 0.25rem",
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontSize: 18, color: COLORS.blueDeep }}>{f.q}</span>
+                  <Plus size={18} color={COLORS.rust} style={{ flexShrink: 0 }} />
+                </summary>
+                <p className="pb-5 px-1 text-[15px] leading-loose" style={{ color: COLORS.inkSoft, marginTop: "-0.25rem" }}>
+                  {f.a}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
