@@ -12,6 +12,7 @@
     { "source": "/pain-au-levain-clermont-ferrand", "destination": "/pain-au-levain-clermont-ferrand.html" },
     { "source": "/biscuiterie-clermont-ferrand", "destination": "/biscuiterie-clermont-ferrand.html" },
     { "source": "/brunch-mariage-clermont-ferrand", "destination": "/brunch-mariage-clermont-ferrand.html" },
-    { "source": "/traiteur-evenement-clermont-ferrand", "destination": "/traiteur-evenement-clermont-ferrand.html" }
+    { "source": "/traiteur-evenement-clermont-ferrand", "destination": "/traiteur-evenement-clermont-ferrand.html" },
+    { "source": "/traiteur-vegetarien-clermont-ferrand", "destination": "/traiteur-vegetarien-clermont-ferrand.html" }
   ]
 }
