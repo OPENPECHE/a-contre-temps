@@ -837,7 +837,7 @@ export default function ContreTempsSite() {
       <header
         className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
         style={{
-          backgroundColor: scrolled ? COLORS.blueDeep : "transparent",
+          background: scrolled ? COLORS.blueDeep : "linear-gradient(to bottom, rgba(43,41,37,0.5), rgba(43,41,37,0))",
           boxShadow: scrolled ? "0 1px 0 rgba(255,255,255,0.08)" : "none",
         }}
       >
@@ -845,9 +845,9 @@ export default function ContreTempsSite() {
           <div className="flex items-center gap-2.5" role="button" tabIndex={0}
             onClick={goHome}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") goHome(); }}
-            style={{ cursor: "pointer" }} aria-label="Retour à l'accueil">
-            <HeartMark size={30} tone="cream" />
-            <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream }} className="text-base tracking-tight">
+            style={{ cursor: "pointer", flexShrink: 0 }} aria-label="Retour à l'accueil">
+            <HeartMark size={30} tone="cream" className="drop-shadow-md" />
+            <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream, textShadow: "0 1px 6px rgba(43,41,37,0.55)", whiteSpace: "nowrap" }} className="text-base tracking-tight">
               à contre-temps
             </span>
           </div>
