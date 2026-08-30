@@ -5,6 +5,11 @@
     { "source": "/vitrine", "destination": "/vitrine.html" },
     { "source": "/qr", "destination": "/qr.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/traiteur-clermont-ferrand", "destination": "/traiteur-clermont-ferrand.html" }
+    { "source": "/traiteur-clermont-ferrand", "destination": "/traiteur-clermont-ferrand.html" },
+    { "source": "/brunch-clermont-ferrand", "destination": "/brunch-clermont-ferrand.html" },
+    { "source": "/plateau-aperitif-clermont-ferrand", "destination": "/plateau-aperitif-clermont-ferrand.html" },
+    { "source": "/lunch-clermont-ferrand", "destination": "/lunch-clermont-ferrand.html" },
+    { "source": "/pain-au-levain-clermont-ferrand", "destination": "/pain-au-levain-clermont-ferrand.html" },
+    { "source": "/biscuiterie-clermont-ferrand", "destination": "/biscuiterie-clermont-ferrand.html" }
   ]
 }
