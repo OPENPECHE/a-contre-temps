@@ -1597,7 +1597,25 @@ export default function ContreTempsSite() {
             <p className="text-[10px] mt-3" style={{ color: COLORS.cream, opacity: 0.4 }}>Comptes en cours de création</p>
           </div>
         </div>
-        <p className="text-center text-[11px] mt-14 opacity-55" style={{ color: COLORS.cream }}>
+        <div className="mt-12 pt-8" style={{ borderTop: "1px solid rgba(243,231,218,0.18)" }}>
+          <p className="text-center text-[10px] tracked mb-4" style={{ color: COLORS.cream, opacity: 0.55 }}>NOS PRESTATIONS À CLERMONT-FERRAND</p>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px]">
+            {[
+              ["Traiteur", "/traiteur-clermont-ferrand"],
+              ["Événements & réceptions", "/traiteur-evenement-clermont-ferrand"],
+              ["Brunch mariage & baby shower", "/brunch-mariage-clermont-ferrand"],
+              ["Brunch en livraison", "/brunch-clermont-ferrand"],
+              ["Box apéro & apéritif", "/plateau-aperitif-clermont-ferrand"],
+              ["Lunch & déjeuner", "/lunch-clermont-ferrand"],
+              ["Pain au levain", "/pain-au-levain-clermont-ferrand"],
+              ["Biscuiterie", "/biscuiterie-clermont-ferrand"],
+              ["Traiteur végétarien", "/traiteur-vegetarien-clermont-ferrand"],
+            ].map(([label, href]) => (
+              <a key={href} href={href} style={{ color: COLORS.cream, opacity: 0.8, textDecoration: "none" }}>{label}</a>
+            ))}
+          </div>
+        </div>
+        <p className="text-center text-[11px] mt-10 opacity-55" style={{ color: COLORS.cream }}>
           © {new Date().getFullYear()} à contre-temps — fournil vivant
         </p>
       </footer>
