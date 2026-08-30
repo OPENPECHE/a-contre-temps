@@ -852,12 +852,15 @@ export default function ContreTempsSite() {
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-10">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-7">
             {navLinks.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setSelectedInstant(null)} className="tracked text-[11px] uppercase" style={{ color: COLORS.cream, opacity: 0.85 }}>
+              <a key={l.href} href={l.href} onClick={() => setSelectedInstant(null)} className="tracked text-[11px] uppercase whitespace-nowrap" style={{ color: COLORS.cream, opacity: 0.85 }}>
                 {l.label}
               </a>
             ))}
+          </nav>
+
+          <div className="hidden md:flex items-center gap-4">
             <button
               onClick={() => setCartOpen(true)}
               className="flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full text-xs tracked uppercase"
@@ -885,7 +888,7 @@ export default function ContreTempsSite() {
                 </div>
               )}
             </button>
-          </nav>
+          </div>
 
           <div className="md:hidden flex items-center gap-4">
             <button onClick={() => setCartOpen(true)} className="relative" aria-label="Mon panier">
