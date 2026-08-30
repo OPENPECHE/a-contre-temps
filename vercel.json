@@ -1,6 +1,8 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/traiteur-clermont-ferrand", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/traiteur-clermont-ferrand.html" },
     { "source": "/accueil", "destination": "/index.html" },
     { "source": "/vitrine", "destination": "/vitrine.html" },
     { "source": "/qr", "destination": "/qr.html" },
