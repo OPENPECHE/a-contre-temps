@@ -837,8 +837,8 @@ export default function ContreTempsSite() {
       <header
         className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
         style={{
-          background: scrolled ? COLORS.blueDeep : "linear-gradient(to bottom, rgba(43,41,37,0.5), rgba(43,41,37,0))",
-          boxShadow: scrolled ? "0 1px 0 rgba(255,255,255,0.08)" : "none",
+          backgroundColor: COLORS.blueDeep,
+          boxShadow: scrolled ? "0 2px 12px rgba(0,0,0,0.15)" : "none",
         }}
       >
         <div className="max-w-6xl mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
@@ -846,8 +846,8 @@ export default function ContreTempsSite() {
             onClick={goHome}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") goHome(); }}
             style={{ cursor: "pointer", flexShrink: 0 }} aria-label="Retour à l'accueil">
-            <HeartMark size={30} tone="cream" className="drop-shadow-md" />
-            <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream, textShadow: "0 1px 6px rgba(43,41,37,0.55)", whiteSpace: "nowrap" }} className="text-base tracking-tight">
+            <HeartMark size={32} tone="cream" />
+            <span style={{ fontFamily: FONT_DISPLAY, color: COLORS.cream, whiteSpace: "nowrap" }} className="text-lg tracking-tight">
               à contre-temps
             </span>
           </div>
