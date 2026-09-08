@@ -1611,6 +1611,7 @@ export default function ContreTempsSite() {
               ["Biscuiterie", "/biscuiterie-clermont-ferrand"],
               ["Traiteur végétarien", "/traiteur-vegetarien-clermont-ferrand"],
               ["Coffrets gourmands & cadeaux d'entreprise", "/coffret-cadeau-gourmand"],
+              ["Viennoiserie artisanale", "/viennoiserie-artisanale-clermont-ferrand"],
             ].map(([label, href]) => (
               <a key={href} href={href} style={{ color: COLORS.cream, opacity: 0.8, textDecoration: "none" }}>{label}</a>
             ))}

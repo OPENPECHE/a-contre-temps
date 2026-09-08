@@ -17,6 +17,7 @@
     { "source": "/brunch-mariage-clermont-ferrand", "destination": "/brunch-mariage-clermont-ferrand.html" },
     { "source": "/traiteur-evenement-clermont-ferrand", "destination": "/traiteur-evenement-clermont-ferrand.html" },
     { "source": "/traiteur-vegetarien-clermont-ferrand", "destination": "/traiteur-vegetarien-clermont-ferrand.html" },
-    { "source": "/coffret-cadeau-gourmand", "destination": "/coffret-cadeau-gourmand.html" }
+    { "source": "/coffret-cadeau-gourmand", "destination": "/coffret-cadeau-gourmand.html" },
+    { "source": "/viennoiserie-artisanale-clermont-ferrand", "destination": "/viennoiserie-artisanale-clermont-ferrand.html" }
   ]
 }
