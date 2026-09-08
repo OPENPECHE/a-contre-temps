@@ -1610,6 +1610,7 @@ export default function ContreTempsSite() {
               ["Pain au levain", "/pain-au-levain-clermont-ferrand"],
               ["Biscuiterie", "/biscuiterie-clermont-ferrand"],
               ["Traiteur végétarien", "/traiteur-vegetarien-clermont-ferrand"],
+              ["Coffrets gourmands & cadeaux d'entreprise", "/coffret-cadeau-gourmand"],
             ].map(([label, href]) => (
               <a key={href} href={href} style={{ color: COLORS.cream, opacity: 0.8, textDecoration: "none" }}>{label}</a>
             ))}
