@@ -1617,7 +1617,14 @@ export default function ContreTempsSite() {
             ))}
           </div>
         </div>
-        <p className="text-center text-[11px] mt-10 opacity-55" style={{ color: COLORS.cream }}>
+        <p className="text-center text-[11px] mt-10" style={{ color: COLORS.cream, opacity: 0.7 }}>
+          <a href="/mentions-legales" style={{ color: COLORS.cream, textDecoration: "none" }}>Mentions légales</a>
+          {" · "}
+          <a href="/cgv" style={{ color: COLORS.cream, textDecoration: "none" }}>CGV</a>
+          {" · "}
+          <a href="/contact" style={{ color: COLORS.cream, textDecoration: "none" }}>Contact</a>
+        </p>
+        <p className="text-center text-[11px] mt-2 opacity-55" style={{ color: COLORS.cream }}>
           © {new Date().getFullYear()} à contre-temps — fournil vivant
         </p>
       </footer>

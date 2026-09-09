@@ -62,6 +62,7 @@ export default async function handler(req, res) {
           <strong>Total indicatif</strong>
           <strong>${total} €</strong>
         </div>
+        <p style="font-size:10px;color:rgba(43,41,37,.5);margin:.6rem 0 0;">TVA non applicable, art. 293 B du CGI</p>
       </div>
       ${order.note ? `<p style="font-size:13px;color:rgba(43,41,37,.6);margin-bottom:1.5rem;padding:.75rem;background:#F0F3F5;border-radius:6px;"><strong>Note :</strong> ${order.note}</p>` : ""}
       <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
@@ -72,9 +73,12 @@ export default async function handler(req, res) {
       </a>
     </div>
     <div style="padding:1.25rem 2rem;border-top:1px solid #D6DFE5;text-align:center;">
-      <p style="font-size:11px;color:rgba(43,41,37,.45);line-height:1.7;">
-        à contre-temps — Fournil vivant<br>
-        <a href="https://fournilvivant.fr" style="color:#7C97AC;">fournilvivant.fr</a> · ${OWNER}
+      <p style="font-size:11px;color:rgba(43,41,37,.5);line-height:1.7;">
+        <strong>à contre-temps — Fournil vivant</strong><br>
+        4 rue des Vignes Rousses, 63360 Gerzat · SIRET 108 719 105 00018<br>
+        TVA non applicable, art. 293 B du CGI<br>
+        <a href="https://fournilvivant.fr" style="color:#7C97AC;">fournilvivant.fr</a> · ${OWNER}<br>
+        <a href="https://www.fournilvivant.fr/mentions-legales" style="color:#7C97AC;">Mentions légales</a> · <a href="https://www.fournilvivant.fr/cgv" style="color:#7C97AC;">CGV</a>
       </p>
     </div>
   </div>
