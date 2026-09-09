@@ -43,9 +43,10 @@ export default async function handler(req, res) {
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#EDF0F3;font-family:Georgia,serif;">
   <div style="max-width:560px;margin:40px auto;background:#FBF8F4;border-radius:12px;overflow:hidden;">
-    <div style="background:#7C97AC;padding:2rem;text-align:center;">
-      <p style="font-size:22px;color:#F3E7DA;margin:0;font-style:italic;">à contre-temps</p>
-      <p style="font-size:10px;letter-spacing:.2em;color:rgba(243,231,218,.65);margin:.3rem 0 0;">FOURNIL VIVANT</p>
+    <div style="background:#3E5A70;padding:1.9rem 2rem;text-align:center;">
+      <img src="https://www.fournilvivant.fr/heart-cream.png" width="42" alt="" style="display:block;margin:0 auto .55rem;" />
+      <p style="font-size:26px;color:#F3E7DA;margin:0;font-style:italic;font-family:Georgia,'Times New Roman',serif;">à contre-temps</p>
+      <p style="font-size:10px;letter-spacing:.22em;color:rgba(243,231,218,.7);margin:.4rem 0 0;">FOURNIL VIVANT · CRÉATEUR D'INSTANTS</p>
     </div>
     <div style="padding:2rem;">
       <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Commande reçue ✓</h1>
@@ -96,7 +97,8 @@ export default async function handler(req, res) {
 <html lang="fr"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#EDF0F3;font-family:Arial,sans-serif;">
   <div style="max-width:560px;margin:30px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #D6DFE5;">
-    <div style="background:#3E5A70;padding:1.25rem 1.5rem;">
+    <div style="background:#3E5A70;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:10px;">
+      <img src="https://www.fournilvivant.fr/heart-cream.png" width="26" alt="" style="display:inline-block;" />
       <p style="font-size:16px;color:#F3E7DA;margin:0;">Nouvelle commande — ${invoiceNum}</p>
     </div>
     <div style="padding:1.5rem;">
