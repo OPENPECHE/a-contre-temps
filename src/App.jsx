@@ -148,7 +148,7 @@ const CATEGORY_META = {
     label: "Le midi",
     title: "L'instant lunch",
     sub: "Pour les bureaux",
-    text: "Sandwiches au levain, salades composées, pains à partager. Une pause déjeuner sans file d'attente.",
+    text: "Sandwiches sur pain au levain, salades composées, pains à partager. Une pause déjeuner sans file d'attente.",
   },
   "Brunch & apéritif": {
     photo: PHOTOS.soir,
