@@ -155,7 +155,7 @@ const CATEGORY_META = {
     label: "Soir & week-end",
     title: "L'instant apéritif",
     sub: "Pour recevoir",
-    text: "Planches à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
+    text: "Plateaux à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
   },
   "Brunch week-end": {
     photo: PHOTOS.soir,
@@ -246,7 +246,7 @@ const FAQ = [
   },
   {
     q: "Proposez-vous des cafés gourmands et des plateaux apéritif ?",
-    a: "Oui : cafés gourmands, planches à composer, charcuterie, fromages et accompagnements de producteurs locaux font partie de nos instants à partager.",
+    a: "Oui : cafés gourmands, plateaux à composer, charcuterie, fromages et accompagnements de producteurs locaux font partie de nos instants à partager.",
   },
 ];
 
