@@ -169,7 +169,7 @@ const CATEGORY_META = {
     label: "Expédiée partout en France",
     title: "La biscuiterie",
     sub: "Coffrets à offrir",
-    text: "Sablés au beurre, biscuits du fournil et mendiants — emballés et expédiés en Chronopost.",
+    text: "Sablés au beurre et biscuits du fournil — emballés et expédiés en Chronopost.",
     isChronopost: true,
   },
 };
@@ -242,7 +242,7 @@ const FAQ = [
   },
   {
     q: "Peut-on commander de la biscuiterie en ligne ?",
-    a: "Oui, notre biscuiterie artisanale (sablés au beurre, biscuits du fournil, mendiants) est expédiée partout en France en Chronopost.",
+    a: "Oui, notre biscuiterie artisanale (sablés au beurre, biscuits du fournil) est expédiée partout en France en Chronopost.",
   },
   {
     q: "Proposez-vous des cafés gourmands et des plateaux apéritif ?",
