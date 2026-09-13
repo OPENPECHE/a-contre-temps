@@ -155,7 +155,7 @@ const CATEGORY_META = {
     label: "Soir & week-end",
     title: "L'instant apéritif",
     sub: "Pour recevoir",
-    text: "Plateaux à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
+    text: "Petites pièces salées, plateaux à composer, charcuterie, fromages et accompagnements de producteurs locaux.",
   },
   "Brunch week-end": {
     photo: PHOTOS.soir,
