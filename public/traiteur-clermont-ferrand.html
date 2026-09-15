@@ -29,6 +29,7 @@
 
   <link rel="icon" type="image/png" href="/icons/icon-192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#3E5A70" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -276,6 +277,41 @@
     </div>
   </section>
 
+  <section id="app-newsletter">
+    <div class="wrap">
+      <div class="center">
+        <span class="eyebrow">Restez connectés</span>
+        <h2>L'application &amp; les actualités</h2>
+        <p>Installez l'application sur votre téléphone et soyez prévenu·e dès l'ouverture.</p>
+      </div>
+      <div class="grid" style="max-width:840px;margin:0 auto">
+        <div class="card">
+          <div class="k">Application</div>
+          <h3>Installez notre application</h3>
+          <p>Retrouvez à contre-temps sur votre écran d'accueil : commandes, menus, marchés et événements — toujours à portée de main.</p>
+          <button id="installBtn" hidden style="display:inline-block;margin-top:14px;background:var(--bd);color:var(--cr);padding:13px 26px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;font-family:var(--sans)">Installer l'application</button>
+          <p id="iosHint" hidden style="font-size:13px;margin-top:14px;color:var(--is)">Sur iPhone/iPad : appuyez sur <strong>Partager</strong> en bas de Safari, puis <strong>« Sur l'écran d'accueil »</strong>.</p>
+          <p id="installedHint" hidden style="font-size:14px;margin-top:14px;color:var(--gn)">✓ Application déjà installée sur cet appareil.</p>
+          <p style="margin-top:14px"><a href="/accueil" style="font-size:13px;color:var(--bd)">Ou l'ouvrir directement dans le navigateur →</a></p>
+        </div>
+        <div class="card">
+          <div class="k">Ouverture</div>
+          <h3>Prévenez-moi de l'ouverture</h3>
+          <p>Laissez votre e-mail : nous vous préviendrons dès le lancement. Pas de spam, promis.</p>
+          <form id="nlForm" style="margin-top:12px">
+            <input id="nlEmail" type="email" required placeholder="votre@email.fr" style="width:100%;padding:12px 14px;border:1px solid var(--bs);border-radius:10px;font-size:15px;font-family:var(--sans);background:var(--pp);color:var(--ink)" />
+            <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12px;color:var(--is);line-height:1.5">
+              <input id="nlConsent" type="checkbox" required style="margin-top:3px;flex-shrink:0" />
+              <span>J'accepte de recevoir des nouvelles d'à contre-temps par e-mail. Voir les <a href="/mentions-legales" style="color:var(--bd)">mentions légales</a>.</span>
+            </label>
+            <button id="nlBtn" type="submit" style="display:inline-block;margin-top:14px;background:var(--bd);color:var(--cr);padding:13px 26px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;font-family:var(--sans)">Me prévenir</button>
+          </form>
+          <p id="nlMsg" hidden style="margin-top:14px;font-size:14px"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="final">
     <div class="wrap">
       <div class="motif" aria-hidden="true">
@@ -294,5 +330,58 @@
     <a href="mailto:acontretemps@fournilvivant.fr">acontretemps@fournilvivant.fr</a><br>
     <a href="/">Retour à l'accueil</a> · Artisan boulanger &amp; traiteur à Clermont-Ferrand
   <br><a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a></footer>
+
+  <script>
+  (function(){
+    // Service worker (nécessaire pour l'installation PWA + notifications)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
+    }
+    // Installation de l'application (PWA)
+    var installBtn = document.getElementById('installBtn');
+    var iosHint = document.getElementById('iosHint');
+    var installedHint = document.getElementById('installedHint');
+    var deferred = null;
+    var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    var isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    if (isStandalone) { if (installedHint) installedHint.hidden = false; }
+    else if (isIOS) { if (iosHint) iosHint.hidden = false; }
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault(); deferred = e; if (installBtn) installBtn.hidden = false;
+    });
+    if (installBtn) installBtn.addEventListener('click', async function(){
+      if (!deferred) return;
+      deferred.prompt();
+      try { await deferred.userChoice; } catch(_) {}
+      deferred = null; installBtn.hidden = true;
+    });
+    window.addEventListener('appinstalled', function(){
+      if (installBtn) installBtn.hidden = true;
+      if (installedHint) installedHint.hidden = false;
+    });
+    // Infolettre "Prévenez-moi de l'ouverture"
+    var form = document.getElementById('nlForm');
+    var email = document.getElementById('nlEmail');
+    var consent = document.getElementById('nlConsent');
+    var btn = document.getElementById('nlBtn');
+    var msg = document.getElementById('nlMsg');
+    function show(t, color){ if(!msg) return; msg.textContent = t; msg.style.color = color; msg.hidden = false; }
+    if (form) form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      var val = (email.value || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { show('Adresse e-mail invalide.', '#b0402f'); return; }
+      if (!consent.checked) { show('Merci de cocher la case de consentement.', '#b0402f'); return; }
+      btn.disabled = true; var old = btn.textContent; btn.textContent = '…';
+      try {
+        var r = await fetch('/api/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: val }) });
+        if (!r.ok) throw 0;
+        form.hidden = true; show('Merci ! Vous serez prévenu·e de l\'ouverture. 🥐', '#7C8B5E');
+      } catch(_) {
+        show('Oups, une erreur est survenue. Réessayez dans un instant.', '#b0402f');
+        btn.disabled = false; btn.textContent = old;
+      }
+    });
+  })();
+  </script>
 </body>
 </html>
