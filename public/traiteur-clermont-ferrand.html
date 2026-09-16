@@ -289,7 +289,7 @@
           <div class="k">Application</div>
           <h3>Installez notre application</h3>
           <p>Retrouvez à contre-temps sur votre écran d'accueil : commandes, menus, marchés et événements — toujours à portée de main.</p>
-          <button id="installBtn" hidden style="display:inline-block;margin-top:14px;background:var(--bd);color:var(--cr);padding:13px 26px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;font-family:var(--sans)">Installer l'application</button>
+          <button id="installBtn" style="display:inline-block;margin-top:14px;background:var(--bd);color:var(--cr);padding:13px 26px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;font-family:var(--sans)">Installer l'application</button>
           <p id="iosHint" hidden style="font-size:13px;margin-top:14px;color:var(--is)">Sur iPhone/iPad : appuyez sur <strong>Partager</strong> en bas de Safari, puis <strong>« Sur l'écran d'accueil »</strong>.</p>
           <p id="installedHint" hidden style="font-size:14px;margin-top:14px;color:var(--gn)">✓ Application déjà installée sur cet appareil.</p>
           <p style="margin-top:14px"><a href="/accueil" style="font-size:13px;color:var(--bd)">Ou l'ouvrir directement dans le navigateur →</a></p>
@@ -354,7 +354,7 @@
     var deferred = null;
     var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
     var isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-    if (isStandalone) { if (installedHint) installedHint.hidden = false; }
+    if (isStandalone) { if (installedHint) installedHint.hidden = false; if (installBtn) installBtn.hidden = true; }
     else if (isIOS) { if (iosHint) iosHint.hidden = false; }
 
     // Pop-up d'installation (bannière bas d'écran)
@@ -366,10 +366,21 @@
     function popDismissed(){ try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch(_) { return false; } }
     function setPopDismissed(){ try { localStorage.setItem(DISMISS_KEY, '1'); } catch(_) {} }
     function showPop(){ if (pop && !isStandalone && !popDismissed()) pop.hidden = false; }
+    function manualHint(){
+      if (isIOS) return "Sur iPhone/iPad : appuyez sur Partager, puis « Sur l'écran d'accueil ».";
+      if (/android/i.test(window.navigator.userAgent)) return "Ouvrez le menu ⋮ du navigateur, puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »).";
+      return "Cliquez sur l'icône d'installation dans la barre d'adresse, ou menu ⋮ → « Installer à contre-temps ».";
+    }
     if (popClose) popClose.addEventListener('click', function(){ if (pop) pop.hidden = true; setPopDismissed(); });
     if (popBtn) popBtn.addEventListener('click', async function(){
-      if (deferred) { deferred.prompt(); try { await deferred.userChoice; } catch(_) {} deferred = null; }
-      if (pop) pop.hidden = true; setPopDismissed();
+      if (deferred) {
+        deferred.prompt(); try { await deferred.userChoice; } catch(_) {} deferred = null;
+        if (pop) pop.hidden = true; setPopDismissed();
+      } else {
+        // Installation directe indisponible → on montre la marche à suivre
+        if (popMsg) popMsg.textContent = manualHint();
+        popBtn.hidden = true;
+      }
     });
     // iOS : pas de prompt automatique → pop-up avec instructions
     if (isIOS && !isStandalone && !popDismissed()) {
@@ -384,10 +395,13 @@
       setTimeout(showPop, 2500);
     });
     if (installBtn) installBtn.addEventListener('click', async function(){
-      if (!deferred) return;
-      deferred.prompt();
-      try { await deferred.userChoice; } catch(_) {}
-      deferred = null; installBtn.hidden = true;
+      if (deferred) {
+        deferred.prompt();
+        try { await deferred.userChoice; } catch(_) {}
+        deferred = null; installBtn.hidden = true;
+      } else if (iosHint) {
+        iosHint.textContent = manualHint(); iosHint.hidden = false;
+      }
     });
     window.addEventListener('appinstalled', function(){
       if (installBtn) installBtn.hidden = true;

@@ -1,4 +1,12 @@
-// Service worker — notifications push "à contre-temps"
+// Service worker — notifications push + installabilité PWA "à contre-temps"
+
+// Prise de contrôle rapide (pour que l'app soit reconnue installable au 1er chargement)
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
+// Gestionnaire fetch minimal (passe-plat réseau, sans cache).
+// Nécessaire pour que Chrome/Edge considèrent l'app installable (beforeinstallprompt).
+self.addEventListener("fetch", () => { /* laisse le réseau gérer la requête */ });
 
 self.addEventListener("push", (event) => {
   let data = {};
