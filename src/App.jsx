@@ -945,8 +945,9 @@ export default function ContreTempsSite() {
             nous créons des instants.
           </p>
           <p className="mt-6 max-w-lg mx-auto text-[13px] md:text-sm leading-relaxed" style={{ color: COLORS.cream, opacity: 0.8 }}>
-            Artisan boulanger à Clermont-Ferrand — petits-déjeuners d'entreprise, brunchs, lunchs,
-            apéritifs, cafés gourmands et biscuiterie. Livraison &amp; retrait sur les marchés.
+            Artisan boulanger à Clermont-Ferrand — pain au levain, viennoiserie artisanale et brunchs
+            faits maison. Aussi : apéritifs, petits-déjeuners d'entreprise, cafés gourmands et biscuiterie.
+            Livraison &amp; retrait sur les marchés.
           </p>
           <a href="#nos-instants" className="mt-12 inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs tracked uppercase" style={{ backgroundColor: COLORS.cream, color: COLORS.blueDeep }}>
             Découvrir nos instants
@@ -1560,7 +1561,7 @@ export default function ContreTempsSite() {
             <a href="tel:+33601482890" className="flex items-center gap-2.5" style={{ color: COLORS.cream, textDecoration: "none" }}><Phone size={13} strokeWidth={1.6} /> 06 01 48 28 90</a>
             <div className="flex items-center gap-2.5"><Mail size={13} strokeWidth={1.6} /> acontretemps@fournilvivant.fr</div>
             <a href="/traiteur-clermont-ferrand" className="flex items-center gap-2.5 mt-1" style={{ color: COLORS.cream, opacity: 0.9, textDecoration: "underline" }}>
-              <MapPin size={13} strokeWidth={1.6} /> Traiteur à Clermont-Ferrand
+              <MapPin size={13} strokeWidth={1.6} /> Boulangerie &amp; viennoiserie à Clermont-Ferrand
             </a>
           </div>
 
@@ -1601,17 +1602,17 @@ export default function ContreTempsSite() {
           <p className="text-center text-[10px] tracked mb-4" style={{ color: COLORS.cream, opacity: 0.55 }}>NOS PRESTATIONS À CLERMONT-FERRAND</p>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px]">
             {[
-              ["Traiteur", "/traiteur-clermont-ferrand"],
-              ["Événements & réceptions", "/traiteur-evenement-clermont-ferrand"],
-              ["Brunch mariage & baby shower", "/brunch-mariage-clermont-ferrand"],
+              ["Pain au levain", "/pain-au-levain-clermont-ferrand"],
+              ["Viennoiserie artisanale", "/viennoiserie-artisanale-clermont-ferrand"],
               ["Brunch en livraison", "/brunch-clermont-ferrand"],
               ["Box apéro & apéritif", "/plateau-aperitif-clermont-ferrand"],
               ["Lunch & déjeuner", "/lunch-clermont-ferrand"],
-              ["Pain au levain", "/pain-au-levain-clermont-ferrand"],
               ["Biscuiterie", "/biscuiterie-clermont-ferrand"],
-              ["Traiteur végétarien", "/traiteur-vegetarien-clermont-ferrand"],
               ["Coffrets gourmands & cadeaux d'entreprise", "/coffret-cadeau-gourmand"],
-              ["Viennoiserie artisanale", "/viennoiserie-artisanale-clermont-ferrand"],
+              ["Événements & réceptions", "/traiteur-evenement-clermont-ferrand"],
+              ["Brunch mariage & baby shower", "/brunch-mariage-clermont-ferrand"],
+              ["Traiteur végétarien", "/traiteur-vegetarien-clermont-ferrand"],
+              ["Traiteur à Clermont-Ferrand", "/traiteur-clermont-ferrand"],
             ].map(([label, href]) => (
               <a key={href} href={href} style={{ color: COLORS.cream, opacity: 0.8, textDecoration: "none" }}>{label}</a>
             ))}
