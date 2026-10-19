@@ -51,3 +51,24 @@ insert into caisse_articles (name, price, color, category, position) values
   ('Sablés (sachet)',   5.00, '#7C8B5E', 'Biscuiterie',    9),
   ('Fondant chocolat',  3.50, '#7C8B5E', 'Biscuiterie',   10)
 on conflict do nothing;
+
+-- ─── Factures (numérotation séquentielle par année) ───────────────────────────
+create table if not exists caisse_factures (
+  id              uuid primary key default gen_random_uuid(),
+  numero          text not null,          -- ex "2026-0001"
+  annee           int  not null,
+  seq             int  not null,
+  created_at      timestamptz default now(),
+  client_nom      text,
+  client_adresse  text,
+  client_email    text,
+  items           jsonb not null default '[]'::jsonb,
+  total           numeric(10,2) not null,
+  payment_method  text,
+  vente_local_id  text
+);
+alter table caisse_factures enable row level security;
+drop policy if exists caisse_factures_all on caisse_factures;
+create policy caisse_factures_all on caisse_factures
+  for all to anon, authenticated using (true) with check (true);
+create unique index if not exists caisse_factures_annee_seq_uq on caisse_factures(annee, seq);

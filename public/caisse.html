@@ -97,6 +97,13 @@
   .pad button{height:76px;border-radius:50%;background:rgba(243,231,218,.14);color:var(--cr);font-size:28px;font-family:var(--serif);}
   .pad button:active{background:rgba(243,231,218,.3);}
 
+  /* Documents imprimables (ticket / facture) */
+  #printArea{display:none;}
+  @media print{
+    html,body{background:#fff;overflow:visible;height:auto;}
+    body > *{display:none !important;}
+    #printArea{display:block !important;}
+  }
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:15px;z-index:70;opacity:0;transition:opacity .2s;}
   .toast.show{opacity:1;}
   @media (max-width:720px){ .right{width:300px;} .pay .pbtn{font-size:14px;} }
@@ -116,6 +123,7 @@
   <div class="brand"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F3E7DA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-7-10.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 7 2.8C19 15.4 12 20 12 20z"/></svg> Caisse</div>
   <div class="spacer"></div>
   <div class="net off" id="net"><span class="dot"></span><span id="netLabel">…</span></div>
+  <button class="tbtn" id="btnDoc" disabled style="opacity:.45">Reçu</button>
   <button class="tbtn" id="btnArticles">Articles</button>
   <button class="tbtn" id="btnDay">Journée</button>
   <button class="tbtn" id="btnLock">Verrouiller</button>
@@ -139,6 +147,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="printArea"></div>
 
 <script>
 /* ───────────────── Config ───────────────── */
@@ -169,6 +178,19 @@ var articles = LS.get("caisse_articles_cache", []);
 var ticket = [];           // {id,name,price,qty}
 var queue = LS.get("caisse_queue", []);      // ventes non synchronisées
 var today = LS.get("caisse_today", {date:"", especes:0, carte:0, sumup:0, count:0});
+var lastSale = null;
+
+/* Identité (facture / ticket) — micro-entreprise, franchise en base de TVA */
+var SELLER = {
+  nom: "à contre-temps — Fournil vivant",
+  resp: "Mylène KLYSZ",
+  adresse: "4 rue des Vignes Rousses, 63360 Gerzat",
+  siret: "108 719 105 00018",
+  tel: "06 01 48 28 90",
+  email: "acontretemps@fournilvivant.fr",
+  web: "www.fournilvivant.fr",
+  tva: "TVA non applicable, art. 293 B du CGI"
+};
 
 /* ───────────────── Réseau ───────────────── */
 function setNet(){
@@ -268,6 +290,7 @@ function recordSale(method, extra){
   LS.set("caisse_today", today);
   // File de synchro
   queue.push(sale); LS.set("caisse_queue", queue);
+  lastSale = sale; var bd = document.getElementById("btnDoc"); if (bd){ bd.disabled = false; bd.style.opacity = 1; }
   ticket = []; renderTicket(); renderDay();
   toast("Encaissé " + eur(sale.total) + " · " + ({especes:"espèces",carte:"carte",sumup:"SumUp"}[method]));
   syncQueue();
@@ -407,6 +430,106 @@ document.getElementById("btnArticles").onclick = function(){
   ov.querySelector("#edClose").onclick = function(){ ov.remove(); loadArticles(); };
   draw();
 };
+
+/* ───────────────── PIN ───────────────── */
+/* ───────────────── Ticket / Facture ───────────────── */
+var PAYNAME = { especes:"espèces", carte:"carte bancaire", sumup:"carte bancaire (SumUp)" };
+function fdate(iso){ try{ return new Date(iso||Date.now()).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}); }catch(e){ return ""; } }
+function printDoc(html){ document.getElementById("printArea").innerHTML = html; setTimeout(function(){ window.print(); }, 60); }
+
+function receiptHTML(s){
+  var rows = s.items.map(function(l){
+    return '<tr><td style="padding:2px 0;">'+l.qty+'× '+esc(l.name)+'</td><td style="text-align:right;">'+eur(l.price*l.qty)+'</td></tr>';
+  }).join("");
+  return '<div style="max-width:320px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#000;padding:14px;">'
+    + '<div style="text-align:center;line-height:1.3;"><div style="font-size:19px;font-weight:bold;">à contre-temps</div>'
+    + '<div style="font-size:11px;letter-spacing:1px;">FOURNIL VIVANT</div>'
+    + '<div style="font-size:10.5px;margin-top:5px;">'+esc(SELLER.adresse)+'</div>'
+    + '<div style="font-size:10.5px;">SIRET '+SELLER.siret+'</div>'
+    + '<div style="font-size:10.5px;">'+SELLER.tel+'</div></div>'
+    + '<div style="border-top:1px dashed #000;margin:10px 0;"></div>'
+    + '<div style="font-size:11px;">Reçu — '+fdate(s.created_at)+'</div>'
+    + '<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:6px;">'+rows+'</table>'
+    + '<div style="border-top:1px dashed #000;margin:8px 0;"></div>'
+    + '<div style="display:flex;justify-content:space-between;font-weight:bold;font-size:15px;"><span>TOTAL</span><span>'+eur(s.total)+'</span></div>'
+    + '<div style="font-size:11.5px;margin-top:4px;">Réglé par '+(PAYNAME[s.payment_method]||s.payment_method)+'</div>'
+    + '<div style="font-size:10.5px;margin-top:10px;font-style:italic;">'+SELLER.tva+'</div>'
+    + '<div style="text-align:center;font-size:12px;margin-top:12px;">Merci et à bientôt !</div></div>';
+}
+
+function invoiceHTML(f){
+  var rows = f.items.map(function(l){
+    return '<tr><td style="padding:6px 0;border-bottom:1px solid #eee;">'+esc(l.name)+'</td>'
+      + '<td style="text-align:center;border-bottom:1px solid #eee;">'+l.qty+'</td>'
+      + '<td style="text-align:right;border-bottom:1px solid #eee;">'+eur(l.price)+'</td>'
+      + '<td style="text-align:right;border-bottom:1px solid #eee;">'+eur(l.price*l.qty)+'</td></tr>';
+  }).join("");
+  return '<div style="max-width:720px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#000;padding:26px;font-size:13px;line-height:1.5;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+    +   '<div><div style="font-size:24px;font-weight:bold;">à contre-temps</div><div style="letter-spacing:1px;">FOURNIL VIVANT</div></div>'
+    +   '<div style="text-align:right;"><div style="font-size:22px;font-weight:bold;">FACTURE</div><div>N° '+esc(f.numero)+'</div><div>'+fdate(f.created_at)+'</div></div>'
+    + '</div><div style="border-top:2px solid #000;margin:14px 0;"></div>'
+    + '<div style="display:flex;justify-content:space-between;gap:20px;">'
+    +   '<div style="font-size:12px;"><b>Émetteur</b><br>'+esc(SELLER.nom)+'<br>'+esc(SELLER.resp)+'<br>'+esc(SELLER.adresse)+'<br>SIRET '+SELLER.siret+'<br>'+SELLER.tel+' · '+esc(SELLER.email)+'</div>'
+    +   '<div style="font-size:12px;text-align:right;"><b>Client</b><br>'+esc(f.client_nom||"—")+(f.client_adresse?'<br>'+esc(f.client_adresse):"")+(f.client_email?'<br>'+esc(f.client_email):"")+'</div>'
+    + '</div>'
+    + '<table style="width:100%;border-collapse:collapse;margin-top:20px;font-size:13px;">'
+    +   '<thead><tr style="border-bottom:2px solid #000;"><th style="text-align:left;padding-bottom:4px;">Désignation</th><th style="text-align:center;">Qté</th><th style="text-align:right;">P.U.</th><th style="text-align:right;">Total</th></tr></thead>'
+    +   '<tbody>'+rows+'</tbody></table>'
+    + '<div style="text-align:right;margin-top:14px;font-size:18px;font-weight:bold;">TOTAL : '+eur(f.total)+'</div>'
+    + '<div style="text-align:right;font-size:11.5px;font-style:italic;margin-top:2px;">'+SELLER.tva+'</div>'
+    + '<div style="margin-top:14px;">Facture acquittée — réglée par '+(PAYNAME[f.payment_method]||f.payment_method)+' le '+fdate(f.created_at)+'.</div>'
+    + '<div style="margin-top:28px;font-size:10.5px;color:#555;border-top:1px solid #ccc;padding-top:8px;">'+esc(SELLER.nom)+' · '+esc(SELLER.adresse)+' · SIRET '+SELLER.siret+' · '+esc(SELLER.email)+' · '+SELLER.web+' — Entreprise individuelle, '+SELLER.tva+'.</div></div>';
+}
+
+function nextFactureNumber(){
+  var y = new Date().getFullYear();
+  return sbFetch("caisse_factures?annee=eq."+y+"&select=seq&order=seq.desc&limit=1")
+    .then(function(r){ return r.json(); })
+    .then(function(d){ var seq=(d&&d[0]?d[0].seq:0)+1; return { annee:y, seq:seq, numero:y+"-"+String(seq).padStart(4,"0") }; });
+}
+
+function showDocMenu(s){
+  if (!s){ toast("Aucune vente récente"); return; }
+  var ov=document.createElement("div"); ov.className="ov";
+  ov.innerHTML='<div class="card"><h3>Reçu / Facture</h3><div class="sub">Dernière vente : '+eur(s.total)+' · '+(PAYNAME[s.payment_method]||s.payment_method)+'</div>'
+    + '<button class="big ok" id="dkT">🧾 Ticket de caisse</button>'
+    + '<button class="big ghost" id="dkF" style="margin-top:10px;">Facture (client pro)</button>'
+    + '<button class="big ghost" id="dkC" style="margin-top:10px;">Fermer</button></div>';
+  document.body.appendChild(ov);
+  ov.querySelector("#dkC").onclick=function(){ ov.remove(); };
+  ov.querySelector("#dkT").onclick=function(){ ov.remove(); printDoc(receiptHTML(s)); };
+  ov.querySelector("#dkF").onclick=function(){ ov.remove(); showFactureForm(s); };
+}
+
+function showFactureForm(s){
+  var ov=document.createElement("div"); ov.className="ov";
+  ov.innerHTML='<div class="card"><h3>Nouvelle facture</h3><div class="sub">Coordonnées du client (le nom suffit).</div>'
+    + '<input class="fi" id="fcNom" placeholder="Nom / Société du client" />'
+    + '<input class="fi" id="fcAdr" placeholder="Adresse (optionnel)" style="margin-top:10px;" />'
+    + '<input class="fi" id="fcMail" placeholder="E-mail (optionnel)" style="margin-top:10px;" />'
+    + '<div id="fcMsg" style="font-size:13px;color:var(--rd);min-height:18px;margin-top:8px;"></div>'
+    + '<button class="big ok" id="fcGo">Créer la facture</button>'
+    + '<button class="big ghost" id="fcC" style="margin-top:10px;">Annuler</button></div>';
+  document.body.appendChild(ov);
+  var msg=ov.querySelector("#fcMsg");
+  ov.querySelector("#fcC").onclick=function(){ ov.remove(); };
+  ov.querySelector("#fcGo").onclick=function(){
+    var nom=ov.querySelector("#fcNom").value.trim();
+    if(!nom){ msg.textContent="Indiquez au moins le nom du client."; return; }
+    if(!navigator.onLine){ msg.textContent="La facture nécessite une connexion (numéro). Réessayez en ligne."; return; }
+    var go=ov.querySelector("#fcGo"); go.disabled=true; go.textContent="Création…";
+    nextFactureNumber().then(function(num){
+      var fac={ numero:num.numero, annee:num.annee, seq:num.seq, client_nom:nom,
+        client_adresse:ov.querySelector("#fcAdr").value.trim()||null, client_email:ov.querySelector("#fcMail").value.trim()||null,
+        items:s.items, total:s.total, payment_method:s.payment_method, vente_local_id:s.local_id };
+      return sbFetch("caisse_factures",{method:"POST",body:JSON.stringify(fac)}).then(function(r){
+        if(!r.ok) throw new Error(r.status); return r.json();
+      }).then(function(d){ var f=(d&&d[0])?d[0]:fac; ov.remove(); printDoc(invoiceHTML(f)); });
+    }).catch(function(){ msg.textContent="Erreur (numéro déjà pris ?). Réessayez."; go.disabled=false; go.textContent="Créer la facture"; });
+  };
+}
+document.getElementById("btnDoc").onclick=function(){ showDocMenu(lastSale); };
 
 /* ───────────────── PIN ───────────────── */
 var pinBuf = "";
