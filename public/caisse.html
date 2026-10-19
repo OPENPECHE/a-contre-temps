@@ -5,8 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Caisse — à contre-temps</title>
-<link rel="manifest" href="/manifest.json" />
-<link rel="apple-touch-icon" href="/icons/icon-192.png" />
+<link rel="manifest" href="/caisse.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/caisse-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Caisse" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#3E5A70" />
 <style>
   :root{
@@ -126,6 +130,7 @@
   <button class="tbtn" id="btnDoc" disabled style="opacity:.45">Reçu</button>
   <button class="tbtn" id="btnArticles">Articles</button>
   <button class="tbtn" id="btnDay">Journée</button>
+  <button class="tbtn" id="btnInstall" style="display:none;background:var(--cr);color:var(--bd)">Installer l'app</button>
   <button class="tbtn" id="btnLock">Verrouiller</button>
 </div>
 
@@ -638,6 +643,19 @@ buildPad(); drawDots();
 if (!pinNeeded()) document.getElementById("pinScreen").classList.add("hidden");
 renderArticles(); renderTicket(); renderDay(); setNet(); loadArticles();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.js", { scope:"/caisse" }).catch(function(){});
+
+/* Installation en application (PWA) */
+(function(){
+  var btn = document.getElementById("btnInstall"), deferred = null;
+  var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  var isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  if (!standalone && isIOS){ btn.style.display="inline-block"; btn.onclick=function(){ toast("Sur iPad : bouton Partager, puis « Sur l'écran d'accueil »"); }; }
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault(); deferred = e; btn.style.display="inline-block";
+    btn.onclick = async function(){ deferred.prompt(); try{ await deferred.userChoice; }catch(_){} deferred=null; btn.style.display="none"; };
+  });
+  window.addEventListener("appinstalled", function(){ btn.style.display="none"; });
+})();
 </script>
 </body>
 </html>
