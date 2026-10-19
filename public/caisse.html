@@ -388,45 +388,61 @@ document.getElementById("btnDay").onclick = function(){
 document.getElementById("btnArticles").onclick = function(){
   var ov = document.createElement("div"); ov.className="ov";
   var colors = ["#A6713F","#C2843E","#7C8B5E","#7C97AC","#3E5A70","#B0768C","#5E8B8B"];
-  var list = articles.slice();
-  ov.innerHTML = '<div class="card"><h3>Articles</h3><div class="sub">Nom, prix (€) et couleur. Les changements sont enregistrés en ligne.</div>'
-    + '<div id="edList"></div>'
-    + '<button class="big ghost" id="edAdd" style="margin-top:12px;">+ Ajouter un article</button>'
+  ov.innerHTML = '<div class="card"><h3>Articles &amp; catégories</h3>'
+    + '<div class="sub">Classez vos articles par catégorie. Touchez la pastille pour la couleur. Tout est enregistré en ligne.</div>'
+    + '<div id="edBox"></div>'
+    + '<button class="big ghost" id="edNewCat" style="margin-top:14px;">+ Nouvelle catégorie</button>'
     + '<button class="big ok" id="edClose" style="margin-top:10px;">Terminé</button></div>';
   document.body.appendChild(ov);
-  var elList = ov.querySelector("#edList");
+  var box = ov.querySelector("#edBox");
+
+  function maxPos(){ return articles.reduce(function(m,a){ return Math.max(m, a.position||0); }, 0); }
+  function reload(){ return sbFetch("caisse_articles?order=position.asc,name.asc").then(function(r){return r.json();})
+      .then(function(d){ if(Array.isArray(d)){ articles=d; LS.set("caisse_articles_cache", d); renderArticles(); } draw(); }); }
+  function patch(a, body){ if(!navigator.onLine){ toast("Hors ligne — non enregistré"); return Promise.resolve(); }
+      return sbFetch("caisse_articles?id=eq."+a.id, { method:"PATCH", body:JSON.stringify(body) }); }
+  function createIn(cat){ if(!navigator.onLine){ toast("Hors ligne"); return; }
+      sbFetch("caisse_articles", { method:"POST", body:JSON.stringify({ name:"Nouvel article", price:0, color:colors[0], category:cat, position:maxPos()+1, active:true }) })
+        .then(function(){ reload(); }); }
+  function del(a){ if(!confirm("Supprimer « "+a.name+" » ?")) return;
+      (a.id? sbFetch("caisse_articles?id=eq."+a.id, { method:"DELETE" }) : Promise.resolve()).then(function(){ reload(); }); }
+  function renameCat(oldName, newName){ newName=(newName||"").trim();
+      if(!newName || newName===oldName) return;
+      if(!navigator.onLine){ toast("Hors ligne"); draw(); return; }
+      sbFetch("caisse_articles?category=eq."+encodeURIComponent(oldName), { method:"PATCH", body:JSON.stringify({category:newName}) }).then(function(){ reload(); }); }
+
+  function groups(){ var g={}, order=[]; articles.forEach(function(a){ var c=a.category||"Sans catégorie"; if(!g[c]){g[c]=[];order.push(c);} g[c].push(a); }); return {g:g, order:order}; }
+
   function draw(){
-    elList.innerHTML = "";
-    list.forEach(function(a,i){
-      var row = document.createElement("div"); row.className="ed-row";
-      row.innerHTML = '<button class="sw" style="background:'+(a.color||"#7C97AC")+'"></button>'
-        + '<input class="en" value="'+esc(a.name)+'" placeholder="Nom"/>'
-        + '<input class="ep" value="'+(a.price!=null?(+a.price).toFixed(2):"")+'" inputmode="decimal"/>'
-        + '<button class="ed-del">×</button>';
-      row.querySelector(".en").onchange = function(e){ a.name=e.target.value; save(a); };
-      row.querySelector(".ep").onchange = function(e){ a.price=parseFloat(String(e.target.value).replace(",","."))||0; e.target.value=a.price.toFixed(2); save(a); };
-      row.querySelector(".sw").onclick = function(){ var k=colors.indexOf(a.color); a.color=colors[(k+1)%colors.length]; row.querySelector(".sw").style.background=a.color; save(a); };
-      row.querySelector(".ed-del").onclick = function(){ if(confirm("Supprimer « "+a.name+" » ?")) del(a,i); };
-      elList.appendChild(row);
+    var gg = groups(); box.innerHTML = "";
+    gg.order.forEach(function(cat){
+      var sec = document.createElement("div"); sec.style.marginTop = "18px";
+      var head = document.createElement("div"); head.style.cssText = "display:flex;align-items:center;gap:8px;";
+      head.innerHTML = '<input class="catName" value="'+esc(cat)+'" style="flex:1;border:none;border-bottom:1px solid var(--bs);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ru);font-weight:600;padding:5px 2px;background:none;"/>';
+      head.querySelector(".catName").onchange = function(e){ renameCat(cat, e.target.value); };
+      sec.appendChild(head);
+      gg.g[cat].forEach(function(a){
+        var row = document.createElement("div"); row.className="ed-row";
+        row.innerHTML = '<button class="sw" style="background:'+(a.color||"#7C97AC")+'"></button>'
+          + '<input class="en" value="'+esc(a.name)+'" placeholder="Nom"/>'
+          + '<input class="ep" value="'+(a.price!=null?(+a.price).toFixed(2):"")+'" inputmode="decimal"/>'
+          + '<button class="ed-del">×</button>';
+        row.querySelector(".en").onchange = function(e){ a.name=e.target.value; LS.set("caisse_articles_cache",articles); patch(a,{name:a.name}); };
+        row.querySelector(".ep").onchange = function(e){ a.price=parseFloat(String(e.target.value).replace(",","."))||0; e.target.value=a.price.toFixed(2); LS.set("caisse_articles_cache",articles); patch(a,{price:a.price}); };
+        row.querySelector(".sw").onclick = function(){ var k=colors.indexOf(a.color); a.color=colors[(k+1)%colors.length]; row.querySelector(".sw").style.background=a.color; LS.set("caisse_articles_cache",articles); patch(a,{color:a.color}); };
+        row.querySelector(".ed-del").onclick = function(){ del(a); };
+        sec.appendChild(row);
+      });
+      var add = document.createElement("button"); add.className="big ghost";
+      add.textContent = "+ Ajouter dans « "+cat+" »"; add.style.cssText = "margin-top:6px;font-size:13px;padding:9px;";
+      add.onclick = function(){ createIn(cat); };
+      sec.appendChild(add);
+      box.appendChild(sec);
     });
+    if (!gg.order.length) box.innerHTML = '<div class="sub" style="margin-top:14px;">Aucun article. Créez une catégorie pour commencer.</div>';
   }
-  function save(a){
-    if (!navigator.onLine){ toast("Hors ligne — modification non enregistrée"); return; }
-    var body = { name:a.name, price:a.price, color:a.color, category:a.category||"Articles", position:a.position||0, active:true };
-    if (a.id){
-      sbFetch("caisse_articles?id=eq."+a.id, { method:"PATCH", body:JSON.stringify(body) })
-        .then(function(){ refresh(); });
-    } else {
-      sbFetch("caisse_articles", { method:"POST", body:JSON.stringify(body) })
-        .then(function(r){ return r.json(); }).then(function(d){ if(d&&d[0]) a.id=d[0].id; refresh(); });
-    }
-  }
-  function del(a,i){
-    if (a.id) sbFetch("caisse_articles?id=eq."+a.id, { method:"DELETE" }).then(function(){ refresh(); });
-    list.splice(i,1); draw();
-  }
-  function refresh(){ loadArticles(); }
-  ov.querySelector("#edAdd").onclick = function(){ var a={name:"Nouvel article",price:0,color:colors[0],category:"Articles",position:(list.length+1)}; list.push(a); draw(); save(a); };
+
+  ov.querySelector("#edNewCat").onclick = function(){ var n = prompt("Nom de la nouvelle catégorie :", ""); if(n && n.trim()) createIn(n.trim()); };
   ov.querySelector("#edClose").onclick = function(){ ov.remove(); loadArticles(); };
   draw();
 };
