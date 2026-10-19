@@ -363,6 +363,57 @@ function renderDay(){
     + '<div><b>'+eur(today.carte+today.sumup)+'</b>Carte</div>'
     + '<div><b>'+eur(today.especes+today.carte+today.sumup)+'</b>Total ('+today.count+')</div>';
 }
+/* ───────────────── Export du journal de caisse (Excel) ───────────────── */
+function itemsSummary(items){ try{ return (items||[]).map(function(l){ return l.qty+"× "+l.name; }).join(", "); }catch(e){ return ""; } }
+function journalRows(ventes){
+  var rows = [["Date","Heure","Référence","Désignation","Règlement","Montant (€)"]];
+  var tot=0, te=0, tc=0;
+  ventes.forEach(function(v){
+    var d = new Date(v.created_at);
+    var pay = v.payment_method==="especes" ? "Espèces" : (v.payment_method==="sumup" ? "Carte (SumUp)" : "Carte");
+    rows.push([ d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),
+      v.local_id||"", itemsSummary(v.items), pay, Number(v.total) ]);
+    tot+=Number(v.total); if(v.payment_method==="especes") te+=Number(v.total); else tc+=Number(v.total);
+  });
+  rows.push([]);
+  rows.push(["","","","","Total espèces", Math.round(te*100)/100]);
+  rows.push(["","","","","Total carte", Math.round(tc*100)/100]);
+  rows.push(["","","","","TOTAL", Math.round(tot*100)/100]);
+  return rows;
+}
+function dl(blob, name){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+function exportCSV(rows, fn){
+  var csv = rows.map(function(r){ return r.map(function(c){ var s=(c==null?"":String(c)); if(typeof c==="number") s=s.replace(".",","); if(/[;"\n\r]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }).join(";"); }).join("\r\n");
+  dl(new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"}), fn.replace(/\.xlsx$/,".csv"));
+  toast("Journal exporté (CSV)");
+}
+function exportXLSX(rows, fn){
+  function build(){ try{
+    var wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"]=[{wch:11},{wch:7},{wch:16},{wch:42},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, "Journal de caisse");
+    XLSX.writeFile(wb, fn); toast("Journal exporté (Excel)");
+  }catch(e){ exportCSV(rows, fn); } }
+  if (window.XLSX) return build();
+  var s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  s.onload=build; s.onerror=function(){ exportCSV(rows, fn); }; document.head.appendChild(s);
+}
+function exportJournal(period){
+  if (!navigator.onLine){ toast("Export : connexion nécessaire"); return; }
+  var now=new Date(), from=null, to=null, label="tout";
+  if (period==="today"){ from=new Date(now.getFullYear(),now.getMonth(),now.getDate()); label="jour_"+from.toISOString().slice(0,10); }
+  else if (period==="month"){ from=new Date(now.getFullYear(),now.getMonth(),1); label="mois_"+from.toISOString().slice(0,7); }
+  else if (period==="lastmonth"){ from=new Date(now.getFullYear(),now.getMonth()-1,1); to=new Date(now.getFullYear(),now.getMonth(),1); label="mois_"+from.toISOString().slice(0,7); }
+  var q="caisse_ventes?select=created_at,local_id,total,payment_method,items&order=created_at.asc";
+  if (from) q+="&created_at=gte."+from.toISOString();
+  if (to)   q+="&created_at=lt."+to.toISOString();
+  toast("Préparation de l'export…");
+  sbFetch(q).then(function(r){ return r.json(); }).then(function(v){
+    if(!Array.isArray(v) || !v.length){ toast("Aucune vente sur la période"); return; }
+    exportXLSX(journalRows(v), "journal-caisse_"+label+".xlsx");
+  }).catch(function(){ toast("Erreur lors de l'export"); });
+}
+
 document.getElementById("btnDay").onclick = function(){
   var tot = today.especes+today.carte+today.sumup;
   var ov = document.createElement("div"); ov.className="ov";
@@ -371,11 +422,20 @@ document.getElementById("btnDay").onclick = function(){
     + line("Espèces", today.especes) + line("Carte (terminal + manuel)", today.carte+today.sumup)
     + '<div style="border-top:2px solid var(--bs);margin:10px 0;"></div>'
     + line("TOTAL", tot) + '<div class="sub" style="margin-top:4px;">'+today.count+' vente(s) · '+queue.length+' en attente de synchro</div>'
-    + '<button class="big ghost" id="dC" style="margin-top:16px;">Fermer</button>'
+    + '<div style="border-top:1px solid var(--bs);margin:14px 0 8px;"></div>'
+    + '<div class="sub" style="margin-bottom:8px;">Exporter le journal de caisse (Excel) :</div>'
+    + '<div class="row"><button class="big ghost" id="exM">Ce mois</button><button class="big ghost" id="exL">Mois dernier</button></div>'
+    + '<div class="row" style="margin-top:8px;"><button class="big ghost" id="exJ">Aujourd\'hui</button><button class="big ghost" id="exT">Tout</button></div>'
+    + '<div style="border-top:1px solid var(--bs);margin:14px 0 8px;"></div>'
+    + '<button class="big ghost" id="dC">Fermer</button>'
     + '<button class="big ghost" id="dR" style="margin-top:10px;color:var(--rd);">Clôturer la journée (remettre à zéro)</button></div>';
   function line(l,v){ return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:16px;"><span>'+l+'</span><b>'+eur(v)+'</b></div>'; }
   document.body.appendChild(ov);
   ov.querySelector("#dC").onclick=function(){ ov.remove(); };
+  ov.querySelector("#exJ").onclick=function(){ exportJournal("today"); };
+  ov.querySelector("#exM").onclick=function(){ exportJournal("month"); };
+  ov.querySelector("#exL").onclick=function(){ exportJournal("lastmonth"); };
+  ov.querySelector("#exT").onclick=function(){ exportJournal("all"); };
   ov.querySelector("#dR").onclick=function(){
     if (confirm("Clôturer la journée ? Les ventes restent enregistrées dans la base, seul le compteur du jour est remis à zéro.")){
       today = { date:new Date().toISOString().slice(0,10), especes:0, carte:0, sumup:0, count:0 };
