@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Caisse — à contre-temps</title>
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/icon-192.png" />
+<meta name="theme-color" content="#3E5A70" />
+<style>
+  :root{
+    --bd:#3E5A70; --b:#7C97AC; --bs:#D6DFE5; --cr:#F3E7DA; --pp:#FBF8F4;
+    --ink:#2B2925; --is:rgba(43,41,37,.6); --ru:#A6713F; --gn:#7C8B5E; --rd:#B0402F;
+    --sans:'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --serif:'Fraunces', Georgia, serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);overflow:hidden;}
+  button{font-family:var(--sans);cursor:pointer;border:none;}
+  .hidden{display:none !important;}
+
+  /* Barre du haut */
+  .top{height:56px;background:var(--bd);color:var(--cr);display:flex;align-items:center;gap:14px;padding:0 16px;}
+  .top .brand{font-family:var(--serif);font-size:19px;font-style:italic;display:flex;align-items:center;gap:8px;}
+  .top .brand img{height:24px;}
+  .top .spacer{flex:1;}
+  .net{font-size:12px;padding:5px 11px;border-radius:999px;display:flex;align-items:center;gap:6px;}
+  .net.on{background:rgba(124,139,94,.3);} .net.off{background:rgba(176,64,47,.35);}
+  .net .dot{width:8px;height:8px;border-radius:50%;background:#9FB27A;} .net.off .dot{background:#E08A7B;}
+  .tbtn{background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;padding:8px 13px;border-radius:9px;}
+  .tbtn:active{background:rgba(243,231,218,.28);}
+
+  /* Corps : grille articles | ticket */
+  .main{display:flex;height:calc(100% - 56px);}
+  .left{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch;}
+  .cat{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ru);margin:14px 4px 8px;font-weight:600;}
+  .cat:first-child{margin-top:2px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+  .art{min-height:84px;border-radius:14px;color:#fff;padding:12px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;box-shadow:0 2px 6px rgba(43,41,37,.12);transition:transform .05s;}
+  .art:active{transform:scale(.96);}
+  .art .n{font-size:15px;font-weight:500;line-height:1.2;}
+  .art .p{font-size:16px;font-weight:600;align-self:flex-end;}
+
+  /* Ticket */
+  .right{width:360px;max-width:42%;background:#fff;border-left:1px solid var(--bs);display:flex;flex-direction:column;}
+  .tk-head{padding:14px 16px;border-bottom:1px solid var(--bs);display:flex;align-items:center;justify-content:space-between;}
+  .tk-head h2{font-family:var(--serif);font-weight:500;font-size:18px;color:var(--bd);}
+  .tk-clear{font-size:12px;color:var(--rd);background:none;padding:6px;}
+  .tk-lines{flex:1;overflow-y:auto;padding:6px 0;}
+  .tk-empty{color:var(--is);text-align:center;padding:40px 20px;font-size:14px;}
+  .ln{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid #F0ECE5;}
+  .ln .ln-n{flex:1;min-width:0;}
+  .ln .ln-n b{font-weight:500;font-size:14.5px;display:block;}
+  .ln .ln-n span{font-size:12px;color:var(--is);}
+  .qbtn{width:34px;height:34px;border-radius:9px;background:var(--cr);color:var(--bd);font-size:20px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .qbtn:active{background:var(--bs);}
+  .ln .q{min-width:22px;text-align:center;font-weight:600;font-size:15px;}
+  .ln .ln-t{width:62px;text-align:right;font-weight:600;font-size:14.5px;}
+  .tk-foot{border-top:1px solid var(--bs);padding:14px 16px;}
+  .tot{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .tot .lbl{font-size:14px;color:var(--is);} .tot .val{font-family:var(--serif);font-size:30px;color:var(--bd);font-weight:500;}
+  .pay{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .pbtn{padding:15px 8px;border-radius:12px;font-size:15px;font-weight:600;color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .pbtn small{font-weight:400;font-size:11px;opacity:.9;}
+  .pbtn:active{filter:brightness(.94);}
+  .pbtn[disabled]{opacity:.4;}
+  .pb-esp{background:var(--gn);} .pb-cb{background:var(--b);} .pb-su{background:var(--bd);grid-column:1 / -1;}
+
+  /* Totaux du jour (bandeau bas du ticket) */
+  .day{display:flex;gap:10px;margin-top:12px;font-size:11.5px;color:var(--is);justify-content:space-between;}
+  .day b{color:var(--ink);font-size:13px;display:block;}
+
+  /* Overlays */
+  .ov{position:fixed;inset:0;background:rgba(43,41,37,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .card{background:#fff;border-radius:18px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;padding:22px;}
+  .card h3{font-family:var(--serif);font-size:21px;color:var(--bd);margin-bottom:6px;}
+  .card .sub{color:var(--is);font-size:13px;margin-bottom:16px;}
+  .fi{width:100%;padding:12px 13px;border:1px solid var(--bs);border-radius:10px;font-size:16px;font-family:var(--sans);margin-top:6px;background:var(--pp);}
+  .row{display:flex;gap:10px;}
+  .big{font-size:18px;padding:15px;border-radius:12px;font-weight:600;width:100%;}
+  .ok{background:var(--bd);color:var(--cr);} .ghost{background:var(--pp);color:var(--bd);border:1px solid var(--bs);}
+
+  /* Éditeur articles */
+  .ed-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F0ECE5;}
+  .ed-row .sw{width:28px;height:28px;border-radius:7px;flex-shrink:0;}
+  .ed-row .en{flex:1;border:none;background:none;font-size:15px;padding:4px;}
+  .ed-row .ep{width:72px;border:1px solid var(--bs);border-radius:7px;padding:6px;font-size:14px;text-align:right;}
+  .ed-del{background:none;color:var(--rd);font-size:20px;width:34px;}
+
+  /* PIN */
+  .pin-wrap{position:fixed;inset:0;background:var(--bd);color:var(--cr);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;gap:18px;}
+  .pin-dots{display:flex;gap:14px;}
+  .pin-dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--cr);} .pin-dots i.f{background:var(--cr);}
+  .pad{display:grid;grid-template-columns:repeat(3,76px);gap:14px;}
+  .pad button{height:76px;border-radius:50%;background:rgba(243,231,218,.14);color:var(--cr);font-size:28px;font-family:var(--serif);}
+  .pad button:active{background:rgba(243,231,218,.3);}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:15px;z-index:70;opacity:0;transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  @media (max-width:720px){ .right{width:300px;} .pay .pbtn{font-size:14px;} }
+</style>
+</head>
+<body>
+
+<!-- Écran PIN -->
+<div class="pin-wrap" id="pinScreen">
+  <div style="font-family:var(--serif);font-size:26px;font-style:italic;">Caisse — à contre-temps</div>
+  <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+  <div class="pad" id="pinPad"></div>
+  <div id="pinErr" style="font-size:13px;color:#E8B4AA;height:16px;"></div>
+</div>
+
+<div class="top">
+  <div class="brand"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F3E7DA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-7-10.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 7 2.8C19 15.4 12 20 12 20z"/></svg> Caisse</div>
+  <div class="spacer"></div>
+  <div class="net off" id="net"><span class="dot"></span><span id="netLabel">…</span></div>
+  <button class="tbtn" id="btnArticles">Articles</button>
+  <button class="tbtn" id="btnDay">Journée</button>
+  <button class="tbtn" id="btnLock">Verrouiller</button>
+</div>
+
+<div class="main">
+  <div class="left" id="articles"></div>
+  <div class="right">
+    <div class="tk-head"><h2>Note en cours</h2><button class="tk-clear hidden" id="btnClear">Vider</button></div>
+    <div class="tk-lines" id="ticket"><div class="tk-empty">Touchez un article pour l'ajouter à la note.</div></div>
+    <div class="tk-foot">
+      <div class="tot"><span class="lbl">Total</span><span class="val" id="total">0,00&nbsp;€</span></div>
+      <div class="pay">
+        <button class="pbtn pb-esp" id="payEsp" disabled>Espèces<small>encaisser</small></button>
+        <button class="pbtn pb-cb" id="payCb" disabled>Carte<small>encaisser</small></button>
+        <button class="pbtn pb-su" id="paySu" disabled>Envoyer sur le SumUp<small>paiement carte sur le terminal</small></button>
+      </div>
+      <div class="day" id="dayStrip"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ───────────────── Config ───────────────── */
+var SB_URL = "https://jxxgafyqfbnqieiqltcn.supabase.co";
+var SB_KEY = "sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+var DEFAULT_PIN = "0000"; // modifiable ci-dessous (localStorage caisse_pin)
+
+function sbFetch(path, opts){
+  opts = opts || {};
+  return fetch(SB_URL + "/rest/v1/" + path, Object.assign({}, opts, {
+    headers: Object.assign({
+      apikey: SB_KEY, Authorization: "Bearer " + SB_KEY,
+      "Content-Type": "application/json",
+      Prefer: opts.method === "POST" ? "return=representation,resolution=merge-duplicates" : ""
+    }, opts.headers || {})
+  }));
+}
+var LS = {
+  get: function(k, d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set: function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".", ",") + " €"; }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function toast(msg){ var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2200); }
+
+/* ───────────────── État ───────────────── */
+var articles = LS.get("caisse_articles_cache", []);
+var ticket = [];           // {id,name,price,qty}
+var queue = LS.get("caisse_queue", []);      // ventes non synchronisées
+var today = LS.get("caisse_today", {date:"", especes:0, carte:0, sumup:0, count:0});
+
+/* ───────────────── Réseau ───────────────── */
+function setNet(){
+  var on = navigator.onLine;
+  var el = document.getElementById("net");
+  el.className = "net " + (on ? "on" : "off");
+  document.getElementById("netLabel").textContent = on ? (queue.length ? ("En ligne · "+queue.length+" à sync") : "En ligne") : "Hors ligne";
+  if (on) syncQueue();
+}
+window.addEventListener("online", setNet);
+window.addEventListener("offline", setNet);
+
+/* ───────────────── Articles ───────────────── */
+function loadArticles(){
+  if (!navigator.onLine){ renderArticles(); return; }
+  sbFetch("caisse_articles?active=eq.true&order=position.asc,name.asc")
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(Array.isArray(d)){ articles=d; LS.set("caisse_articles_cache", d); renderArticles(); } })
+    .catch(function(){ renderArticles(); });
+}
+function renderArticles(){
+  var box = document.getElementById("articles");
+  if (!articles.length){ box.innerHTML = '<div class="tk-empty">Aucun article. Touchez « Articles » pour en ajouter.</div>'; return; }
+  var cats = {}; var order = [];
+  articles.forEach(function(a){ var c=a.category||"Articles"; if(!cats[c]){cats[c]=[];order.push(c);} cats[c].push(a); });
+  var html = "";
+  order.forEach(function(c){
+    html += '<div class="cat">'+esc(c)+'</div><div class="grid">';
+    cats[c].forEach(function(a){
+      html += '<button class="art" style="background:'+(a.color||"#7C97AC")+'" data-id="'+a.id+'">'
+           +  '<span class="n">'+esc(a.name)+'</span><span class="p">'+eur(+a.price)+'</span></button>';
+    });
+    html += '</div>';
+  });
+  box.innerHTML = html;
+  box.querySelectorAll(".art").forEach(function(b){
+    b.addEventListener("click", function(){ addToTicket(b.getAttribute("data-id")); });
+  });
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]; }); }
+
+/* ───────────────── Ticket ───────────────── */
+function addToTicket(id){
+  var a = articles.find(function(x){ return String(x.id)===String(id); });
+  if (!a) return;
+  var ln = ticket.find(function(x){ return x.id===a.id; });
+  if (ln) ln.qty++;
+  else ticket.push({ id:a.id, name:a.name, price:+a.price, qty:1 });
+  renderTicket();
+}
+function changeQty(id, d){
+  var ln = ticket.find(function(x){ return x.id===id; }); if(!ln) return;
+  ln.qty += d; if (ln.qty<=0) ticket = ticket.filter(function(x){ return x.id!==id; });
+  renderTicket();
+}
+function ticketTotal(){ return ticket.reduce(function(s,l){ return s + l.price*l.qty; }, 0); }
+function renderTicket(){
+  var box = document.getElementById("ticket");
+  if (!ticket.length){
+    box.innerHTML = '<div class="tk-empty">Touchez un article pour l\'ajouter à la note.</div>';
+    document.getElementById("btnClear").classList.add("hidden");
+  } else {
+    var html = "";
+    ticket.forEach(function(l){
+      html += '<div class="ln"><div class="ln-n"><b>'+esc(l.name)+'</b><span>'+eur(l.price)+'</span></div>'
+           +  '<button class="qbtn" data-m="'+l.id+'">−</button><span class="q">'+l.qty+'</span>'
+           +  '<button class="qbtn" data-p="'+l.id+'">+</button>'
+           +  '<span class="ln-t">'+eur(l.price*l.qty)+'</span></div>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll("[data-p]").forEach(function(b){ b.onclick=function(){ changeQty(b.getAttribute("data-p"),1); }; });
+    box.querySelectorAll("[data-m]").forEach(function(b){ b.onclick=function(){ changeQty(b.getAttribute("data-m"),-1); }; });
+    document.getElementById("btnClear").classList.remove("hidden");
+  }
+  var tot = ticketTotal();
+  document.getElementById("total").innerHTML = eur(tot);
+  var has = tot>0;
+  document.getElementById("payEsp").disabled = !has;
+  document.getElementById("payCb").disabled = !has;
+  document.getElementById("paySu").disabled = !has || !navigator.onLine;
+}
+
+/* ───────────────── Encaissement ───────────────── */
+function recordSale(method, extra){
+  var sale = {
+    local_id: uid(),
+    total: Math.round(ticketTotal()*100)/100,
+    payment_method: method,
+    items: ticket.map(function(l){ return {name:l.name, price:l.price, qty:l.qty}; }),
+    created_at: new Date().toISOString()
+  };
+  if (extra && extra.sumup_tx_id) sale.sumup_tx_id = extra.sumup_tx_id;
+  // Totaux du jour
+  var d = new Date().toISOString().slice(0,10);
+  if (today.date !== d) today = { date:d, especes:0, carte:0, sumup:0, count:0 };
+  today[method] = (today[method]||0) + sale.total; today.count++;
+  LS.set("caisse_today", today);
+  // File de synchro
+  queue.push(sale); LS.set("caisse_queue", queue);
+  ticket = []; renderTicket(); renderDay();
+  toast("Encaissé " + eur(sale.total) + " · " + ({especes:"espèces",carte:"carte",sumup:"SumUp"}[method]));
+  syncQueue();
+}
+function syncQueue(){
+  if (!navigator.onLine || !queue.length || syncQueue._busy) return;
+  syncQueue._busy = true;
+  var batch = queue.slice();
+  sbFetch("caisse_ventes", { method:"POST", body: JSON.stringify(batch) })
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(){ queue = queue.slice(batch.length); LS.set("caisse_queue", queue); syncQueue._busy=false; setNet(); })
+    .catch(function(){ syncQueue._busy=false; });
+}
+
+/* Espèces / Carte (hors terminal) */
+document.getElementById("payEsp").onclick = function(){ if(ticketTotal()>0) recordSale("especes"); };
+document.getElementById("payCb").onclick  = function(){ if(ticketTotal()>0) recordSale("carte"); };
+
+/* SumUp Solo — envoi du montant au terminal */
+document.getElementById("paySu").onclick = function(){
+  var tot = ticketTotal(); if (tot<=0) return;
+  if (!navigator.onLine){ toast("SumUp nécessite une connexion"); return; }
+  var items = ticket.map(function(l){ return l.qty+"× "+l.name; }).join(", ");
+  showSumUp(tot, items);
+};
+function showSumUp(tot, label){
+  var ov = document.createElement("div"); ov.className="ov";
+  ov.innerHTML = '<div class="card"><h3>Paiement SumUp</h3><div class="sub">Montant envoyé sur le terminal SumUp.</div>'
+    + '<div style="text-align:center;font-family:var(--serif);font-size:40px;color:var(--bd);margin:10px 0 18px;">'+eur(tot)+'</div>'
+    + '<div id="suMsg" style="text-align:center;color:var(--is);font-size:14px;min-height:20px;margin-bottom:16px;"></div>'
+    + '<button class="big ok" id="suGo">Envoyer sur le terminal</button>'
+    + '<button class="big ghost" id="suCancel" style="margin-top:10px;">Annuler</button>'
+    + '<div style="margin-top:14px;text-align:center;"><button class="big ghost" id="suManual" style="font-size:14px;padding:10px;">Marquer payé carte sans le terminal</button></div></div>';
+  document.body.appendChild(ov);
+  var msg = ov.querySelector("#suMsg");
+  ov.querySelector("#suCancel").onclick = function(){ ov.remove(); };
+  ov.querySelector("#suManual").onclick = function(){ ov.remove(); recordSale("carte"); };
+  ov.querySelector("#suGo").onclick = function(){
+    var go = ov.querySelector("#suGo"); go.disabled=true; go.textContent="Envoi…"; msg.textContent="Présentez la carte sur le terminal.";
+    fetch("/api/sumup-charge", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ amount: Math.round(tot*100)/100, description: label }) })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if (res.ok && res.j && res.j.ok){
+          var card = ov.querySelector(".card");
+          card.innerHTML = '<h3>Sur le terminal SumUp</h3>'
+            + '<div style="text-align:center;font-family:var(--serif);font-size:40px;color:var(--bd);margin:10px 0 8px;">'+eur(tot)+'</div>'
+            + '<div class="sub" style="text-align:center;">Le montant est affiché sur le terminal. Faites régler la carte, puis indiquez le résultat :</div>'
+            + '<button class="big ok" id="suPaid" style="margin-top:8px;background:var(--gn);">✓ Paiement accepté</button>'
+            + '<button class="big ghost" id="suFail" style="margin-top:10px;color:var(--rd);">Échec / annulé</button>';
+          card.querySelector("#suPaid").onclick = function(){ ov.remove(); recordSale("sumup", { sumup_tx_id: res.j.transaction_id }); };
+          card.querySelector("#suFail").onclick = function(){ ov.remove(); };
+        }
+        else {
+          msg.innerHTML = (res.j && res.j.error ? esc(res.j.error) : "Échec de l'envoi.") + "<br><small>Vous pouvez encaisser carte manuellement.</small>";
+          go.disabled=false; go.textContent="Réessayer";
+        }
+      })
+      .catch(function(){ msg.innerHTML="Pas de réponse du terminal.<br><small>Vérifiez la connexion / l'appairage.</small>"; go.disabled=false; go.textContent="Réessayer"; });
+  };
+}
+
+/* ───────────────── Totaux du jour ───────────────── */
+function renderDay(){
+  var d = new Date().toISOString().slice(0,10);
+  if (today.date !== d) today = { date:d, especes:0, carte:0, sumup:0, count:0 };
+  var strip = document.getElementById("dayStrip");
+  strip.innerHTML =
+      '<div><b>'+eur(today.especes)+'</b>Espèces</div>'
+    + '<div><b>'+eur(today.carte+today.sumup)+'</b>Carte</div>'
+    + '<div><b>'+eur(today.especes+today.carte+today.sumup)+'</b>Total ('+today.count+')</div>';
+}
+document.getElementById("btnDay").onclick = function(){
+  var tot = today.especes+today.carte+today.sumup;
+  var ov = document.createElement("div"); ov.className="ov";
+  ov.innerHTML = '<div class="card"><h3>Journée du '+ (today.date||"") +'</h3>'
+    + '<div class="sub">Récapitulatif encaissé aujourd\'hui.</div>'
+    + line("Espèces", today.especes) + line("Carte (terminal + manuel)", today.carte+today.sumup)
+    + '<div style="border-top:2px solid var(--bs);margin:10px 0;"></div>'
+    + line("TOTAL", tot) + '<div class="sub" style="margin-top:4px;">'+today.count+' vente(s) · '+queue.length+' en attente de synchro</div>'
+    + '<button class="big ghost" id="dC" style="margin-top:16px;">Fermer</button>'
+    + '<button class="big ghost" id="dR" style="margin-top:10px;color:var(--rd);">Clôturer la journée (remettre à zéro)</button></div>';
+  function line(l,v){ return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:16px;"><span>'+l+'</span><b>'+eur(v)+'</b></div>'; }
+  document.body.appendChild(ov);
+  ov.querySelector("#dC").onclick=function(){ ov.remove(); };
+  ov.querySelector("#dR").onclick=function(){
+    if (confirm("Clôturer la journée ? Les ventes restent enregistrées dans la base, seul le compteur du jour est remis à zéro.")){
+      today = { date:new Date().toISOString().slice(0,10), especes:0, carte:0, sumup:0, count:0 };
+      LS.set("caisse_today", today); renderDay(); ov.remove(); toast("Journée clôturée");
+    }
+  };
+};
+
+/* ───────────────── Éditeur d'articles ───────────────── */
+document.getElementById("btnArticles").onclick = function(){
+  var ov = document.createElement("div"); ov.className="ov";
+  var colors = ["#A6713F","#C2843E","#7C8B5E","#7C97AC","#3E5A70","#B0768C","#5E8B8B"];
+  var list = articles.slice();
+  ov.innerHTML = '<div class="card"><h3>Articles</h3><div class="sub">Nom, prix (€) et couleur. Les changements sont enregistrés en ligne.</div>'
+    + '<div id="edList"></div>'
+    + '<button class="big ghost" id="edAdd" style="margin-top:12px;">+ Ajouter un article</button>'
+    + '<button class="big ok" id="edClose" style="margin-top:10px;">Terminé</button></div>';
+  document.body.appendChild(ov);
+  var elList = ov.querySelector("#edList");
+  function draw(){
+    elList.innerHTML = "";
+    list.forEach(function(a,i){
+      var row = document.createElement("div"); row.className="ed-row";
+      row.innerHTML = '<button class="sw" style="background:'+(a.color||"#7C97AC")+'"></button>'
+        + '<input class="en" value="'+esc(a.name)+'" placeholder="Nom"/>'
+        + '<input class="ep" value="'+(a.price!=null?(+a.price).toFixed(2):"")+'" inputmode="decimal"/>'
+        + '<button class="ed-del">×</button>';
+      row.querySelector(".en").onchange = function(e){ a.name=e.target.value; save(a); };
+      row.querySelector(".ep").onchange = function(e){ a.price=parseFloat(String(e.target.value).replace(",","."))||0; e.target.value=a.price.toFixed(2); save(a); };
+      row.querySelector(".sw").onclick = function(){ var k=colors.indexOf(a.color); a.color=colors[(k+1)%colors.length]; row.querySelector(".sw").style.background=a.color; save(a); };
+      row.querySelector(".ed-del").onclick = function(){ if(confirm("Supprimer « "+a.name+" » ?")) del(a,i); };
+      elList.appendChild(row);
+    });
+  }
+  function save(a){
+    if (!navigator.onLine){ toast("Hors ligne — modification non enregistrée"); return; }
+    var body = { name:a.name, price:a.price, color:a.color, category:a.category||"Articles", position:a.position||0, active:true };
+    if (a.id){
+      sbFetch("caisse_articles?id=eq."+a.id, { method:"PATCH", body:JSON.stringify(body) })
+        .then(function(){ refresh(); });
+    } else {
+      sbFetch("caisse_articles", { method:"POST", body:JSON.stringify(body) })
+        .then(function(r){ return r.json(); }).then(function(d){ if(d&&d[0]) a.id=d[0].id; refresh(); });
+    }
+  }
+  function del(a,i){
+    if (a.id) sbFetch("caisse_articles?id=eq."+a.id, { method:"DELETE" }).then(function(){ refresh(); });
+    list.splice(i,1); draw();
+  }
+  function refresh(){ loadArticles(); }
+  ov.querySelector("#edAdd").onclick = function(){ var a={name:"Nouvel article",price:0,color:colors[0],category:"Articles",position:(list.length+1)}; list.push(a); draw(); save(a); };
+  ov.querySelector("#edClose").onclick = function(){ ov.remove(); loadArticles(); };
+  draw();
+};
+
+/* ───────────────── PIN ───────────────── */
+var pinBuf = "";
+function pinNeeded(){ return LS.get("caisse_unlocked_ts",0) < Date.now()-1000*60*60*8; } // 8h
+function buildPad(){
+  var pad = document.getElementById("pinPad");
+  var keys = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
+  pad.innerHTML = "";
+  keys.forEach(function(k){
+    var b=document.createElement("button"); b.textContent=k; if(!k) b.style.visibility="hidden";
+    b.onclick=function(){
+      if (k==="⌫"){ pinBuf=pinBuf.slice(0,-1); }
+      else if (k){ pinBuf+=k; }
+      drawDots();
+      if (pinBuf.length===4) checkPin();
+    };
+    pad.appendChild(b);
+  });
+}
+function drawDots(){ var d=document.getElementById("pinDots").children; for(var i=0;i<4;i++) d[i].className = i<pinBuf.length?"f":""; }
+function checkPin(){
+  var good = LS.get("caisse_pin", DEFAULT_PIN);
+  if (pinBuf===good){ LS.set("caisse_unlocked_ts", Date.now()); document.getElementById("pinScreen").classList.add("hidden"); pinBuf=""; }
+  else { document.getElementById("pinErr").textContent="Code incorrect"; pinBuf=""; drawDots(); setTimeout(function(){document.getElementById("pinErr").textContent="";},1500); }
+}
+document.getElementById("btnLock").onclick = function(){ LS.set("caisse_unlocked_ts",0); pinBuf=""; drawDots(); document.getElementById("pinScreen").classList.remove("hidden"); };
+
+/* ───────────────── Init ───────────────── */
+buildPad(); drawDots();
+if (!pinNeeded()) document.getElementById("pinScreen").classList.add("hidden");
+renderArticles(); renderTicket(); renderDay(); setNet(); loadArticles();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.js", { scope:"/caisse" }).catch(function(){});
+</script>
+</body>
+</html>

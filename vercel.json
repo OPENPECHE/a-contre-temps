@@ -7,6 +7,7 @@
     { "source": "/vitrine", "destination": "/vitrine.html" },
     { "source": "/qr", "destination": "/qr.html" },
     { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/caisse", "destination": "/caisse.html" },
     { "source": "/contact", "destination": "/contact.html" },
     { "source": "/mentions-legales", "destination": "/mentions-legales.html" },
     { "source": "/cgv", "destination": "/cgv.html" },
