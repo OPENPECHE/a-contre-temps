@@ -162,7 +162,9 @@
     <div class="tk-head"><button class="tkback" id="tkBack">‹ Articles</button><h2>Note en cours</h2><button class="tk-clear hidden" id="btnClear">Vider</button></div>
     <div class="tk-lines" id="ticket"><div class="tk-empty">Touchez un article pour l'ajouter à la note.</div></div>
     <div class="tk-foot">
+      <div id="subRow" style="display:none;font-size:12.5px;color:var(--is);margin-bottom:6px;"></div>
       <div class="tot"><span class="lbl">Total</span><span class="val" id="total">0,00&nbsp;€</span></div>
+      <button id="btnRemise" style="width:100%;margin-bottom:10px;background:var(--cr);color:var(--bd);border:1px solid var(--bs);border-radius:10px;padding:10px;font-size:13.5px;font-weight:500;">Appliquer une remise</button>
       <div class="pay">
         <button class="pbtn pb-esp" id="payEsp" disabled>Espèces<small>encaisser</small></button>
         <button class="pbtn pb-cb" id="payCb" disabled>Carte<small>encaisser</small></button>
@@ -211,6 +213,7 @@ var ticket = [];           // {id,name,price,qty}
 var queue = LS.get("caisse_queue", []);      // ventes non synchronisées
 var today = LS.get("caisse_today", {date:"", especes:0, carte:0, sumup:0, count:0});
 var lastSale = null;
+var discount = { mode:null, value:0 };   // mode: null | 'pct' | 'eur'
 
 /* Identité (facture / ticket) — micro-entreprise, franchise en base de TVA */
 var SELLER = {
@@ -278,7 +281,10 @@ function changeQty(id, d){
   ln.qty += d; if (ln.qty<=0) ticket = ticket.filter(function(x){ return x.id!==id; });
   renderTicket();
 }
-function ticketTotal(){ return ticket.reduce(function(s,l){ return s + l.price*l.qty; }, 0); }
+function subtotalAmt(){ return ticket.reduce(function(s,l){ return s + l.price*l.qty; }, 0); }
+function remiseAmt(){ var st=subtotalAmt(); if(!discount.mode || !discount.value) return 0; var r = discount.mode==="pct" ? st*discount.value/100 : discount.value; return Math.round(Math.max(0, Math.min(r, st))*100)/100; }
+function remiseLabel(){ return discount.mode==="pct" ? ("Remise "+discount.value+" %") : "Remise"; }
+function ticketTotal(){ return Math.round((subtotalAmt() - remiseAmt())*100)/100; }
 function renderTicket(){
   var box = document.getElementById("ticket");
   if (!ticket.length){
@@ -306,15 +312,22 @@ function renderTicket(){
   var count = ticket.reduce(function(s,l){ return s+l.qty; }, 0);
   var mt=document.getElementById("mbarTotal"); if(mt) mt.innerHTML = eur(tot);
   var mc=document.getElementById("mbarCount"); if(mc) mc.textContent = count ? (count+" art.") : "";
+  var rem=remiseAmt(), subRow=document.getElementById("subRow"), bR=document.getElementById("btnRemise");
+  if (rem>0){ if(subRow){ subRow.style.display="block"; subRow.innerHTML='Sous-total '+eur(subtotalAmt())+' · <span style="color:var(--ru)">Remise −'+eur(rem)+'</span>'; } if(bR) bR.innerHTML='Remise : −'+eur(rem)+'   ✕'; }
+  else { if(subRow) subRow.style.display="none"; if(bR) bR.innerHTML='Appliquer une remise'; }
 }
 
 /* ───────────────── Encaissement ───────────────── */
 function recordSale(method, extra){
+  var its = ticket.map(function(l){ return {name:l.name, price:l.price, qty:l.qty}; });
+  var rem = remiseAmt();
+  if (rem>0) its.push({ name: remiseLabel(), price: -rem, qty: 1 });
   var sale = {
     local_id: uid(),
-    total: Math.round(ticketTotal()*100)/100,
+    total: ticketTotal(),
     payment_method: method,
-    items: ticket.map(function(l){ return {name:l.name, price:l.price, qty:l.qty}; }),
+    items: its,
+    note: rem>0 ? (remiseLabel()+" (−"+eur(rem)+")") : null,
     created_at: new Date().toISOString()
   };
   if (extra && extra.sumup_tx_id) sale.sumup_tx_id = extra.sumup_tx_id;
@@ -326,7 +339,7 @@ function recordSale(method, extra){
   // File de synchro
   queue.push(sale); LS.set("caisse_queue", queue);
   lastSale = sale; var bd = document.getElementById("btnDoc"); if (bd){ bd.disabled = false; bd.style.opacity = 1; }
-  ticket = []; renderTicket(); renderDay();
+  ticket = []; discount = { mode:null, value:0 }; renderTicket(); renderDay();
   document.body.classList.remove("noteopen");
   toast("Encaissé " + eur(sale.total) + " · " + ({especes:"espèces",carte:"carte",sumup:"SumUp"}[method]));
   syncQueue();
@@ -344,6 +357,41 @@ function syncQueue(){
 /* Espèces / Carte (hors terminal) */
 document.getElementById("payEsp").onclick = function(){ if(ticketTotal()>0) recordSale("especes"); };
 document.getElementById("payCb").onclick  = function(){ if(ticketTotal()>0) recordSale("carte"); };
+document.getElementById("btnClear").onclick = function(){ ticket=[]; discount={mode:null,value:0}; renderTicket(); };
+
+/* Remise sur la note (% ou €) */
+document.getElementById("btnRemise").onclick = function(){ showRemise(); };
+function showRemise(){
+  if (!ticket.length){ toast("Ajoutez d'abord des articles"); return; }
+  var ov=document.createElement("div"); ov.className="ov";
+  var mode = discount.mode || "pct";
+  ov.innerHTML = '<div class="card"><h3>Remise</h3><div class="sub">Appliquée sur le total de la note.</div>'
+    + '<div class="row" style="margin:4px 0 12px;"><button class="big ghost" id="rmPct">En %</button><button class="big ghost" id="rmEur">En €</button></div>'
+    + '<input class="fi" id="rmVal" inputmode="decimal" placeholder="Valeur" value="'+(discount.value||"")+'" />'
+    + '<div id="rmHint" class="sub" style="margin-top:10px;min-height:18px;"></div>'
+    + '<button class="big ok" id="rmGo" style="margin-top:4px;">Appliquer la remise</button>'
+    + (discount.mode ? '<button class="big ghost" id="rmDel" style="margin-top:10px;color:var(--rd);">Retirer la remise</button>' : '')
+    + '<button class="big ghost" id="rmC" style="margin-top:10px;">Annuler</button></div>';
+  document.body.appendChild(ov);
+  var val=ov.querySelector("#rmVal"), hint=ov.querySelector("#rmHint");
+  function paint(){
+    ov.querySelector("#rmPct").style.cssText="";
+    ov.querySelector("#rmEur").style.cssText="";
+    var on=ov.querySelector(mode==="pct"?"#rmPct":"#rmEur");
+    on.style.background="var(--bd)"; on.style.color="var(--cr)";
+    var v=parseFloat(String(val.value||"").replace(",","."))||0, st=subtotalAmt();
+    var r=mode==="pct"? st*v/100 : v; r=Math.max(0,Math.min(r,st));
+    hint.innerHTML = v ? ("Remise de <b>"+eur(Math.round(r*100)/100)+"</b> sur "+eur(st)+" → net <b>"+eur(Math.round((st-r)*100)/100)+"</b>") : "";
+  }
+  ov.querySelector("#rmPct").onclick=function(){ mode="pct"; paint(); };
+  ov.querySelector("#rmEur").onclick=function(){ mode="eur"; paint(); };
+  val.oninput=paint;
+  ov.querySelector("#rmC").onclick=function(){ ov.remove(); };
+  if (discount.mode) ov.querySelector("#rmDel").onclick=function(){ discount={mode:null,value:0}; ov.remove(); renderTicket(); };
+  ov.querySelector("#rmGo").onclick=function(){ var v=parseFloat(String(val.value||"").replace(",","."))||0;
+    discount = v>0 ? { mode:mode, value:v } : { mode:null, value:0 }; ov.remove(); renderTicket(); };
+  paint();
+}
 
 /* SumUp Solo — envoi du montant au terminal */
 document.getElementById("paySu").onclick = function(){
