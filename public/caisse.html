@@ -152,6 +152,7 @@
   <button class="tbtn" id="btnDoc" disabled style="opacity:.45">Reçu</button>
   <button class="tbtn" id="btnArticles">Articles</button>
   <button class="tbtn" id="btnDay">Journée</button>
+  <button class="tbtn" id="btnStats">Stats</button>
   <button class="tbtn" id="btnInstall" style="display:none;background:var(--cr);color:var(--bd)">Installer l'app</button>
   <button class="tbtn" id="btnLock">Verrouiller</button>
 </div>
@@ -497,6 +498,82 @@ function exportJournal(period){
     exportXLSX(journalRows(v), "journal-caisse_"+label+".xlsx");
   }).catch(function(){ toast("Erreur lors de l'export"); });
 }
+
+/* ───────────────── Statistiques de ventes par produit ───────────────── */
+function statsRange(period){
+  var now=new Date(), from=null, to=null, label="Tout l'historique";
+  if(period==="today"){ from=new Date(now.getFullYear(),now.getMonth(),now.getDate()); label="Aujourd'hui"; }
+  else if(period==="month"){ from=new Date(now.getFullYear(),now.getMonth(),1); label="Ce mois"; }
+  else if(period==="lastmonth"){ from=new Date(now.getFullYear(),now.getMonth()-1,1); to=new Date(now.getFullYear(),now.getMonth(),1); label="Mois dernier"; }
+  return { from:from, to:to, label:label };
+}
+function aggregate(ventes){
+  var prod={}, caTotal=0, nb=0, esp=0, cb=0;
+  ventes.forEach(function(v){
+    caTotal += Number(v.total)||0; nb++;
+    if(v.payment_method==="especes") esp+=Number(v.total)||0; else cb+=Number(v.total)||0;
+    (v.items||[]).forEach(function(l){
+      if(!l || Number(l.price)<0 || /^remise/i.test(l.name||"")) return;
+      var k=l.name||"?"; if(!prod[k]) prod[k]={ name:k, qty:0, ca:0 };
+      prod[k].qty += Number(l.qty)||0; prod[k].ca += (Number(l.price)||0)*(Number(l.qty)||0);
+    });
+  });
+  var arr=Object.keys(prod).map(function(k){ return prod[k]; });
+  arr.sort(function(a,b){ return b.qty-a.qty || b.ca-a.ca; });
+  return { prod:arr, caTotal:caTotal, nb:nb, esp:esp, cb:cb };
+}
+function exportStats(s, label){
+  var rows=[["Produit","Quantité vendue","Chiffre d'affaires (€)"]];
+  s.prod.forEach(function(p){ rows.push([p.name, p.qty, Math.round(p.ca*100)/100]); });
+  rows.push([]); rows.push(["","Total CA", Math.round(s.caTotal*100)/100]);
+  exportXLSX(rows, "stats-ventes_"+label.replace(/[^a-z0-9]+/gi,"-").toLowerCase()+".xlsx");
+}
+document.getElementById("btnStats").onclick = function(){
+  var ov=document.createElement("div"); ov.className="ov";
+  ov.innerHTML='<div class="card" style="max-width:520px;"><h3>Statistiques de ventes</h3>'
+    +'<div class="sub">Quels produits se vendent le mieux, par période.</div>'
+    +'<div class="row" style="margin-top:6px;"><button class="big ghost" data-p="today">Aujourd\'hui</button><button class="big ghost" data-p="month">Ce mois</button></div>'
+    +'<div class="row" style="margin-top:8px;"><button class="big ghost" data-p="lastmonth">Mois dernier</button><button class="big ghost" data-p="all">Tout</button></div>'
+    +'<div id="stOut" style="margin-top:16px;"><div class="sub">Choisissez une période ci-dessus.</div></div>'
+    +'<button class="big ok" id="stClose" style="margin-top:14px;">Fermer</button></div>';
+  document.body.appendChild(ov);
+  var out=ov.querySelector("#stOut");
+  ov.querySelector("#stClose").onclick=function(){ ov.remove(); };
+  ov.querySelectorAll("[data-p]").forEach(function(b){ b.onclick=function(){
+    ov.querySelectorAll("[data-p]").forEach(function(x){ x.style.background=""; x.style.color=""; });
+    b.style.background="var(--bd)"; b.style.color="var(--cr)";
+    load(b.getAttribute("data-p"));
+  }; });
+  function load(period){
+    if(!navigator.onLine){ out.innerHTML='<div class="sub">Connexion nécessaire pour les statistiques.</div>'; return; }
+    out.innerHTML='<div class="sub">Calcul…</div>';
+    var rg=statsRange(period);
+    var q="caisse_ventes?select=total,payment_method,items,created_at&order=created_at.asc";
+    if(rg.from) q+="&created_at=gte."+rg.from.toISOString();
+    if(rg.to)   q+="&created_at=lt."+rg.to.toISOString();
+    sbFetch(q).then(function(r){ return r.json(); }).then(function(v){
+      if(!Array.isArray(v) || !v.length){ out.innerHTML='<div class="sub">Aucune vente sur la période.</div>'; return; }
+      render(aggregate(v), rg.label);
+    }).catch(function(){ out.innerHTML='<div class="sub">Erreur de chargement.</div>'; });
+  }
+  function render(s, label){
+    var maxQty = s.prod.length ? s.prod[0].qty : 1;
+    var h='<div style="display:flex;gap:10px;margin-bottom:12px;">'
+      +'<div style="flex:1;background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--bd);">'+eur(s.caTotal)+'</div><div class="sub" style="font-size:11px;">CA ('+s.nb+' ventes)</div></div>'
+      +'<div style="flex:1;background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--bd);">'+eur(s.nb? s.caTotal/s.nb:0)+'</div><div class="sub" style="font-size:11px;">Panier moyen</div></div></div>';
+    h+='<div class="sub" style="font-size:11.5px;margin-bottom:8px;">'+label+' · Espèces '+eur(s.esp)+' · Carte '+eur(s.cb)+'</div>';
+    h+='<div style="max-height:44vh;overflow-y:auto;padding-right:4px;">';
+    s.prod.forEach(function(p){
+      var w=Math.max(4, Math.round(p.qty/maxQty*100));
+      h+='<div style="padding:8px 0;border-bottom:1px solid #F0ECE5;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:14px;"><span><b>'+p.qty+'</b> &times; '+esc(p.name)+'</span><b>'+eur(p.ca)+'</b></div>'
+        +'<div style="height:7px;background:var(--bs);border-radius:4px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:'+w+'%;background:var(--b);"></div></div></div>';
+    });
+    h+='</div><button class="big ghost" id="stExport" style="margin-top:14px;">Exporter ces stats (Excel)</button>';
+    out.innerHTML=h;
+    out.querySelector("#stExport").onclick=function(){ exportStats(s, label); };
+  }
+};
 
 document.getElementById("btnDay").onclick = function(){
   var tot = today.especes+today.carte+today.sumup;
