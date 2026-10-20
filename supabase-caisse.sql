@@ -72,3 +72,6 @@ drop policy if exists caisse_factures_all on caisse_factures;
 create policy caisse_factures_all on caisse_factures
   for all to anon, authenticated using (true) with check (true);
 create unique index if not exists caisse_factures_annee_seq_uq on caisse_factures(annee, seq);
+
+-- Lieu de vente (marchés) sur chaque vente
+alter table caisse_ventes add column if not exists lieu text;
