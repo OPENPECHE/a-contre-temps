@@ -93,6 +93,8 @@
   .ed-row .en{flex:1;border:none;background:none;font-size:15px;padding:4px;}
   .ed-row .ep{width:72px;border:1px solid var(--bs);border-radius:7px;padding:6px;font-size:14px;text-align:right;}
   .ed-del{background:none;color:var(--rd);font-size:20px;width:34px;}
+  .mv{background:var(--pp);border:1px solid var(--bs);border-radius:7px;width:28px;height:30px;color:var(--bd);font-size:11px;flex-shrink:0;padding:0;}
+  .mv:active{background:var(--bs);}
 
   /* PIN */
   .pin-wrap{position:fixed;inset:0;background:var(--bd);color:var(--cr);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;gap:18px;}
@@ -721,19 +723,36 @@ document.getElementById("btnArticles").onclick = function(){
       if(!navigator.onLine){ toast("Hors ligne"); draw(); return; }
       sbFetch("caisse_articles?category=eq."+encodeURIComponent(oldName), { method:"PATCH", body:JSON.stringify({category:newName}) }).then(function(){ reload(); }); }
 
-  function groups(){ var g={}, order=[]; articles.forEach(function(a){ var c=a.category||"Sans catégorie"; if(!g[c]){g[c]=[];order.push(c);} g[c].push(a); }); return {g:g, order:order}; }
+  function model(){ // structure ordonnée [{name, arts:[...]}] selon position
+    var g={}, order=[]; articles.forEach(function(a){ var c=a.category||"Sans catégorie"; if(!g[c]){ g[c]={name:c, arts:[]}; order.push(c); } g[c].arts.push(a); });
+    return order.map(function(c){ return g[c]; });
+  }
+  function swap(arr,i,j){ var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  function applyOrder(m){
+    var pos=1, changed=[];
+    m.forEach(function(cat){ cat.arts.forEach(function(a){ var np=pos++; if(a.position!==np){ a.position=np; changed.push(a); } }); });
+    articles = m.reduce(function(acc,cat){ return acc.concat(cat.arts); }, []);
+    LS.set("caisse_articles_cache", articles); renderArticles(); draw();
+    if (navigator.onLine){ changed.forEach(function(a){ sbFetch("caisse_articles?id=eq."+a.id, { method:"PATCH", body:JSON.stringify({ position:a.position }) }); }); }
+    else if (changed.length) toast("Hors ligne — ordre non enregistré");
+  }
 
   function draw(){
-    var gg = groups(); box.innerHTML = "";
-    gg.order.forEach(function(cat){
+    var m = model(); box.innerHTML = "";
+    if (!m.length){ box.innerHTML = '<div class="sub" style="margin-top:14px;">Aucun article. Créez une catégorie pour commencer.</div>'; return; }
+    m.forEach(function(cat, ci){
       var sec = document.createElement("div"); sec.style.marginTop = "18px";
-      var head = document.createElement("div"); head.style.cssText = "display:flex;align-items:center;gap:8px;";
-      head.innerHTML = '<input class="catName" value="'+esc(cat)+'" style="flex:1;border:none;border-bottom:1px solid var(--bs);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ru);font-weight:600;padding:5px 2px;background:none;"/>';
-      head.querySelector(".catName").onchange = function(e){ renameCat(cat, e.target.value); };
+      var head = document.createElement("div"); head.style.cssText = "display:flex;align-items:center;gap:6px;";
+      head.innerHTML = '<button class="mv" data-cu'+(ci===0?' style="opacity:.25"':'')+'>▲</button><button class="mv" data-cd'+(ci===m.length-1?' style="opacity:.25"':'')+'>▼</button>'
+        + '<input class="catName" value="'+esc(cat.name)+'" style="flex:1;border:none;border-bottom:1px solid var(--bs);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ru);font-weight:600;padding:5px 2px;background:none;"/>';
+      head.querySelector(".catName").onchange = function(e){ renameCat(cat.name, e.target.value); };
+      head.querySelector("[data-cu]").onclick = function(){ if(ci>0){ swap(m,ci,ci-1); applyOrder(m); } };
+      head.querySelector("[data-cd]").onclick = function(){ if(ci<m.length-1){ swap(m,ci,ci+1); applyOrder(m); } };
       sec.appendChild(head);
-      gg.g[cat].forEach(function(a){
+      cat.arts.forEach(function(a, ai){
         var row = document.createElement("div"); row.className="ed-row";
-        row.innerHTML = '<button class="sw" style="background:'+(a.color||"#7C97AC")+'"></button>'
+        row.innerHTML = '<button class="mv" data-au'+(ai===0?' style="opacity:.25"':'')+'>▲</button><button class="mv" data-ad'+(ai===cat.arts.length-1?' style="opacity:.25"':'')+'>▼</button>'
+          + '<button class="sw" style="background:'+(a.color||"#7C97AC")+'"></button>'
           + '<input class="en" value="'+esc(a.name)+'" placeholder="Nom"/>'
           + '<input class="ep" value="'+(a.price!=null?(+a.price).toFixed(2):"")+'" inputmode="decimal"/>'
           + '<button class="ed-del">×</button>';
@@ -741,15 +760,16 @@ document.getElementById("btnArticles").onclick = function(){
         row.querySelector(".ep").onchange = function(e){ a.price=parseFloat(String(e.target.value).replace(",","."))||0; e.target.value=a.price.toFixed(2); LS.set("caisse_articles_cache",articles); patch(a,{price:a.price}); };
         row.querySelector(".sw").onclick = function(){ var k=colors.indexOf(a.color); a.color=colors[(k+1)%colors.length]; row.querySelector(".sw").style.background=a.color; LS.set("caisse_articles_cache",articles); patch(a,{color:a.color}); };
         row.querySelector(".ed-del").onclick = function(){ del(a); };
+        row.querySelector("[data-au]").onclick = function(){ if(ai>0){ swap(cat.arts,ai,ai-1); applyOrder(m); } };
+        row.querySelector("[data-ad]").onclick = function(){ if(ai<cat.arts.length-1){ swap(cat.arts,ai,ai+1); applyOrder(m); } };
         sec.appendChild(row);
       });
       var add = document.createElement("button"); add.className="big ghost";
-      add.textContent = "+ Ajouter dans « "+cat+" »"; add.style.cssText = "margin-top:6px;font-size:13px;padding:9px;";
-      add.onclick = function(){ createIn(cat); };
+      add.textContent = "+ Ajouter dans « "+cat.name+" »"; add.style.cssText = "margin-top:6px;font-size:13px;padding:9px;";
+      add.onclick = function(){ createIn(cat.name); };
       sec.appendChild(add);
       box.appendChild(sec);
     });
-    if (!gg.order.length) box.innerHTML = '<div class="sub" style="margin-top:14px;">Aucun article. Créez une catégorie pour commencer.</div>';
   }
 
   ov.querySelector("#edNewCat").onclick = function(){ var n = prompt("Nom de la nouvelle catégorie :", ""); if(n && n.trim()) createIn(n.trim()); };
