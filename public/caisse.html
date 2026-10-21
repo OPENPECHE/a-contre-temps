@@ -426,13 +426,34 @@ function showSumUp(tot, label){
       .then(function(res){
         if (res.ok && res.j && res.j.ok){
           var card = ov.querySelector(".card");
-          card.innerHTML = '<h3>Sur le terminal SumUp</h3>'
-            + '<div style="text-align:center;font-family:var(--serif);font-size:40px;color:var(--bd);margin:10px 0 8px;">'+eur(tot)+'</div>'
-            + '<div class="sub" style="text-align:center;">Le montant est affiché sur le terminal. Faites régler la carte, puis indiquez le résultat :</div>'
-            + '<button class="big ok" id="suPaid" style="margin-top:8px;background:var(--gn);">✓ Paiement accepté</button>'
-            + '<button class="big ghost" id="suFail" style="margin-top:10px;color:var(--rd);">Échec / annulé</button>';
-          card.querySelector("#suPaid").onclick = function(){ ov.remove(); recordSale("sumup", { sumup_tx_id: res.j.transaction_id }); };
-          card.querySelector("#suFail").onclick = function(){ ov.remove(); };
+          var txid = res.j.transaction_id;
+          card.innerHTML = '<h3>Paiement en cours</h3>'
+            + '<div style="text-align:center;font-family:var(--serif);font-size:40px;color:var(--bd);margin:10px 0 6px;">'+eur(tot)+'</div>'
+            + '<div id="suWait" class="sub" style="text-align:center;min-height:40px;">Présentez la carte sur le terminal…</div>'
+            + '<button class="big ghost" id="suManual2" style="margin-top:4px;">Valider à la main</button>'
+            + '<button class="big ghost" id="suCancel2" style="margin-top:10px;color:var(--rd);">Annuler</button>';
+          var stopped=false, tries=0, waitEl=card.querySelector("#suWait");
+          card.querySelector("#suCancel2").onclick = function(){ stopped=true; ov.remove(); };
+          card.querySelector("#suManual2").onclick = function(){ stopped=true; ov.remove(); recordSale("sumup", { sumup_tx_id: txid }); };
+          function fail(){
+            stopped=true;
+            card.innerHTML = '<h3>Paiement refusé</h3><div class="sub" style="text-align:center;margin:12px 0;">Le paiement a été refusé ou annulé sur le terminal.</div>'
+              + '<button class="big ok" id="suRetry">Réessayer</button><button class="big ghost" id="suClose2" style="margin-top:10px;">Fermer</button>';
+            card.querySelector("#suClose2").onclick=function(){ ov.remove(); };
+            card.querySelector("#suRetry").onclick=function(){ ov.remove(); showSumUp(tot, label); };
+          }
+          (function poll(){
+            if (stopped || !txid) { if(!txid && !stopped){ waitEl.textContent="Suivez le terminal, puis validez à la main."; } return; }
+            fetch("/api/sumup-status?tx="+encodeURIComponent(txid)).then(function(r){ return r.json(); }).then(function(j){
+              if (stopped) return;
+              var st=(j && j.status) || "PENDING";
+              if (st==="SUCCESSFUL"){ stopped=true; ov.remove(); recordSale("sumup", { sumup_tx_id: txid }); return; }
+              if (st==="FAILED" || st==="CANCELLED"){ fail(); return; }
+              tries++;
+              if (tries===30) waitEl.textContent="Toujours en attente… vous pouvez valider à la main si besoin.";
+              setTimeout(poll, 3000);
+            }).catch(function(){ if(!stopped){ setTimeout(poll, 3500); } });
+          })();
         }
         else {
           msg.innerHTML = (res.j && res.j.error ? esc(res.j.error) : "Échec de l'envoi.") + "<br><small>Vous pouvez encaisser carte manuellement.</small>";
