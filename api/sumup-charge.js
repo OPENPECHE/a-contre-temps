@@ -36,8 +36,11 @@ export default async function handler(req, res) {
     const txt = await r.text();
     let data = {}; try { data = txt ? JSON.parse(txt) : {}; } catch (_) {}
     if (!r.ok) {
-      const msg = (data && (data.message || data.error_message)) || ("Erreur SumUp (" + r.status + ")");
-      return res.status(200).json({ ok: false, error: msg });
+      let msg = (data && (data.message || data.error_message)) || ("Erreur SumUp (" + r.status + ")");
+      if (r.status === 422 || r.status === 404 || r.status === 409) {
+        msg = "Terminal SumUp injoignable (hors ligne ?). Vérifiez que le Solo a bien du réseau — data SIM intégrée ou WiFi.";
+      }
+      return res.status(200).json({ ok: false, status: r.status, error: msg, detail: (data && (data.message || data.error_message)) || null });
     }
     const id = (data.data && (data.data.client_transaction_id || data.data.id)) || data.client_transaction_id || null;
     // Le terminal affiche le montant et attend la carte ; le résultat final se confirme sur le terminal.
