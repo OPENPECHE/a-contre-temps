@@ -166,7 +166,7 @@ function loadCatalog(){
     catGroups={}; catOrder=[];
     d.forEach(function(a){ if(!(a.price>0)) return; var c=a.cat||"Autres"; if(!catGroups[c]){catGroups[c]=[];catOrder.push(c);} catGroups[c].push(a); });
     document.getElementById("catbar").innerHTML = catOrder.map(function(c){ return '<button class="chip" data-cat="'+esc(c)+'">'+esc(c)+'</button>'; }).join("");
-    document.querySelectorAll("#catbar .chip").forEach(function(ch){ ch.onclick=function(){ showCat(ch.getAttribute("data-cat")); window.scrollTo({top:0,behavior:"smooth"}); }; });
+    document.querySelectorAll("#catbar .chip").forEach(function(ch){ ch.onclick=function(){ showCat(ch.getAttribute("data-cat")); var cb=document.getElementById("catbar"); var y=cb.getBoundingClientRect().top+window.pageYOffset-4; if(window.pageYOffset>y) window.scrollTo({top:y,behavior:"smooth"}); }; });
     showCat(catOrder[0]);
   }).catch(function(){ document.getElementById("catalog").innerHTML='<p style="color:var(--rd);padding:30px 0;text-align:center;">Impossible de charger le catalogue. Réessayez.</p>'; });
 }
