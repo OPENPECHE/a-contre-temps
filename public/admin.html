@@ -697,7 +697,17 @@ function orderRow(o){
   const items=Array.isArray(o.items)?o.items:[];
   const open=expandedOrder===o.id;
   const pd=o.pickup_date?`<span class="badge" style="background:#3E5A7022;color:#3E5A70">📅 ${new Date(o.pickup_date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</span>`:"";
-  const pm=o.payment_method==="online"?`<span class="badge" style="background:#4A7C5922;color:#4A7C59">En ligne</span>`:o.payment_method==="onsite_cash"?`<span class="badge" style="background:#A6713F22;color:#A6713F">Espèces</span>`:`<span class="badge" style="background:#7C97AC22;color:#7C97AC">CB</span>`;
+  const pmRaw=String(o.payment_method||"").toLowerCase();
+  let pm;
+  if(pmRaw.includes("ligne")||pmRaw.includes("sumup")||pmRaw==="online") pm=`<span class="badge" style="background:#4A7C5922;color:#4A7C59">Payé en ligne</span>`;
+  else if(pmRaw.includes("place")||pmRaw==="onsite") pm=`<span class="badge" style="background:#A6713F22;color:#A6713F">À régler sur place</span>`;
+  else if(pmRaw.includes("espèce")||pmRaw.includes("espece")||pmRaw==="onsite_cash") pm=`<span class="badge" style="background:#A6713F22;color:#A6713F">Espèces</span>`;
+  else if(pmRaw.includes("cb")||pmRaw.includes("carte")) pm=`<span class="badge" style="background:#7C97AC22;color:#7C97AC">CB</span>`;
+  else pm=`<span class="badge" style="background:#7C97AC22;color:#7C97AC">—</span>`;
+  const isPaid = o.paid===true || pmRaw.includes("ligne") || pmRaw.includes("sumup");
+  const paidBadge = isPaid
+    ? `<span class="badge" style="background:#4A7C5922;color:#4A7C59">💶 Payé</span>`
+    : `<span class="badge" style="background:#A6333322;color:#A63333">⚠️ Non réglé</span>`;
   return `<div class="orow" id="orow-${o.id}">
     <div class="ohead" onclick="toggleOrder('${o.id}')">
       <div style="flex:1">
@@ -705,7 +715,7 @@ function orderRow(o){
           <span style="font-weight:500;font-size:14px">${o.name}</span>
           <span class="badge" style="background:${sm(o.status).color}22;color:${sm(o.status).color}">${sm(o.status).label}</span>
           ${o.shipping==="chronopost"?`<span class="badge" style="background:#3E5A7022;color:#3E5A70">Chronopost</span>`:""}
-          ${pd} ${pm}
+          ${pd} ${pm} ${paidBadge}
         </div>
         <p style="font-size:11px;color:var(--is)">${new Date(o.created_at).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${items.length} article${items.length>1?"s":""} · ${Number(o.total).toFixed(2)} €</p>
       </div>
@@ -723,17 +733,71 @@ function orderRow(o){
       </div>
       <p style="font-size:10px;letter-spacing:.12em;color:var(--is);margin-bottom:5px">STATUT</p>
       <div class="sbtns">${STATUSES.map(s=>`<button class="sbtn" style="border:1px solid ${s.color};background:${o.status===s.key?s.color:"transparent"};color:${o.status===s.key?"#FBF8F4":s.color}" onclick="updateStatus('${o.id}','${s.key}')">${s.label}</button>`).join("")}</div>
+      <p style="font-size:10px;letter-spacing:.12em;color:var(--is);margin:12px 0 5px">RÈGLEMENT & PRÉPARATION</p>
+      <div class="sbtns">
+        <button class="sbtn" style="border:1px solid ${isPaid?"#A63333":"#4A7C59"};color:${isPaid?"#A63333":"#4A7C59"};background:transparent" onclick="togglePaid('${o.id}',${isPaid?"false":"true"})">${isPaid?"↩︎ Marquer non réglé":"💶 Marquer payé"}</button>
+        <button class="sbtn" style="border:1px solid #3E5A70;color:#3E5A70;background:transparent" onclick="printOrder('${o.id}')">🖨 Imprimer</button>
+      </div>
     </div>
   </div>`;
+}
+async function togglePaid(id,val){
+  const paid = val===true || val==="true";
+  await sbFetch(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({paid})});
+  allOrders=allOrders.map(o=>o.id===id?{...o,paid}:o);
+  renderOrders();
+}
+function printOrder(id){
+  const o=allOrders.find(x=>x.id===id); if(!o) return;
+  const items=Array.isArray(o.items)?o.items:[];
+  const inv="ACT-"+String(o.id||"").toUpperCase().slice(-8);
+  const pmRaw=String(o.payment_method||"").toLowerCase();
+  const isPaid=o.paid===true||pmRaw.includes("ligne")||pmRaw.includes("sumup");
+  const quand=o.pickup_date?new Date(o.pickup_date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}):"—";
+  const esc=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const rows=items.map(it=>`<tr><td style="padding:7px 4px;border-bottom:1px solid #ddd">${esc(it.name)}</td><td style="padding:7px 4px;border-bottom:1px solid #ddd;text-align:center;font-size:20px;font-weight:700">× ${it.qty}</td><td style="padding:7px 4px;border-bottom:1px solid #ddd;text-align:right">${(it.price*it.qty).toFixed(2)} €</td></tr>`).join("");
+  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Bon de préparation ${inv}</title>
+  <style>*{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a}body{margin:24px;max-width:560px}
+  h1{font-size:19px;margin:0 0 2px}.sub{color:#666;font-size:12px;margin:0 0 14px}
+  .box{border:1px solid #bbb;border-radius:8px;padding:12px 14px;margin-bottom:14px}
+  .line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  .tot{display:flex;justify-content:space-between;font-size:17px;font-weight:700;margin-top:10px;border-top:2px solid #333;padding-top:8px}
+  .pay{display:inline-block;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;${isPaid?"background:#e3f0e6;color:#2f6b3f":"background:#fbe3e3;color:#9a2a2a"}}
+  @media print{button{display:none}}</style></head><body>
+  <h1>🥖 à contre-temps — Bon de préparation</h1>
+  <p class="sub">${inv} · imprimé le ${new Date().toLocaleString("fr-FR")}</p>
+  <div class="box">
+    <div class="line"><span style="color:#666">Client</span><b>${esc(o.name||"—")}</b></div>
+    <div class="line"><span style="color:#666">Téléphone</span><b>${esc(o.phone||"—")}</b></div>
+    <div class="line"><span style="color:#666">Retrait / livraison</span><b>${esc(o.shipping||"—")}</b></div>
+    <div class="line"><span style="color:#666">Date</span><b>${esc(quand)}</b></div>
+    <div class="line"><span style="color:#666">Règlement</span><span class="pay">${isPaid?"PAYÉ":"NON RÉGLÉ — à encaisser"}</span></div>
+  </div>
+  <table><thead><tr><th style="text-align:left;font-size:11px;color:#666;padding:4px">PRODUIT</th><th style="font-size:11px;color:#666;padding:4px">QTÉ</th><th style="text-align:right;font-size:11px;color:#666;padding:4px">PRIX</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="tot"><span>TOTAL</span><span>${Number(o.total).toFixed(2)} €</span></div>
+  ${o.note?`<div class="box" style="margin-top:14px;background:#fff8ee"><b>Note :</b> ${esc(o.note)}</div>`:""}
+  <button onclick="window.print()" style="margin-top:20px;padding:10px 18px;font-size:14px;cursor:pointer">🖨 Imprimer</button>
+  <script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script>
+  </body></html>`;
+  const w=window.open("","_blank","width=640,height=800");
+  if(!w){ alert("Autorisez les fenêtres pop-up pour imprimer."); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 function toggleOrder(id){expandedOrder=expandedOrder===id?null:id;renderOrders();}
 async function updateStatus(id,status){
   await sbFetch(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({status})});
   allOrders=allOrders.map(o=>o.id===id?{...o,status}:o);
   renderOrders();
+  const o=allOrders.find(x=>x.id===id);
+  // E-mail de confirmation au client quand on passe la commande en « Confirmée ».
+  if(status==="confirmed" && o && o.email && !o.confirm_mailed){
+    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"confirmed",order:o})}).catch(()=>{});
+    sbFetch(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({confirm_mailed:true})}).catch(()=>{});
+    allOrders=allOrders.map(x=>x.id===id?{...x,confirm_mailed:true}:x);
+  }
   // Fidélité : +1 tampon quand la commande est remise (livrée), une seule fois.
   if(status==="delivered"){
-    const o=allOrders.find(x=>x.id===id);
     if(o && !o.loyalty_awarded) await awardLoyalty(o);
   }
 }
@@ -1641,8 +1705,8 @@ function savePin(){
 async function exportCSV(){
   const orders=await sbFetch("orders?order=created_at.desc");
   if(!orders?.length){alert("Aucune commande à exporter.");return;}
-  const rows=[["ID","Date","Nom","Email","Téléphone","Articles","Total","Statut","Livraison","Date retrait","Paiement"],
-    ...orders.map(o=>[o.id,new Date(o.created_at).toLocaleDateString("fr-FR"),o.name,o.email,o.phone||"",(o.items||[]).map(i=>`${i.name} x${i.qty}`).join("|"),Number(o.total).toFixed(2),sm(o.status).label,o.shipping||"—",o.pickup_date||"—",o.payment_method||"—"])
+  const rows=[["ID","Date","Nom","Email","Téléphone","Articles","Total","Statut","Livraison","Date retrait","Paiement","Réglé"],
+    ...orders.map(o=>{const pmr=String(o.payment_method||"").toLowerCase();const paid=o.paid===true||pmr.includes("ligne")||pmr.includes("sumup");return [o.id,new Date(o.created_at).toLocaleDateString("fr-FR"),o.name,o.email,o.phone||"",(o.items||[]).map(i=>`${i.name} x${i.qty}`).join("|"),Number(o.total).toFixed(2),sm(o.status).label,o.shipping||"—",o.pickup_date||"—",o.payment_method||"—",paid?"Oui":"Non"];})
   ].map(r=>r.join(";")).join("\n");
   const a=document.createElement("a");
   a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(rows);

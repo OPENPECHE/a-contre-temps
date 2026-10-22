@@ -1,8 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Vercel Serverless Function — /api/send-email
-// Envoie 2 emails via Resend :
-//   1. Accusé de réception au CLIENT (to: client)
-//   2. Notification de nouvelle commande au FOURNIL (to: acontretemps@…)
+// Types d'e-mails (champ "type" du corps JSON) :
+//   "received"  (défaut) → accusé de réception au CLIENT + notification au FOURNIL
+//   "confirmed"           → confirmation de commande au CLIENT (uniquement)
+//   "welcome"             → e-mail de bienvenue au nouveau CLIENT (uniquement)
+// Tout passe par Resend, depuis l'adresse de marque à contre-temps.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const OWNER = "acontretemps@fournilvivant.fr";
@@ -22,22 +24,9 @@ async function sendEmail(apiKey, payload) {
   return { ok: r.ok, status: r.status, data };
 }
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const { order } = req.body;
-  if (!order?.email) return res.status(400).json({ error: "Missing order data" });
-
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  if (!RESEND_API_KEY) return res.status(500).json({ error: "Resend API key not configured" });
-
-  const items = Array.isArray(order.items) ? order.items : [];
-  const invoiceNum = "ACT-" + order.id.toUpperCase().slice(-8);
-  const firstName = (order.name || "").split(" ")[0] || "";
-  const total = Number(order.total).toFixed(2);
-
-  // ── Email CLIENT : accusé de réception ─────────────────────────────────────
-  const clientHtml = `
+// En-tête + pied de page de marque, partagés par tous les e-mails clients.
+function shell(bodyHtml) {
+  return `
 <!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -49,28 +38,7 @@ export default async function handler(req, res) {
       <p style="font-size:10px;letter-spacing:.22em;color:rgba(243,231,218,.7);margin:.4rem 0 0;">FOURNIL VIVANT · CRÉATEUR D'INSTANTS</p>
     </div>
     <div style="padding:2rem;">
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Commande reçue ✓</h1>
-      <p style="font-size:14px;color:rgba(43,41,37,.6);margin:0 0 1.5rem;">Bonjour ${firstName}, merci pour votre commande ! Nous revenons vers vous très vite pour confirmer.</p>
-      <div style="background:#F3E7DA;border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;">
-        <p style="font-size:10px;letter-spacing:.14em;color:#A6713F;margin:0 0 .75rem;">RÉCAPITULATIF — ${invoiceNum}</p>
-        ${items.map(it => `
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:.35rem 0;border-bottom:1px solid rgba(166,113,63,.15);">
-          <span>${it.name} × ${it.qty}</span>
-          <span style="color:rgba(43,41,37,.6)">${(it.price * it.qty).toFixed(2)} €</span>
-        </div>`).join("")}
-        <div style="display:flex;justify-content:space-between;font-size:15px;padding:.75rem 0 0;margin-top:.25rem;border-top:1px solid rgba(43,41,37,.15);">
-          <strong>Total indicatif</strong>
-          <strong>${total} €</strong>
-        </div>
-        <p style="font-size:10px;color:rgba(43,41,37,.5);margin:.6rem 0 0;">TVA non applicable, art. 293 B du CGI</p>
-      </div>
-      ${order.note ? `<p style="font-size:13px;color:rgba(43,41,37,.6);margin-bottom:1.5rem;padding:.75rem;background:#F0F3F5;border-radius:6px;"><strong>Note :</strong> ${order.note}</p>` : ""}
-      <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
-        Nous vous confirmerons votre commande par email ou par téléphone, et vous communiquerons les modalités de livraison ou de retrait.
-      </p>
-      <a href="https://fournilvivant.fr" style="display:inline-block;padding:.75rem 1.5rem;background:#3E5A70;color:#F3E7DA;border-radius:999px;font-size:11px;letter-spacing:.12em;text-decoration:none;">
-        VOIR LE SITE
-      </a>
+      ${bodyHtml}
     </div>
     <div style="padding:1.25rem 2rem;border-top:1px solid #D6DFE5;text-align:center;">
       <p style="font-size:11px;color:rgba(43,41,37,.5);line-height:1.7;">
@@ -84,8 +52,139 @@ export default async function handler(req, res) {
   </div>
 </body>
 </html>`;
+}
 
-  // Version texte (améliore nettement la délivrabilité, évite le spam)
+function recapBlock(invoiceNum, items, total, note) {
+  return `
+      <div style="background:#F3E7DA;border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;">
+        <p style="font-size:10px;letter-spacing:.14em;color:#A6713F;margin:0 0 .75rem;">RÉCAPITULATIF — ${invoiceNum}</p>
+        ${items.map(it => `
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:.35rem 0;border-bottom:1px solid rgba(166,113,63,.15);">
+          <span>${it.name} × ${it.qty}</span>
+          <span style="color:rgba(43,41,37,.6)">${(it.price * it.qty).toFixed(2)} €</span>
+        </div>`).join("")}
+        <div style="display:flex;justify-content:space-between;font-size:15px;padding:.75rem 0 0;margin-top:.25rem;border-top:1px solid rgba(43,41,37,.15);">
+          <strong>Total</strong>
+          <strong>${total} €</strong>
+        </div>
+        <p style="font-size:10px;color:rgba(43,41,37,.5);margin:.6rem 0 0;">TVA non applicable, art. 293 B du CGI</p>
+      </div>
+      ${note ? `<p style="font-size:13px;color:rgba(43,41,37,.6);margin-bottom:1.5rem;padding:.75rem;background:#F0F3F5;border-radius:6px;"><strong>Note :</strong> ${note}</p>` : ""}`;
+}
+
+function siteButton(label = "VOIR LE SITE", href = "https://fournilvivant.fr") {
+  return `<a href="${href}" style="display:inline-block;padding:.75rem 1.5rem;background:#3E5A70;color:#F3E7DA;border-radius:999px;font-size:11px;letter-spacing:.12em;text-decoration:none;">${label}</a>`;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) return res.status(500).json({ error: "Resend API key not configured" });
+
+  const type = (req.body && req.body.type) || "received";
+
+  // ───────────────────────── E-MAIL DE BIENVENUE ─────────────────────────────
+  if (type === "welcome") {
+    const client = req.body.client || {};
+    if (!client.email) return res.status(400).json({ error: "Missing client email" });
+    const firstName = (client.name || "").split(" ")[0] || "";
+    const body = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Bienvenue chez à contre-temps 🌾</h1>
+      <p style="font-size:14px;color:rgba(43,41,37,.7);line-height:1.8;margin:0 0 1.25rem;">
+        Bonjour ${firstName}, votre compte est créé — merci et bienvenue dans la maison&nbsp;!
+        Vous pouvez désormais commander en quelques clics et retrouver vos informations à chaque fois.
+      </p>
+      <div style="background:#F3E7DA;border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;">
+        <p style="font-size:13px;color:rgba(43,41,37,.75);line-height:1.8;margin:0;">
+          🥖 <strong>Votre carte de fidélité</strong> est active : 1 achat = 1 tampon, et au bout de 10,
+          votre pain (ou votre douceur) préféré vous est offert.
+        </p>
+      </div>
+      <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
+        À très vite sur le marché ou en livraison&nbsp;!
+      </p>
+      ${siteButton("COMMANDER", "https://www.fournilvivant.fr/commander")}`;
+    const html = shell(body);
+    const text =
+      `Bonjour ${firstName},\n\n` +
+      `Bienvenue chez à contre-temps — votre compte est créé !\n\n` +
+      `Votre carte de fidélité est active : 1 achat = 1 tampon, 10 tampons = un produit offert.\n\n` +
+      `Commander : https://www.fournilvivant.fr/commander\n\n` +
+      `à contre-temps — Fournil vivant\nhttps://fournilvivant.fr`;
+    try {
+      const r = await sendEmail(RESEND_API_KEY, {
+        from: FROM, to: [client.email], reply_to: OWNER,
+        subject: "Bienvenue chez à contre-temps 🌾", html, text,
+      });
+      if (!r.ok) console.error("Resend welcome error:", r.status, r.data);
+      return res.status(200).json({ welcome: { ok: r.ok, status: r.status, error: r.ok ? null : r.data } });
+    } catch (e) {
+      console.error("Send welcome error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ───────────────── E-MAILS LIÉS À UNE COMMANDE (received / confirmed) ───────
+  const { order } = req.body;
+  if (!order?.email) return res.status(400).json({ error: "Missing order data" });
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const invoiceNum = "ACT-" + String(order.id || "").toUpperCase().slice(-8);
+  const firstName = (order.name || "").split(" ")[0] || "";
+  const total = Number(order.total).toFixed(2);
+
+  // ── Confirmation de commande (déclenchée depuis le back-office) ─────────────
+  if (type === "confirmed") {
+    const retrait = order.shipping || "";
+    const quand = order.pickup_date
+      ? new Date(order.pickup_date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
+      : "";
+    const body = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Votre commande est confirmée ✓</h1>
+      <p style="font-size:14px;color:rgba(43,41,37,.7);line-height:1.8;margin:0 0 1.25rem;">
+        Bonjour ${firstName}, bonne nouvelle&nbsp;: votre commande est confirmée et prise en compte.
+        Nous la préparons avec soin${quand ? ` pour le <strong>${quand}</strong>` : ""}${retrait ? ` — ${retrait}` : ""}.
+      </p>
+      ${recapBlock(invoiceNum, items, total, order.note)}
+      <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
+        À très bientôt, et merci de votre confiance&nbsp;!
+      </p>
+      ${siteButton()}`;
+    const html = shell(body);
+    const text =
+      `Bonjour ${firstName},\n\n` +
+      `Votre commande ${invoiceNum} est confirmée et prise en compte.\n` +
+      (quand ? `Préparation pour le ${quand}.\n` : "") +
+      (retrait ? `${retrait}\n` : "") +
+      `\n` +
+      items.map(it => `- ${it.name} x${it.qty} : ${(it.price * it.qty).toFixed(2)} €`).join("\n") +
+      `\nTotal : ${total} €\n\n` +
+      `Merci de votre confiance !\n\nà contre-temps — Fournil vivant\nhttps://fournilvivant.fr`;
+    try {
+      const r = await sendEmail(RESEND_API_KEY, {
+        from: FROM, to: [order.email], reply_to: OWNER,
+        subject: `Votre commande ${invoiceNum} est confirmée — à contre-temps`, html, text,
+      });
+      if (!r.ok) console.error("Resend confirmed error:", r.status, r.data);
+      return res.status(200).json({ confirmed: { ok: r.ok, status: r.status, error: r.ok ? null : r.data } });
+    } catch (e) {
+      console.error("Send confirmed error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── Accusé de réception (type "received", par défaut) ──────────────────────
+  const clientBody = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Commande reçue ✓</h1>
+      <p style="font-size:14px;color:rgba(43,41,37,.6);margin:0 0 1.5rem;">Bonjour ${firstName}, merci pour votre commande ! Nous revenons vers vous très vite pour la confirmer.</p>
+      ${recapBlock(invoiceNum, items, total, order.note)}
+      <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
+        Nous vous confirmerons votre commande par email ou par téléphone, et vous communiquerons les modalités de livraison ou de retrait.
+      </p>
+      ${siteButton()}`;
+  const clientHtml = shell(clientBody);
+
   const clientText =
     `Bonjour ${firstName},\n\n` +
     `Merci pour votre commande ${invoiceNum} !\n\n` +
@@ -147,7 +246,6 @@ export default async function handler(req, res) {
     if (!client.ok) console.error("Resend client error:", client.status, client.data);
     if (!owner.ok) console.error("Resend owner error:", owner.status, owner.data);
 
-    // On renvoie le détail pour pouvoir diagnostiquer côté navigateur si besoin
     return res.status(200).json({
       client: { ok: client.ok, status: client.status, error: client.ok ? null : client.data },
       owner: { ok: owner.ok, status: owner.status, error: owner.ok ? null : owner.data },

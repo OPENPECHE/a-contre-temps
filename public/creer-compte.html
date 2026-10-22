@@ -146,6 +146,8 @@ function verifyCode(){
     try{ localStorage.setItem("act_token",res.j.access_token); localStorage.setItem("act_refresh",res.j.refresh_token); }catch(e){}
     // enregistre les infos sur le compte + active la carte fidélité
     saveProfile(res.j.access_token);
+    // e-mail de bienvenue (charte à contre-temps)
+    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"welcome",client:{email:pending.email,name:pending.prenom+" "+pending.nom}})}).catch(function(){});
     success(pending.prenom);
   })
   .catch(function(){ msg2.textContent="Connexion impossible, réessayez."; b.disabled=false; b.textContent="Valider et créer mon compte"; });
