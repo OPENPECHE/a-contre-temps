@@ -159,30 +159,48 @@ document.getElementById("okCard").onclick=submit;
 document.getElementById("noCard").onclick=function(){ sendBack(null); };
 
 /* ─── Scan du QR code de la carte client ─── */
-var scanStream=null, scanRAF=null, scanCv=document.createElement("canvas"), scanCx=scanCv.getContext("2d");
+var scanStream=null, scanRAF=null, scanBD=null, scanCv=document.createElement("canvas"), scanCx=scanCv.getContext("2d", {willReadFrequently:true});
 document.getElementById("scanBtn").onclick=startScan;
 document.getElementById("scanCancel").onclick=function(){ stopScan(); show("ask"); };
 function startScan(){
   show("scan");
   var v=document.getElementById("scanVideo"), msg=document.getElementById("scanMsg");
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ msg.textContent="Caméra non disponible sur cet appareil."; return; }
+  scanBD=null; if("BarcodeDetector" in window){ try{ scanBD=new window.BarcodeDetector({formats:["qr_code"]}); }catch(e){ scanBD=null; } }
   msg.textContent="Activation de la caméra…";
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"}}})
-    .then(function(stream){ scanStream=stream; v.srcObject=stream; v.setAttribute("playsinline","true"); v.play(); msg.textContent = window.jsQR? "Présentez le QR face à la caméra" : "Lecteur QR indisponible — tapez votre numéro."; scanRAF=requestAnimationFrame(scanLoop); })
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"}, width:{ideal:1280}, height:{ideal:720}}})
+    .then(function(stream){
+      scanStream=stream; v.srcObject=stream; v.setAttribute("playsinline","true"); v.muted=true;
+      v.play().catch(function(){});
+      msg.textContent = (scanBD||window.jsQR)? "Présentez le QR à la caméra (bien net, ~20 cm)" : "Lecteur QR indisponible — tapez votre numéro.";
+      scanRAF=requestAnimationFrame(scanLoop);
+    })
     .catch(function(){ msg.textContent="Accès caméra refusé. Tapez votre numéro."; });
 }
+function onScanned(ph){ stopScan(); entry=ph; sendBack(ph); }
 function scanLoop(){
   var v=document.getElementById("scanVideo");
-  if(scanStream && v.readyState===v.HAVE_ENOUGH_DATA && window.jsQR){
-    scanCv.width=v.videoWidth; scanCv.height=v.videoHeight;
-    scanCx.drawImage(v,0,0,scanCv.width,scanCv.height);
-    try{
-      var img=scanCx.getImageData(0,0,scanCv.width,scanCv.height);
-      var code=jsQR(img.data,img.width,img.height,{inversionAttempts:"attemptBoth"});
-      if(code&&code.data){ var ph=normPhone(code.data); if(ph.length>=10){ stopScan(); entry=ph; sendBack(ph); return; } }
-    }catch(e){}
+  if(!scanStream) return;
+  if(v.videoWidth>0 && v.videoHeight>0){
+    if(scanBD){
+      scanBD.detect(v).then(function(codes){
+        if(!scanStream) return;
+        if(codes&&codes.length){ var ph=normPhone(codes[0].rawValue); if(ph.length>=10){ onScanned(ph); return; } }
+        scanRAF=requestAnimationFrame(scanLoop);
+      }).catch(function(){ if(scanStream) scanRAF=requestAnimationFrame(scanLoop); });
+      return;
+    }
+    if(window.jsQR){
+      try{
+        scanCv.width=v.videoWidth; scanCv.height=v.videoHeight;
+        scanCx.drawImage(v,0,0,scanCv.width,scanCv.height);
+        var img=scanCx.getImageData(0,0,scanCv.width,scanCv.height);
+        var code=jsQR(img.data,img.width,img.height,{inversionAttempts:"attemptBoth"});
+        if(code&&code.data){ var p2=normPhone(code.data); if(p2.length>=10){ onScanned(p2); return; } }
+      }catch(e){}
+    }
   }
-  if(scanStream) scanRAF=requestAnimationFrame(scanLoop);
+  scanRAF=requestAnimationFrame(scanLoop);
 }
 function stopScan(){
   if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF=null; }
