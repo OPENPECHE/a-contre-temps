@@ -117,6 +117,9 @@
     .card{background:var(--pp);border:1px solid var(--bs);border-radius:14px;padding:26px;}
     .card .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ru);}
     .card h3{font-size:21px;color:var(--bd);margin:8px 0 10px;}
+    .card .win{display:inline-block;font-size:11px;font-weight:600;color:var(--ru);background:var(--cr);border-radius:6px;padding:3px 9px;margin-bottom:10px;}
+    .card .cardcta{display:inline-block;margin-top:16px;background:var(--bd);color:var(--cr);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:11px 20px;border-radius:999px;text-decoration:none;font-weight:500;}
+    .card .cardcta.alt{background:transparent;color:var(--bd);border:1px solid var(--bs);}
     .card p{color:var(--is);font-size:14.5px;}
 
     .band{background:var(--cr);}
@@ -156,52 +159,54 @@
   <section id="offres">
     <div class="wrap">
       <div class="center">
-        <span class="eyebrow">Notre cœur de métier</span>
-        <h2>De l'aube à l'apéro, tout est fait maison</h2>
-        <p>Chaque instant est composé le jour même dans notre atelier, avec des matières premières brutes et locales autant que possible.</p>
+        <span class="eyebrow">Nos univers</span>
+        <h2>Que souhaitez‑vous commander ?</h2>
+        <p>Du pain du marché au brunch livré, en passant par l'apéro, le déjeuner d'entreprise et vos événements sur mesure — tout est fait maison, au levain.</p>
       </div>
       <div class="grid">
         <div class="card">
-          <div class="k">Le fournil</div>
-          <h3>Boulangerie artisanale</h3>
-          <p>Pains au levain à longue fermentation, farine bio et française — le vrai goût du pain, cuit le matin même. En livraison et sur les marchés.</p>
+          <div class="k">🥖 Sur les marchés</div>
+          <h3>Pains & douceurs</h3>
+          <p>Pains au levain, viennoiseries et douceurs faits maison. Commandez en ligne et retirez sur notre stand.</p>
+          <a href="/commander-marche" class="cardcta">Commander au marché</a>
         </div>
         <div class="card">
-          <div class="k">Chaque matin</div>
-          <h3>Viennoiserie artisanale</h3>
-          <p>Croissants, pains au chocolat et mini-viennoiseries faits maison, garnis par nos soins — farine bio, rien d'industriel, rien de surgelé.</p>
+          <div class="k">🥐 Le week-end</div>
+          <span class="win">Livré samedi & dimanche matin</span>
+          <h3>Brunch à livrer</h3>
+          <p>Instant Brunch & Box Brunch : viennoiseries, pains spéciaux, douceurs et salé à partager, livrés chez vous.</p>
+          <a href="/brunch-clermont-ferrand" class="cardcta alt">Découvrir le brunch</a>
         </div>
         <div class="card">
-          <div class="k">Le week-end</div>
-          <h3>Brunchs extraordinaires</h3>
-          <p>Mini-viennoiseries sucrées-salées, pains spéciaux, confitures de producteurs et douceurs à partager — le week-end, à Clermont-Ferrand et alentours.</p>
+          <div class="k">🧀 En soirée</div>
+          <span class="win">Jeudi soir → samedi soir</span>
+          <h3>Apéro à livrer</h3>
+          <p>Instant Apéro & Box Apéro : pièces salées maison, planches à composer, pour recevoir sans rien préparer.</p>
+          <a href="/plateau-aperitif-clermont-ferrand" class="cardcta alt">Découvrir l'apéro</a>
         </div>
         <div class="card">
-          <div class="k">Soir &amp; week-end</div>
-          <h3>Apéritifs & cafés gourmands</h3>
-          <p>Petites pièces salées, plateaux à composer, charcuterie, fromages et cafés gourmands avec les douceurs du fournil — pour recevoir sans rien préparer.</p>
+          <div class="k">🥪 Au bureau</div>
+          <span class="win">Le midi, lundi → vendredi</span>
+          <h3>Lunch entreprise</h3>
+          <p>Casse‑croûtes, sandwiches au levain, salades et formules déjeuner livrés sur votre lieu de travail.</p>
+          <a href="/lunch-clermont-ferrand" class="cardcta alt">Le lunch d'entreprise</a>
         </div>
         <div class="card">
-          <div class="k">Pour les équipes</div>
-          <h3>Petits-déjeuners d'entreprise</h3>
-          <p>Viennoiseries du fournil, jus pressés et cafés livrés à l'heure qui vous arrange. Réunions, séminaires, petits-déjeuners récurrents : on compose le vôtre.</p>
-        </div>
-        <div class="card">
-          <div class="k">Le midi</div>
-          <h3>Lunch & déjeuner</h3>
-          <p>Sandwiches sur pain au levain, salades composées, plats cuisinés maison et pains à partager pour une pause déjeuner sans file d'attente, livrée sur votre lieu de travail.</p>
-        </div>
-        <div class="card">
-          <div class="k">À offrir &amp; à croquer</div>
-          <h3>Biscuiterie artisanale</h3>
-          <p>Sablés au beurre et biscuits du fournil, emballés avec soin — à retirer sur place ou expédiés partout en France en Chronopost.</p>
-        </div>
-        <div class="card">
-          <div class="k">Sur mesure</div>
+          <div class="k">🎉 Sur mesure</div>
+          <span class="win">Sur devis</span>
           <h3>Événements & réceptions</h3>
-          <p>Un événement, une équipe à nourrir ? Décrivez votre besoin, nous composons un instant sur mesure, livré à Clermont-Ferrand et sa métropole.</p>
+          <p>Mariage, séminaire, baby shower, anniversaire… On compose votre instant, livré sur votre lieu de réception.</p>
+          <a href="/traiteur-evenement-clermont-ferrand" class="cardcta alt">Demander un devis</a>
+        </div>
+        <div class="card">
+          <div class="k">🎁 À offrir</div>
+          <span class="win">Expédié en France</span>
+          <h3>Coffrets biscuiterie</h3>
+          <p>Sablés et biscuits du fournil, emballés avec soin — à retirer ou expédiés partout en France.</p>
+          <a href="/biscuiterie-clermont-ferrand" class="cardcta alt">Voir les coffrets</a>
         </div>
       </div>
+      <p style="text-align:center;margin-top:22px;font-size:13px;color:var(--is)">Aussi : <a href="/pain-au-levain-clermont-ferrand" style="color:var(--b)">pain au levain</a> · <a href="/viennoiserie-artisanale-clermont-ferrand" style="color:var(--b)">viennoiserie</a> · petits‑déjeuners d'entreprise.</p>
     </div>
   </section>
 
