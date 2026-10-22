@@ -71,18 +71,29 @@
 </head>
 <body>
 <header>
-  <img class="heart" src="/heart-cream.png" alt="" />
-  <div class="brand">à contre-temps</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;max-width:760px;margin:0 auto 14px;font-size:13px;font-weight:500;">
+    <a href="/" style="color:var(--cr);text-decoration:none;opacity:.92;">← Accueil</a>
+    <a href="/mon-compte" style="color:var(--cr);text-decoration:none;opacity:.92;">👤 Mon compte</a>
+  </div>
+  <a href="/" style="text-decoration:none;color:inherit;display:block;">
+    <img class="heart" src="/heart-cream.png" alt="à contre-temps — Accueil" />
+    <div class="brand">à contre-temps</div>
+  </a>
   <div class="sub">Fournil vivant · Créateur d'instants</div>
   <h1>Commander au marché</h1>
   <p>Réservez vos produits en ligne et retirez‑les sur notre stand au marché. <strong>Payez en ligne ou sur place.</strong></p>
 </header>
 
 <div class="wrap">
-  <a href="/ma-fidelite" style="display:block;text-decoration:none;margin:18px 0 4px;background:var(--cr);border:1px solid #E7D6C2;border-radius:14px;padding:14px 16px;color:var(--ink);">
+  <div style="margin:18px 0 4px;background:var(--cr);border:1px solid #E7D6C2;border-radius:14px;padding:14px 16px;color:var(--ink);">
     <div style="font-family:var(--serif);font-size:16px;color:var(--bd);">🥖 Carte de fidélité</div>
-    <div style="font-size:13px;color:var(--is);margin-top:2px;">1 achat = 1 tampon · 10 tampons = <b style="color:var(--ru)">un produit offert</b>. Donnez votre numéro à l'achat. <span style="color:var(--bd);font-weight:600;white-space:nowrap;">Voir ma carte →</span></div>
-  </a>
+    <div style="font-size:13px;color:var(--is);margin-top:2px;">1 achat = 1 tampon · 10 tampons = <b style="color:var(--ru)">un produit offert</b>.</div>
+    <div style="font-size:13.5px;margin-top:8px;font-weight:600;">
+      <a href="/creer-compte" style="color:var(--bd);">Créer mon compte →</a>
+      <span style="color:var(--bs);margin:0 6px;">·</span>
+      <a href="/mon-compte" style="color:var(--bd);">Se connecter</a>
+    </div>
+  </div>
   <div id="catalog"><p style="color:var(--is);padding:30px 0;text-align:center;">Chargement du catalogue…</p></div>
 </div>
 
