@@ -394,11 +394,12 @@ function promptLoyalty(){
 }
 
 /* Mode 2 tablettes : on demande le numéro sur la borne client, réponse en direct. */
-function resetBorne(){
+function setBorneState(st){
   if (!borneCode) return;
   sbFetch("pos_link?code=eq."+encodeURIComponent(borneCode),
-          { method:"PATCH", body:JSON.stringify({ state:"idle", phone:null, updated_at:new Date().toISOString() }) }).catch(function(){});
+          { method:"PATCH", body:JSON.stringify({ state:st, updated_at:new Date().toISOString() }) }).catch(function(){});
 }
+function resetBorne(){ setBorneState("idle"); }
 function askViaBorne(amount){
   var ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
   ov.innerHTML='<div class="card" style="text-align:center;">'
@@ -418,41 +419,55 @@ function askViaBorne(amount){
       .then(function(r){ return r.json(); })
       .then(function(rows){
         var row=(Array.isArray(rows)&&rows[0])||null; if(!row||done) return;
-        if (row.state==="done"){
-          done=true; clearInterval(poll); resetBorne();
+        if (row.state==="submitted"){
+          done=true; clearInterval(poll);
           var ph=normPhone(row.phone||"");
-          if (ph.length>=10){ creditLoyalty(ph, ov); }
-          else { ov.remove(); toast("Vente close · sans carte"); }
+          if (ph.length<10){ resetBorne(); ov.remove(); toast("Vente close · sans carte"); return; }
+          creditLoyalty(ph, ov).then(function(outcome){
+            setBorneState(outcome==="noaccount" ? "noaccount" : "ok");
+            setTimeout(resetBorne, outcome==="noaccount" ? 8000 : 4000);
+          });
         }
       }).catch(function(){});
   }, 1200);
   ov.querySelector("#loyCancel").onclick = function(){ done=true; clearInterval(poll); resetBorne(); ov.remove(); };
 }
 
-function loyaltyUpsert(phone){
-  // Lit la carte puis renvoie la promesse d'écriture ; résout {stamps,free,won}.
+function loyaltyCredit(phone){
+  // Crédite UNIQUEMENT les cartes activées (compte créé). Sinon {notRegistered:true}.
   return sbFetch("loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*")
     .then(function(r){ return r.json(); })
     .then(function(rows){
-      var cur=(rows&&rows[0])||null, won=false;
-      var stamps=(cur?cur.stamps:0)+1, free=(cur?cur.free_breads:0), total=(cur?cur.total_stamps:0)+1;
+      var cur=(Array.isArray(rows)&&rows[0])||null;
+      if (!cur || !cur.registered){ return { notRegistered:true }; }
+      var won=false, stamps=cur.stamps+1, free=cur.free_breads, total=cur.total_stamps+1;
       if (stamps>=10){ stamps-=10; free+=1; won=true; }
-      var body={ phone:phone, stamps:stamps, free_breads:free, total_stamps:total,
+      var body={ stamps:stamps, free_breads:free, total_stamps:total,
                  last_order_at:new Date().toISOString(), updated_at:new Date().toISOString() };
-      return sbFetch("loyalty", { method:"POST", body:JSON.stringify(body) })
-        .then(function(r2){ if(!r2.ok) throw new Error(r2.status); return {stamps:stamps, free:free, won:won}; });
+      return sbFetch("loyalty?phone=eq."+encodeURIComponent(phone), { method:"PATCH", body:JSON.stringify(body) })
+        .then(function(r2){ if(!r2.ok) throw new Error(r2.status); return { stamps:stamps, free:free, won:won }; });
     });
 }
+// Résout avec l'issue : "ok" | "noaccount" | "offline" (pour piloter la borne).
 function creditLoyalty(phone, ov){
-  var msg=ov.querySelector("#loyMsg"); msg.style.color="var(--is)"; msg.textContent="…";
-  attachPhoneToLastSale(phone);
-  if (!navigator.onLine){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); return; }
-  loyaltyUpsert(phone)
+  var msg=ov.querySelector("#loyMsg"); if(msg){ msg.style.color="var(--is)"; msg.textContent="…"; }
+  if (!navigator.onLine){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); return Promise.resolve("offline"); }
+  return loyaltyCredit(phone)
     .then(function(res){
+      if (res.notRegistered){ showNotRegistered(ov); return "noaccount"; }
+      attachPhoneToLastSale(phone);
       res.phone=phone;
-      return loadLoyaltyHistory(phone).then(function(h){ res.hist=h; showLoyaltyResult(ov, res); });
+      return loadLoyaltyHistory(phone).then(function(h){ res.hist=h; showLoyaltyResult(ov, res); return "ok"; });
     })
-    .catch(function(){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); });
+    .catch(function(){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); return "offline"; });
+}
+function showNotRegistered(ov){
+  var c=ov.querySelector(".card"); if(!c) return;
+  c.innerHTML='<h3 style="text-align:center;">Carte non activée</h3>'
+    +'<div class="sub" style="text-align:center;margin-top:6px;">Ce numéro n\'a pas encore de compte fidélité.</div>'
+    +'<div class="sub" style="text-align:center;margin-top:10px;">Créez votre compte en 1 min sur<br><b style="color:var(--bd)">fournilvivant.fr/creer-compte</b><br>(ou scannez le QR du flyer) — ensuite vos tampons se cumulent.</div>'
+    +'<button class="big ok" id="loyClose" style="margin-top:14px;">Fermer</button>';
+  c.querySelector("#loyClose").onclick=function(){ ov.remove(); };
 }
 function queueLoyalty(phone){ loyaltyQueue.push({phone:phone, ts:Date.now()}); LS.set("caisse_loyalty_queue", loyaltyQueue); }
 
@@ -526,7 +541,7 @@ function flushLoyalty(){
   if (!navigator.onLine || !loyaltyQueue.length || flushLoyalty._busy) return;
   flushLoyalty._busy=true;
   var job=loyaltyQueue[0];
-  loyaltyUpsert(job.phone)
+  loyaltyCredit(job.phone)
     .then(function(){ loyaltyQueue.shift(); LS.set("caisse_loyalty_queue", loyaltyQueue); flushLoyalty._busy=false; if(loyaltyQueue.length) flushLoyalty(); })
     .catch(function(){ flushLoyalty._busy=false; });
 }

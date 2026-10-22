@@ -119,9 +119,9 @@ function linkLoyalty(ph, name){
   fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph)+"&select=phone",{headers:h})
     .then(function(r){return r.json();}).then(function(rows){
       if(Array.isArray(rows)&&rows[0]){
-        fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph),{method:"PATCH",headers:h,body:JSON.stringify({name:name,updated_at:new Date().toISOString()})});
+        fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph),{method:"PATCH",headers:h,body:JSON.stringify({name:name,registered:true,updated_at:new Date().toISOString()})});
       } else {
-        fetch(SB_URL+"/rest/v1/loyalty",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},h),body:JSON.stringify({phone:ph,name:name,stamps:0,free_breads:0,total_stamps:0,updated_at:new Date().toISOString()})});
+        fetch(SB_URL+"/rest/v1/loyalty",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},h),body:JSON.stringify({phone:ph,name:name,registered:true,stamps:0,free_breads:0,total_stamps:0,updated_at:new Date().toISOString()})});
       }
     }).catch(function(){});
 }

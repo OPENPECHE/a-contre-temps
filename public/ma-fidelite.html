@@ -114,7 +114,7 @@ function render(p,row,hist){
     +'<div class="dots">'+dots+'</div>'
     +'<div class="count"><b>'+stamps+' / 10</b> tampons'+(total?(' · '+total+' au total'):'')+'</div>';
   if(free>0) html+='<div class="free">🎁 '+free+' produit'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>';
-  else if(!row) html+='<div class="free" style="background:var(--pp);color:var(--is);font-weight:400;">Pas encore de tampon sur ce numéro — rendez-vous au marché pour votre premier achat 🥖</div>';
+  else if(!row || !row.registered) html+='<div class="free" style="background:var(--pp);color:var(--is);font-weight:400;">Ce numéro n\'a pas de carte activée.<br><a href="/creer-compte" style="color:var(--bd);font-weight:600;">Créez votre compte →</a> pour cumuler vos tampons.</div>';
   else html+='<div class="count" style="margin-top:14px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre produit offert !</div>';
   if(hist && hist.top.length){
     html+='<div style="margin-top:18px;border-top:1px solid var(--bs);padding-top:14px;text-align:left;">'

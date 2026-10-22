@@ -78,6 +78,13 @@
   <div style="margin-top:10px;opacity:.9;" id="thxSub"></div>
 </div>
 
+<div class="screen" id="create" style="display:none;background:var(--pp);">
+  <h2 style="font-family:var(--serif);color:var(--bd);font-size:clamp(24px,4vw,32px);">Activez votre carte 🥖</h2>
+  <p style="color:var(--is);font-size:clamp(14px,2vw,18px);margin-top:8px;max-width:560px;">Ce numéro n'a pas encore de compte. Créez le vôtre en 1 min pour cumuler vos tampons.</p>
+  <img src="/qr-creer-compte.png" alt="QR création de compte" style="width:min(42vw,220px);height:auto;margin:20px auto;border:8px solid #fff;border-radius:16px;box-shadow:0 8px 24px rgba(43,41,37,.12);" />
+  <p style="color:var(--bd);font-weight:600;font-size:clamp(15px,2.2vw,19px);">Scannez le QR code<br><span style="color:var(--is);font-weight:400;">ou allez sur fournilvivant.fr/creer-compte</span></p>
+</div>
+
 <div class="screen" id="setup">
   <div class="card">
     <h2 style="font-family:var(--serif);color:var(--bd);font-size:24px;margin-bottom:6px;">Borne client</h2>
@@ -94,7 +101,7 @@ function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Obj
 function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
 function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €"; }
-function show(id){ ["idle","ask","thanks","setup"].forEach(function(s){ document.getElementById(s).style.display = (s===id?"flex":"none"); }); }
+function show(id){ ["idle","ask","thanks","create","setup"].forEach(function(s){ document.getElementById(s).style.display = (s===id?"flex":"none"); }); }
 
 var CODE = (new URLSearchParams(location.search).get("code")||"").trim().toUpperCase();
 try{ if(CODE) localStorage.setItem("borne_code",CODE); else CODE=(localStorage.getItem("borne_code")||"").trim().toUpperCase(); }catch(e){}
@@ -144,17 +151,30 @@ function submit(){
 }
 function sendBack(phone){
   if(busy) return; busy=true;
-  sb("pos_link?code=eq."+encodeURIComponent(CODE),{method:"PATCH",body:JSON.stringify({state:"done",phone:phone,updated_at:new Date().toISOString()})})
+  sb("pos_link?code=eq."+encodeURIComponent(CODE),{method:"PATCH",body:JSON.stringify({state:"submitted",phone:phone,updated_at:new Date().toISOString()})})
     .then(function(){
       busy=false;
-      document.getElementById("thxBig").textContent = phone? "Merci !" : "À bientôt !";
-      document.getElementById("thxSub").textContent = phone? "Votre tampon est enregistré 🥖" : "";
-      show("thanks");
-      lastState="done";
-      setTimeout(function(){ if(document.getElementById("thanks").style.display!=="none"){ show("idle"); } }, 3500);
+      if(phone){
+        // on attend l'issue de la caisse (ok / pas de compte)
+        document.getElementById("thxBig").innerHTML='⌛';
+        document.getElementById("thxSub").textContent="Un instant…";
+        show("thanks");
+      } else {
+        document.getElementById("thxBig").textContent="À bientôt !";
+        document.getElementById("thxSub").textContent="";
+        show("thanks");
+      }
     })
     .catch(function(){ busy=false; });
 }
+function showThanks(){
+  document.getElementById("thxBig").textContent="Merci !";
+  document.getElementById("thxSub").textContent="Votre tampon est enregistré 🥖";
+  show("thanks");
+  idleFallback();
+}
+function showCreate(){ show("create"); idleFallback(); }
+function idleFallback(){ clearTimeout(idleFallback._t); idleFallback._t=setTimeout(function(){ var a=document.getElementById("ask").style.display, s=document.getElementById("setup").style.display; if(a==="none"&&s==="none") show("idle"); }, 10000); }
 
 function startPolling(){
   tick(); setInterval(tick, 1200);
@@ -166,7 +186,9 @@ function tick(){
       var row=(Array.isArray(rows)&&rows[0])||null;
       var st=row?row.state:"idle";
       if(st==="asking" && lastState!=="asking"){ openAsk(row.amount); }
-      else if(st==="idle" && lastState!=="idle"){ if(document.getElementById("ask").style.display!=="none"){ show("idle"); } }
+      else if(st==="ok" && lastState!=="ok"){ showThanks(); }
+      else if(st==="noaccount" && lastState!=="noaccount"){ showCreate(); }
+      else if(st==="idle" && lastState!=="idle"){ if(document.getElementById("setup").style.display==="none") show("idle"); }
       lastState=st;
     })
     .catch(function(){});

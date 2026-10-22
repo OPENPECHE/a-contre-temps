@@ -728,11 +728,17 @@ async function awardLoyalty(o){
   try{
     const rows=await sbFetch(`loyalty?phone=eq.${encodeURIComponent(phone)}&select=*`);
     const cur=(Array.isArray(rows)&&rows[0])||null;
-    let stamps=(cur?cur.stamps:0)+1, free=(cur?cur.free_breads:0), total=(cur?cur.total_stamps:0)+1, won=false;
+    if(!cur || !cur.registered){
+      // Pas de compte fidélité → pas de tampon (on marque pour ne plus réessayer).
+      await sbFetch(`orders?id=eq.${o.id}`,{method:"PATCH",body:JSON.stringify({loyalty_awarded:true})});
+      allOrders=allOrders.map(x=>x.id===o.id?{...x,loyalty_awarded:true}:x);
+      alert(`ℹ️ ${o.name||phone} n'a pas de compte fidélité — pas de tampon.\nInvitez le client à créer son compte sur fournilvivant.fr/creer-compte.`);
+      return;
+    }
+    let stamps=cur.stamps+1, free=cur.free_breads, total=cur.total_stamps+1, won=false;
     if(stamps>=10){ stamps-=10; free+=1; won=true; }
-    const body={phone,name:o.name||null,stamps,free_breads:free,total_stamps:total,last_order_at:new Date().toISOString(),updated_at:new Date().toISOString()};
-    if(cur) await sbFetch(`loyalty?phone=eq.${encodeURIComponent(phone)}`,{method:"PATCH",body:JSON.stringify(body)});
-    else    await sbFetch("loyalty",{method:"POST",body:JSON.stringify(body)});
+    const body={stamps,free_breads:free,total_stamps:total,last_order_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    await sbFetch(`loyalty?phone=eq.${encodeURIComponent(phone)}`,{method:"PATCH",body:JSON.stringify(body)});
     await sbFetch(`orders?id=eq.${o.id}`,{method:"PATCH",body:JSON.stringify({loyalty_awarded:true})});
     allOrders=allOrders.map(x=>x.id===o.id?{...x,loyalty_awarded:true}:x);
     alert(`🥖 +1 tampon de fidélité pour ${o.name||phone} (${stamps}/10)`+(won?` — 🎉 un produit offert gagné !`:``));
