@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Créer mon compte — à contre-temps, Fournil vivant</title>
+<meta name="description" content="Créez votre compte fidélité à contre-temps : suivez vos tampons et récupérez votre produit offert tous les 10 achats." />
+<meta name="robots" content="noindex, follow" />
+<link rel="canonical" href="https://www.fournilvivant.fr/creer-compte" />
+<link rel="icon" type="image/png" href="/icons/icon-192.png" />
+<meta name="theme-color" content="#7C97AC" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:inherit;}
+  header{background:var(--b);color:var(--cr);text-align:center;padding:30px 20px 30px;}
+  header .heart{height:54px;width:auto;margin:0 auto 12px;display:block;}
+  header .brand{font-family:var(--serif);font-size:30px;font-style:italic;line-height:1.1;}
+  header .sub{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin-top:8px;}
+  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(18px,3.4vw,23px);margin-top:18px;opacity:.95;}
+  .wrap{max-width:440px;margin:0 auto;padding:24px 18px 50px;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:18px;padding:22px 20px;box-shadow:0 8px 28px rgba(43,41,37,.07);}
+  .intro{text-align:center;color:var(--is);font-size:14px;margin-bottom:16px;}
+  .intro b{color:var(--ru);}
+  label{display:block;font-size:12px;color:var(--is);margin:12px 0 5px;}
+  .fi{width:100%;padding:13px;border:1px solid var(--bs);border-radius:11px;font-size:16px;font-family:var(--sans);background:#fff;color:var(--ink);}
+  .row2{display:flex;gap:10px;}
+  .row2>div{flex:1;}
+  .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:18px;background:var(--bd);color:var(--cr);}
+  .btn:disabled{opacity:.6;}
+  .msg{font-size:13px;min-height:18px;margin-top:10px;text-align:center;}
+  .msg.err{color:var(--rd);}
+  .foot{text-align:center;font-size:13px;color:var(--is);margin-top:18px;}
+  .foot a{color:var(--bd);font-weight:500;}
+  .ok-screen{text-align:center;padding:14px 6px;}
+  .ok-screen .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:8px 0;}
+</style>
+</head>
+<body>
+<header>
+  <img class="heart" src="/heart-cream.png" alt="" />
+  <div class="brand">à contre-temps</div>
+  <div class="sub">Fournil vivant · Créateur d'instants</div>
+  <h1>Créer mon compte fidélité</h1>
+</header>
+
+<div class="wrap">
+  <div class="card" id="card">
+    <p class="intro">Suivez vos tampons et récupérez <b>un produit offert tous les 10 achats</b> 🎁<br>Au marché, donnez simplement votre numéro à l'encaissement.</p>
+    <div class="row2">
+      <div><label for="prenom">Prénom</label><input class="fi" id="prenom" autocomplete="given-name" /></div>
+      <div><label for="nom">Nom</label><input class="fi" id="nom" autocomplete="family-name" /></div>
+    </div>
+    <label for="phone">Numéro de portable <span style="color:var(--ru)">(votre carte de fidélité)</span></label>
+    <input class="fi" id="phone" inputmode="numeric" autocomplete="tel" placeholder="06 12 34 56 78" />
+    <label for="email">E‑mail</label>
+    <input class="fi" id="email" type="email" autocomplete="email" placeholder="votre@email.fr" />
+    <label for="pass">Mot de passe <span style="color:var(--is)">(6 caractères min.)</span></label>
+    <input class="fi" id="pass" type="password" autocomplete="new-password" />
+    <div class="msg err" id="msg"></div>
+    <button class="btn" id="go">Créer mon compte</button>
+  </div>
+  <p class="foot">Vous avez déjà un compte ? <a href="/mon-compte">Se connecter</a></p>
+</div>
+
+<script>
+var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co";
+var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+function normPhone(s){ return String(s||"").replace(/\D/g,""); }
+function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
+
+var phone=document.getElementById("phone"), msg=document.getElementById("msg");
+phone.addEventListener("input",function(){ phone.value=fmtPhone(normPhone(phone.value).slice(0,10)); });
+try{ var sp=localStorage.getItem("acontretemps_phone"); if(sp) phone.value=fmtPhone(sp); }catch(e){}
+
+document.getElementById("go").onclick=signup;
+
+function signup(){
+  var prenom=document.getElementById("prenom").value.trim();
+  var nom=document.getElementById("nom").value.trim();
+  var ph=normPhone(phone.value);
+  var email=document.getElementById("email").value.trim();
+  var pass=document.getElementById("pass").value;
+  msg.className="msg err"; msg.textContent="";
+  if(!prenom||!nom){ msg.textContent="Indiquez vos prénom et nom."; return; }
+  if(ph.length<10){ msg.textContent="Numéro de portable à 10 chiffres."; return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.textContent="E‑mail invalide."; return; }
+  if(pass.length<6){ msg.textContent="Mot de passe : 6 caractères minimum."; return; }
+  try{ localStorage.setItem("acontretemps_phone",ph); }catch(e){}
+  var go=document.getElementById("go"); go.disabled=true; go.textContent="Création…";
+
+  fetch(SB_URL+"/auth/v1/signup",{method:"POST",
+    headers:{apikey:SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({ email:email, password:pass, data:{ prenom:prenom, nom:nom, phone:ph } })
+  }).then(function(r){ return r.json().then(function(j){ return {status:r.status, j:j}; }); })
+  .then(function(res){
+    var j=res.j;
+    if(res.status>=400 || j.error || j.msg || j.error_description){
+      var m=(j.msg||j.error_description||j.error||"").toString();
+      if(/registered|already/i.test(m)) msg.innerHTML="Ce compte existe déjà. <a href=\"/mon-compte\" style=\"color:var(--bd)\">Se connecter →</a>";
+      else msg.textContent="Création impossible : "+(m||("erreur "+res.status));
+      go.disabled=false; go.textContent="Créer mon compte"; return;
+    }
+    // lie le nom à la carte de fidélité (sans toucher aux tampons existants)
+    linkLoyalty(ph, prenom+" "+nom);
+    var token=j.access_token || (j.session&&j.session.access_token);
+    if(token){ try{ localStorage.setItem("act_token",token); }catch(e){} success(prenom, true); }
+    else success(prenom, false); // confirmation e‑mail requise
+  })
+  .catch(function(){ msg.textContent="Connexion impossible, réessayez."; go.disabled=false; go.textContent="Créer mon compte"; });
+}
+
+function linkLoyalty(ph, name){
+  var h={apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json"};
+  fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph)+"&select=phone",{headers:h})
+    .then(function(r){return r.json();}).then(function(rows){
+      if(Array.isArray(rows)&&rows[0]){
+        fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph),{method:"PATCH",headers:h,body:JSON.stringify({name:name,updated_at:new Date().toISOString()})});
+      } else {
+        fetch(SB_URL+"/rest/v1/loyalty",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},h),body:JSON.stringify({phone:ph,name:name,stamps:0,free_breads:0,total_stamps:0,updated_at:new Date().toISOString()})});
+      }
+    }).catch(function(){});
+}
+
+function success(prenom, loggedIn){
+  document.getElementById("card").innerHTML='<div class="ok-screen">'
+    +'<div style="font-size:42px;">🥖</div>'
+    +'<div class="big">Bienvenue '+prenom.replace(/</g,"")+' !</div>'
+    +'<p style="color:var(--is);">Votre compte fidélité est créé.'+(loggedIn?'':' Vérifiez votre e‑mail pour l\'activer.')+'</p>'
+    +'<p style="color:var(--is);margin-top:8px;">Au marché, donnez votre numéro à l\'encaissement pour gagner vos tampons.</p>'
+    +(loggedIn?'<a href="/mon-compte" class="btn" style="display:block;text-decoration:none;text-align:center;">Voir ma carte de fidélité</a>'
+             :'<a href="/mon-compte" class="btn" style="display:block;text-decoration:none;text-align:center;">Se connecter</a>')
+    +'</div>';
+}
+</script>
+</body>
+</html>

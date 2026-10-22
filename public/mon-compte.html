@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mon compte — à contre-temps, Fournil vivant</title>
+<meta name="description" content="Votre compte fidélité à contre-temps : suivez vos tampons et votre produit offert." />
+<meta name="robots" content="noindex, follow" />
+<link rel="canonical" href="https://www.fournilvivant.fr/mon-compte" />
+<link rel="icon" type="image/png" href="/icons/icon-192.png" />
+<meta name="theme-color" content="#7C97AC" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:inherit;}
+  header{background:var(--b);color:var(--cr);text-align:center;padding:30px 20px 30px;}
+  header .heart{height:54px;width:auto;margin:0 auto 12px;display:block;}
+  header .brand{font-family:var(--serif);font-size:30px;font-style:italic;line-height:1.1;}
+  header .sub{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin-top:8px;}
+  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(18px,3.4vw,23px);margin-top:18px;opacity:.95;}
+  .wrap{max-width:440px;margin:0 auto;padding:24px 18px 50px;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:18px;padding:22px 20px;box-shadow:0 8px 28px rgba(43,41,37,.07);}
+  label{display:block;font-size:12px;color:var(--is);margin:12px 0 5px;}
+  .fi{width:100%;padding:13px;border:1px solid var(--bs);border-radius:11px;font-size:16px;font-family:var(--sans);background:#fff;color:var(--ink);}
+  .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:16px;background:var(--bd);color:var(--cr);}
+  .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);}
+  .btn:disabled{opacity:.6;}
+  .msg{font-size:13px;min-height:18px;margin-top:10px;text-align:center;color:var(--rd);}
+  .foot{text-align:center;font-size:13px;color:var(--is);margin-top:18px;}
+  .foot a{color:var(--bd);font-weight:500;}
+  .result{text-align:center;}
+  .result .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:2px 0 4px;}
+  .dots{margin:16px 0 8px;line-height:1;}
+  .dot{display:inline-block;width:26px;height:26px;border-radius:50%;margin:4px;border:2px solid var(--bd);vertical-align:middle;}
+  .dot.on{background:var(--bd);}
+  .count{font-size:15px;color:var(--is);}
+  .free{margin-top:16px;background:var(--cr);border-radius:12px;padding:14px;color:var(--ru);font-weight:600;}
+</style>
+</head>
+<body>
+<header>
+  <img class="heart" src="/heart-cream.png" alt="" />
+  <div class="brand">à contre-temps</div>
+  <div class="sub">Fournil vivant · Créateur d'instants</div>
+  <h1>Mon compte fidélité</h1>
+</header>
+
+<div class="wrap">
+  <div class="card" id="card"><p class="count" style="text-align:center;padding:20px 0;">Chargement…</p></div>
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co";
+var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €"; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c];}); }
+function normPhone(s){ return String(s||"").replace(/\D/g,""); }
+function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
+function getToken(){ try{ return localStorage.getItem("act_token"); }catch(e){ return null; } }
+function setToken(t){ try{ t?localStorage.setItem("act_token",t):localStorage.removeItem("act_token"); }catch(e){} }
+
+var card=document.getElementById("card"), foot=document.getElementById("foot");
+start();
+
+function start(){
+  var t=getToken();
+  if(!t){ showLogin(); return; }
+  fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+t}})
+    .then(function(r){ if(!r.ok) throw new Error("auth"); return r.json(); })
+    .then(function(u){ showAccount(u); })
+    .catch(function(){ setToken(null); showLogin(); });
+}
+
+function showLogin(msgText){
+  foot.innerHTML='Pas encore de compte ? <a href="/creer-compte">Créer mon compte</a>';
+  card.innerHTML='<label for="email">E‑mail</label><input class="fi" id="email" type="email" autocomplete="email" placeholder="votre@email.fr" />'
+    +'<label for="pass">Mot de passe</label><input class="fi" id="pass" type="password" autocomplete="current-password" />'
+    +'<div class="msg" id="msg">'+(msgText||"")+'</div>'
+    +'<button class="btn" id="login">Se connecter</button>';
+  document.getElementById("login").onclick=function(){
+    var email=document.getElementById("email").value.trim(), pass=document.getElementById("pass").value;
+    var msg=document.getElementById("msg"); msg.textContent="";
+    if(!email||!pass){ msg.textContent="Entrez votre e‑mail et mot de passe."; return; }
+    var b=document.getElementById("login"); b.disabled=true; b.textContent="Connexion…";
+    fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,password:pass})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(j.access_token){ setToken(j.access_token); card.innerHTML='<p class="count" style="text-align:center;padding:20px 0;">Chargement…</p>'; start(); }
+        else { msg.textContent="E‑mail ou mot de passe incorrect."; b.disabled=false; b.textContent="Se connecter"; }
+      })
+      .catch(function(){ msg.textContent="Connexion impossible, réessayez."; b.disabled=false; b.textContent="Se connecter"; });
+  };
+}
+
+function showAccount(user){
+  var meta=(user&&user.user_metadata)||{};
+  var prenom=meta.prenom||"", phone=normPhone(meta.phone||"");
+  foot.innerHTML='<a href="#" id="logout">Se déconnecter</a>';
+  foot.querySelector("#logout").onclick=function(e){ e.preventDefault(); setToken(null); location.reload(); };
+  if(!phone){ card.innerHTML='<p class="count" style="text-align:center;">Aucun numéro associé à ce compte. Contactez-nous.</p>'; return; }
+  Promise.all([
+    fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(function(r){return r.json();}).catch(function(){return null;}),
+    fetch(SB_URL+"/rest/v1/caisse_ventes?phone=eq."+encodeURIComponent(phone)+"&select=total,items,created_at&order=created_at.desc&limit=100",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(function(r){return r.json();}).catch(function(){return [];})
+  ]).then(function(out){
+    var row=(Array.isArray(out[0])&&out[0][0])||null;
+    render(prenom, phone, row, summarize(Array.isArray(out[1])?out[1]:[]));
+  });
+}
+
+function summarize(rows){
+  if(!rows.length) return null;
+  var sum=0, prod={};
+  rows.forEach(function(s){ sum+=Number(s.total)||0; (s.items||[]).forEach(function(it){ if(!it||!it.name||Number(it.price)<0) return; prod[it.name]=(prod[it.name]||0)+(Number(it.qty)||1); }); });
+  var top=Object.keys(prod).map(function(k){return {name:k,qty:prod[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,4);
+  return { count:rows.length, avg:sum/rows.length, top:top };
+}
+
+function render(prenom, phone, row, hist){
+  var stamps=row?row.stamps:0, free=row?row.free_breads:0, total=row?row.total_stamps:0;
+  var dots=""; for(var i=0;i<10;i++){ dots+='<span class="dot'+(i<stamps?' on':'')+'"></span>'; }
+  var html='<div class="result">'
+    +'<div class="big">Bonjour '+esc(prenom||"")+' 👋</div>'
+    +'<div class="count">'+fmtPhone(phone)+'</div>'
+    +'<div class="dots">'+dots+'</div>'
+    +'<div class="count"><b>'+stamps+' / 10</b> tampons'+(total?(' · '+total+' au total'):'')+'</div>';
+  if(free>0) html+='<div class="free">🎁 '+free+' produit'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>';
+  else html+='<div class="count" style="margin-top:14px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre produit offert !</div>';
+  if(hist && hist.top.length){
+    html+='<div style="margin-top:18px;border-top:1px solid var(--bs);padding-top:14px;text-align:left;">'
+      +'<div style="font-size:13px;color:var(--is);margin-bottom:6px;">Vos produits préférés</div>';
+    hist.top.forEach(function(t){ html+='<div style="font-size:14px;padding:3px 0;">🥖 '+esc(t.name)+' <span style="color:var(--is)">· ×'+t.qty+'</span></div>'; });
+    html+='<div style="font-size:12px;color:var(--is);margin-top:8px;">'+hist.count+' passage'+(hist.count>1?'s':'')+' · panier moyen '+eur(hist.avg)+'</div></div>';
+  }
+  html+='<a href="/commander-marche" class="btn ghost" style="display:block;text-decoration:none;text-align:center;margin-top:18px;">Commander au marché</a></div>';
+  card.innerHTML=html;
+}
+</script>
+</body>
+</html>
