@@ -75,6 +75,11 @@
   .topnav .navr{display:flex;gap:16px;align-items:center;}
   .topnav .navlink{color:var(--cr);text-decoration:none;font-size:13px;font-weight:500;opacity:.92;}
   .topnav .cta{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--bd);background:var(--cr);padding:9px 16px;border-radius:999px;text-decoration:none;white-space:nowrap;}
+  /* barre de catégories */
+  .catbar{position:sticky;top:0;z-index:20;background:var(--pp);display:flex;gap:8px;overflow-x:auto;padding:12px 2px 10px;margin:14px 0 0;border-bottom:1px solid #EFE9E1;scrollbar-width:none;}
+  .catbar::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;border:1px solid var(--bs);background:#fff;color:var(--bd);border-radius:999px;padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:var(--sans);}
+  .chip.on{background:var(--bd);color:var(--cr);border-color:var(--bd);}
 </style>
 </head>
 <body>
@@ -103,6 +108,7 @@
       <a href="/mon-compte" style="color:var(--bd);">Se connecter</a>
     </div>
   </div>
+  <div class="catbar" id="catbar"></div>
   <div id="catalog"><p style="color:var(--is);padding:30px 0;text-align:center;">Chargement du catalogue…</p></div>
 </div>
 
@@ -153,48 +159,55 @@ function upcomingDates(days){
 }
 function fmtWeight(g){ g=Number(g); return g>=1000 ? (g/1000).toString().replace(".",",")+" kg" : g+" g"; }
 function eurKg(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €/kg"; }
+var catGroups={}, catOrder=[], activeCat=null, articlesById={};
 function loadCatalog(){
   sb("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,description,weight_g,price_per_kg,position&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){
     if(!Array.isArray(d)||!d.length){ document.getElementById("catalog").innerHTML='<p style="color:var(--is);padding:30px 0;text-align:center;">Catalogue bientôt disponible.</p>'; return; }
-    var g={}, order=[]; d.forEach(function(a){ if(!(a.price>0)) return; var c=a.cat||"Autres"; if(!g[c]){g[c]=[];order.push(c);} g[c].push(a); });
-    var html="";
-    order.forEach(function(c){
-      html+='<div class="cat">'+esc(c)+'</div>';
-      g[c].forEach(function(a){
-        var key="a_"+a.id;
-        var sub=[]; if(a.weight_g) sub.push(fmtWeight(a.weight_g)); if(a.price_per_kg) sub.push(eurKg(a.price_per_kg));
-        html+='<div class="item">'
-          +'<div class="in"><b>'+esc(a.name)+'</b>'
-          +(a.description?'<em>'+esc(a.description)+'</em>':'')
-          +(sub.length?'<span class="det">'+sub.join(" · ")+'</span>':'')
-          +'</div>'
-          +'<div class="right"><span class="pr">'+eur(a.price)+'</span>'
-          +'<div class="step" data-k="'+key+'">'
-          +'<button class="add" data-add>Ajouter</button>'
-          +'<button class="mz" data-mz hidden>−</button><span class="q mz" data-q hidden>0</span><button class="mz" data-pl hidden>+</button>'
-          +'</div></div></div>';
-        // mémorise l'article pour le panier
-        articlesById[key]={name:a.name,price:+a.price};
-      });
-    });
-    document.getElementById("catalog").innerHTML=html;
-    document.querySelectorAll(".step").forEach(function(st){
-      var key=st.getAttribute("data-k");
-      function render(){
-        var q=cart[key]?cart[key].qty:0;
-        st.querySelector("[data-add]").hidden = q>0;
-        ["[data-mz]","[data-q]","[data-pl]"].forEach(function(s){ st.querySelector(s).hidden = q===0; });
-        st.querySelector("[data-q]").textContent=q;
-      }
-      function setQ(q){ if(q<=0){ delete cart[key]; } else { cart[key]={name:articlesById[key].name,price:articlesById[key].price,qty:q}; } render(); updateBar(); }
-      st.querySelector("[data-add]").onclick=function(){ setQ(1); };
-      st.querySelector("[data-pl]").onclick=function(){ setQ((cart[key]?cart[key].qty:0)+1); };
-      st.querySelector("[data-mz]").onclick=function(){ setQ((cart[key]?cart[key].qty:0)-1); };
-      render();
-    });
+    catGroups={}; catOrder=[];
+    d.forEach(function(a){ if(!(a.price>0)) return; var c=a.cat||"Autres"; if(!catGroups[c]){catGroups[c]=[];catOrder.push(c);} catGroups[c].push(a); });
+    document.getElementById("catbar").innerHTML = catOrder.map(function(c){ return '<button class="chip" data-cat="'+esc(c)+'">'+esc(c)+'</button>'; }).join("");
+    document.querySelectorAll("#catbar .chip").forEach(function(ch){ ch.onclick=function(){ showCat(ch.getAttribute("data-cat")); window.scrollTo({top:0,behavior:"smooth"}); }; });
+    showCat(catOrder[0]);
   }).catch(function(){ document.getElementById("catalog").innerHTML='<p style="color:var(--rd);padding:30px 0;text-align:center;">Impossible de charger le catalogue. Réessayez.</p>'; });
 }
-var articlesById={};
+function showCat(cat){
+  activeCat=cat;
+  document.querySelectorAll("#catbar .chip").forEach(function(ch){ ch.classList.toggle("on", ch.getAttribute("data-cat")===cat); });
+  var items=catGroups[cat]||[], html='<div class="cat">'+esc(cat)+'</div>';
+  items.forEach(function(a){
+    var key="a_"+a.id;
+    var sub=[]; if(a.weight_g) sub.push(fmtWeight(a.weight_g)); if(a.price_per_kg) sub.push(eurKg(a.price_per_kg));
+    html+='<div class="item">'
+      +'<div class="in"><b>'+esc(a.name)+'</b>'
+      +(a.description?'<em>'+esc(a.description)+'</em>':'')
+      +(sub.length?'<span class="det">'+sub.join(" · ")+'</span>':'')
+      +'</div>'
+      +'<div class="right"><span class="pr">'+eur(a.price)+'</span>'
+      +'<div class="step" data-k="'+key+'">'
+      +'<button class="add" data-add>Ajouter</button>'
+      +'<button class="mz" data-mz hidden>−</button><span class="q mz" data-q hidden>0</span><button class="mz" data-pl hidden>+</button>'
+      +'</div></div></div>';
+    articlesById[key]={name:a.name,price:+a.price};
+  });
+  document.getElementById("catalog").innerHTML=html;
+  bindSteps();
+}
+function bindSteps(){
+  document.querySelectorAll(".step").forEach(function(st){
+    var key=st.getAttribute("data-k");
+    function render(){
+      var q=cart[key]?cart[key].qty:0;
+      st.querySelector("[data-add]").hidden = q>0;
+      ["[data-mz]","[data-q]","[data-pl]"].forEach(function(s){ st.querySelector(s).hidden = q===0; });
+      st.querySelector("[data-q]").textContent=q;
+    }
+    function setQ(q){ if(q<=0){ delete cart[key]; } else { cart[key]={name:articlesById[key].name,price:articlesById[key].price,qty:q}; } render(); updateBar(); }
+    st.querySelector("[data-add]").onclick=function(){ setQ(1); };
+    st.querySelector("[data-pl]").onclick=function(){ setQ((cart[key]?cart[key].qty:0)+1); };
+    st.querySelector("[data-mz]").onclick=function(){ setQ((cart[key]?cart[key].qty:0)-1); };
+    render();
+  });
+}
 
 /* ───── Commande ───── */
 document.getElementById("barGo").onclick=function(){ if(cartCount()>0) openCheckout(); };
