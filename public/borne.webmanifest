@@ -1,0 +1,16 @@
+{
+  "name": "Borne fidélité — à contre-temps",
+  "short_name": "Borne",
+  "description": "Borne client : le client saisit son numéro de fidélité à l'encaissement.",
+  "start_url": "/borne",
+  "scope": "/borne",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#7C97AC",
+  "theme_color": "#7C97AC",
+  "icons": [
+    { "src": "/icons/borne-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/borne-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/borne-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

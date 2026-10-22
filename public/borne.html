@@ -5,8 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Borne fidélité — à contre-temps</title>
 <meta name="robots" content="noindex, nofollow" />
-<link rel="icon" type="image/png" href="/icons/icon-192.png" />
+<link rel="icon" type="image/png" href="/icons/borne-192.png" />
 <meta name="theme-color" content="#7C97AC" />
+<link rel="manifest" href="/borne.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/borne-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Borne" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -51,6 +57,8 @@
 </style>
 </head>
 <body>
+
+<button id="installBtn" style="display:none;position:fixed;bottom:16px;right:16px;z-index:100;background:var(--bd);color:var(--cr);border:none;border-radius:999px;padding:12px 18px;font-family:var(--sans);font-size:14px;font-weight:600;box-shadow:0 6px 18px rgba(43,41,37,.25);cursor:pointer;">⬇️ Installer l'app</button>
 
 <div class="screen" id="idle">
   <img class="heart" src="/heart-cream.png" alt="" />
@@ -193,6 +201,22 @@ function tick(){
     })
     .catch(function(){});
 }
+
+/* ─── Installation en application (PWA), périmètre /borne ─── */
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/borne-sw.js", { scope:"/borne" }).catch(function(){});
+(function(){
+  var btn=document.getElementById("installBtn"), deferred=null;
+  var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+  var isIOS=/iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  if(standalone) return;
+  if(isIOS){ btn.style.display="block"; btn.textContent="⬇️ Installer (Partager → écran d'accueil)";
+    btn.onclick=function(){ alert("Sur iPad / iPhone :\n1) touchez le bouton Partager (carré avec une flèche)\n2) choisissez « Sur l'écran d'accueil »."); }; }
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault(); deferred=e; btn.style.display="block"; btn.textContent="⬇️ Installer l'app";
+    btn.onclick=async function(){ deferred.prompt(); try{ await deferred.userChoice; }catch(_){} deferred=null; btn.style.display="none"; };
+  });
+  window.addEventListener("appinstalled", function(){ btn.style.display="none"; });
+})();
 </script>
 </body>
 </html>
