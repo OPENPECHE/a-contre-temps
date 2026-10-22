@@ -78,6 +78,12 @@
   .pay2{display:flex;gap:8px;margin-top:6px;}
   .pay2 button{flex:1;padding:13px;border-radius:10px;border:1px solid var(--bs);background:#fff;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;font-family:var(--sans);}
   .pay2 button.on{border-color:var(--bd);background:var(--bd);color:var(--cr);}
+  /* connexion express dans le tunnel (invités) */
+  .loginCard{background:#fff;border:1px solid var(--bs);border-radius:12px;padding:14px;margin:6px 0 14px;}
+  .loginCard .lcH{font-family:var(--serif);font-size:16px;color:var(--bd);}
+  .loginCard .lcS{font-size:12.5px;color:var(--is);margin:4px 0 10px;}
+  .btn2{width:100%;padding:12px;border-radius:10px;border:none;background:var(--bd);color:var(--cr);font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;font-family:var(--sans);}
+  .orGuest{font-size:11px;color:var(--is);text-transform:uppercase;letter-spacing:.09em;margin:14px 0 2px;text-align:center;}
   footer{text-align:center;font-size:12px;color:var(--is);padding:26px 18px 10px;}
   footer a{color:var(--bd);}
   /* barre de navigation (même charte que le reste du site) */
@@ -253,6 +259,7 @@ function openCheckout(){
   // choix déliberés du client — aucune valeur pré-sélectionnée
   var state={ market:null, marketId:null, days:[], date:null, dateLabel:"" };
   var payMode="place";
+  var loginStage="idle", loginEmail="";   // connexion express (invités)
 
   function stepsBar(n){ // n = étape active (1,2,3)
     return '<div class="steps"><div class="s'+(n>=1?" on":"")+'"></div><div class="s'+(n>=2?" on":"")+'"></div><div class="s'+(n>=3?" on":"")+'"></div></div>';
@@ -302,6 +309,65 @@ function openCheckout(){
     }; });
   }
 
+  /* Connexion express : encart proposé aux invités à l'étape 3 */
+  function loginBlock(){
+    if(currentUser) return '';
+    var inner;
+    if(loginStage==="code"){
+      inner='<div class="lcS">Nous avons envoyé un code à <b>'+esc(loginEmail)+'</b>. Saisissez‑le ci‑dessous.</div>'
+        +'<input class="fi" id="lgCode" inputmode="numeric" maxlength="6" placeholder="Code à 6 chiffres" autocomplete="one-time-code" />'
+        +'<button class="btn2" id="lgVerify">Me connecter</button>'
+        +'<button class="lnk" id="lgBack" style="margin-top:10px;">← Changer d’e‑mail</button>'
+        +'<div class="err" id="lgErr"></div>';
+    } else {
+      inner='<input class="fi" id="lgMail" type="email" placeholder="votre@email.fr" value="'+esc(loginEmail)+'" />'
+        +'<button class="btn2" id="lgSend">Recevoir mon code par e‑mail</button>'
+        +'<div class="err" id="lgErr"></div>';
+    }
+    return '<div class="loginCard"><div class="lcH">🥖 Vous avez déjà un compte&nbsp;?</div>'
+      +'<div class="lcS">Connectez‑vous pour pré‑remplir vos infos et cumuler vos tampons de fidélité.</div>'
+      +inner+'</div>'
+      +'<div class="orGuest">— ou commandez sans compte —</div>';
+  }
+  function bindLogin(){
+    if(currentUser) return;
+    var send=sheet.querySelector("#lgSend");
+    if(send){ send.onclick=function(){
+      var mail=(sheet.querySelector("#lgMail").value||"").trim();
+      var err=sheet.querySelector("#lgErr"); err.textContent="";
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ err.textContent="E‑mail invalide."; return; }
+      send.disabled=true; send.textContent="Envoi du code…";
+      fetch(SB_URL+"/auth/v1/otp",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:mail, create_user:false})})
+        .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok,j:j}; }); })
+        .then(function(res){
+          if(res.ok){ loginEmail=mail; loginStage="code"; stepInfos(); return; }
+          var msg=(res.j&&(res.j.msg||res.j.error_description||res.j.error))||"";
+          if(/not.*found|signups|otp|user/i.test(msg)) err.textContent="Aucun compte avec cet e‑mail. Commandez sans compte ci‑dessous, ou créez un compte.";
+          else err.textContent="Envoi impossible. Réessayez ou commandez sans compte.";
+          send.disabled=false; send.textContent="Recevoir mon code par e‑mail";
+        }).catch(function(){ err.textContent="Erreur réseau. Réessayez."; send.disabled=false; send.textContent="Recevoir mon code par e‑mail"; });
+    }; }
+    var ver=sheet.querySelector("#lgVerify");
+    if(ver){ ver.onclick=function(){
+      var code=(sheet.querySelector("#lgCode").value||"").replace(/\D/g,"");
+      var err=sheet.querySelector("#lgErr"); err.textContent="";
+      if(code.length<4){ err.textContent="Saisissez le code reçu."; return; }
+      ver.disabled=true; ver.textContent="Connexion…";
+      fetch(SB_URL+"/auth/v1/verify",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:loginEmail, token:code, type:"email"})})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(j){
+          if(!(j && j.access_token)){ err.textContent="Code incorrect ou expiré. Réessayez."; ver.disabled=false; ver.textContent="Me connecter"; return; }
+          try{ localStorage.setItem("act_token",j.access_token); localStorage.setItem("act_refresh",j.refresh_token); }catch(e){}
+          function done(){ loginStage="idle"; stepInfos(); }   // ré‑affiche avec infos pré‑remplies
+          if(j.user){ setUser(j.user); done(); return; }
+          fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+j.access_token}})
+            .then(function(r){return r.ok?r.json():null;}).then(function(u){ if(u) setUser(u); done(); }).catch(done);
+        }).catch(function(){ err.textContent="Erreur réseau. Réessayez."; ver.disabled=false; ver.textContent="Me connecter"; });
+    }; }
+    var back=sheet.querySelector("#lgBack");
+    if(back){ back.onclick=function(){ loginStage="idle"; stepInfos(); }; }
+  }
+
   /* ── Étape 3 : coordonnées + paiement ── */
   function stepInfos(){
     sheet.innerHTML=stepsBar(3)
@@ -309,6 +375,7 @@ function openCheckout(){
       +'<h2>Vos coordonnées</h2>'
       +'<div class="confirm">📍 Retrait : <b>'+esc(state.market)+'</b><br>🗓️ Le <b>'+esc(state.dateLabel)+'</b></div>'
       +recapHtml()
+      +loginBlock()
       +(currentUser?'<div class="sub" style="color:var(--gn);margin-top:8px;">✓ Connecté en tant que '+esc(currentUser.name||currentUser.email)+'</div>':'')
       +'<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" value="'+esc(currentUser?currentUser.name:"")+'" />'
       +'<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" value="'+esc(currentUser?currentUser.phone:"")+'" />'
@@ -318,6 +385,7 @@ function openCheckout(){
       +'<div class="err" id="coErr"></div>'
       +'<button class="btn go" id="coGo">Valider ma réservation</button>';
     sheet.querySelector("#bk").onclick=stepLieu;
+    bindLogin();
     function paintPay(){
       sheet.querySelector("#payPlace").classList.toggle("on", payMode==="place");
       sheet.querySelector("#payOnline").classList.toggle("on", payMode==="online");
