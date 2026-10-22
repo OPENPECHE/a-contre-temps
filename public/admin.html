@@ -755,30 +755,72 @@ function printOrder(id){
   const isPaid=o.paid===true||pmRaw.includes("ligne")||pmRaw.includes("sumup");
   const quand=o.pickup_date?new Date(o.pickup_date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}):"—";
   const esc=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-  const rows=items.map(it=>`<tr><td style="padding:7px 4px;border-bottom:1px solid #ddd">${esc(it.name)}</td><td style="padding:7px 4px;border-bottom:1px solid #ddd;text-align:center;font-size:20px;font-weight:700">× ${it.qty}</td><td style="padding:7px 4px;border-bottom:1px solid #ddd;text-align:right">${(it.price*it.qty).toFixed(2)} €</td></tr>`).join("");
+  // Poids : récupéré depuis la fiche produit (le nom de l'article), quand il est renseigné.
+  const wmap={}; (allProducts||[]).forEach(p=>{ if(p&&p.name!=null&&p.weight_g!=null&&p.weight_g!=="") wmap[String(p.name).trim().toLowerCase()]=Number(p.weight_g); });
+  const fmtW=g=>g>=1000?String(Math.round(g/10)/100).replace(".",",")+" kg":Math.round(g)+" g";
+  let totW=0, anyW=false;
+  const rows=items.map(it=>{
+    const w=wmap[String(it.name||"").trim().toLowerCase()];
+    let wline="";
+    if(w!=null && !isNaN(w) && w>0){ anyW=true; totW+=w*it.qty; wline=`<div class="wsub">${fmtW(w)} / pièce${it.qty>1?` · ${fmtW(w*it.qty)} au total`:""}</div>`; }
+    return `<tr><td>${esc(it.name)}${wline}</td><td class="qte">× ${it.qty}</td><td class="prix">${(it.price*it.qty).toFixed(2)} €</td></tr>`;
+  }).join("");
   const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Bon de préparation ${inv}</title>
-  <style>*{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a}body{margin:24px;max-width:560px}
-  h1{font-size:19px;margin:0 0 2px}.sub{color:#666;font-size:12px;margin:0 0 14px}
-  .box{border:1px solid #bbb;border-radius:8px;padding:12px 14px;margin-bottom:14px}
-  .line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
-  table{width:100%;border-collapse:collapse;margin-top:6px}
-  .tot{display:flex;justify-content:space-between;font-size:17px;font-weight:700;margin-top:10px;border-top:2px solid #333;padding-top:8px}
-  .pay{display:inline-block;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;${isPaid?"background:#e3f0e6;color:#2f6b3f":"background:#fbe3e3;color:#9a2a2a"}}
-  @media print{button{display:none}}</style></head><body>
-  <h1>🥖 à contre-temps — Bon de préparation</h1>
-  <p class="sub">${inv} · imprimé le ${new Date().toLocaleString("fr-FR")}</p>
-  <div class="box">
-    <div class="line"><span style="color:#666">Client</span><b>${esc(o.name||"—")}</b></div>
-    <div class="line"><span style="color:#666">Téléphone</span><b>${esc(o.phone||"—")}</b></div>
-    <div class="line"><span style="color:#666">Retrait / livraison</span><b>${esc(o.shipping||"—")}</b></div>
-    <div class="line"><span style="color:#666">Date</span><b>${esc(quand)}</b></div>
-    <div class="line"><span style="color:#666">Règlement</span><span class="pay">${isPaid?"PAYÉ":"NON RÉGLÉ — à encaisser"}</span></div>
+  <style>
+  :root{--bd:#3E5A70;--cr:#F3E7DA;--ru:#A6713F;--ink:#2B2925;--pp:#FBF8F4;--bs:#D6DFE5;--gn:#4A7C59;--rd:#A63333;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--ink);background:#fff;margin:0;}
+  .page{max-width:580px;margin:0 auto;padding:22px;}
+  .hd{background:var(--bd);border-radius:12px 12px 0 0;text-align:center;padding:20px 18px;}
+  .hd img{display:block;margin:0 auto 6px;width:38px;height:auto;}
+  .hd .nm{font-size:25px;color:var(--cr);font-style:italic;}
+  .hd .tl{font-size:9px;letter-spacing:.22em;color:rgba(243,231,218,.72);margin-top:5px;}
+  .band{background:var(--cr);padding:9px 18px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ru);letter-spacing:.06em;}
+  .band b{color:var(--bd);letter-spacing:0;}
+  .body{border:1px solid var(--bs);border-top:none;border-radius:0 0 12px 12px;padding:20px 18px;}
+  h1{font-size:18px;font-weight:400;color:var(--bd);margin:0 0 14px;}
+  .box{background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:13px 15px;margin-bottom:16px;}
+  .line{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0;}
+  .line span.k{color:rgba(43,41,37,.55);}
+  table{width:100%;border-collapse:collapse;margin-top:4px;}
+  thead th{font-family:Arial,sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.1em;color:var(--ru);padding:6px 4px;border-bottom:2px solid var(--bs);}
+  td{padding:9px 4px;border-bottom:1px solid #EFE9E1;font-size:14px;}
+  .qte{text-align:center;font-size:21px;font-weight:700;color:var(--bd);}
+  .prix{text-align:right;color:rgba(43,41,37,.6);}
+  .wsub{font-family:Arial,sans-serif;font-size:11px;color:var(--ru);margin-top:3px;}
+  .wtot{display:flex;justify-content:space-between;font-family:Arial,sans-serif;font-size:12px;color:rgba(43,41,37,.55);margin-top:5px;}
+  .tot{display:flex;justify-content:space-between;font-size:18px;color:var(--bd);margin-top:12px;border-top:2px solid var(--bd);padding-top:9px;}
+  .pay{display:inline-block;padding:5px 13px;border-radius:999px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.03em;${isPaid?"background:#E4EFE8;color:var(--gn);":"background:#F6E2E2;color:var(--rd);"}}
+  .note{background:#FBF4E8;border:1px solid #EADFC9;border-radius:10px;padding:11px 14px;font-size:13px;margin-top:14px;}
+  .ft{text-align:center;font-family:Arial,sans-serif;font-size:10px;color:rgba(43,41,37,.5);margin-top:16px;line-height:1.6;}
+  .pbtn{display:block;margin:18px auto 0;padding:11px 20px;background:var(--bd);color:var(--cr);border:none;border-radius:999px;font-size:13px;letter-spacing:.1em;cursor:pointer;font-family:Arial,sans-serif;}
+  @media print{.pbtn{display:none;} .page{padding:0;} body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  </style></head><body>
+  <div class="page">
+    <div class="hd">
+      <img src="https://www.fournilvivant.fr/heart-cream.png" alt="" />
+      <div class="nm">à contre-temps</div>
+      <div class="tl">FOURNIL VIVANT · CRÉATEUR D'INSTANTS</div>
+    </div>
+    <div class="band"><span>BON DE PRÉPARATION</span><span><b>${inv}</b></span></div>
+    <div class="body">
+      <h1>Commande à préparer</h1>
+      <div class="box">
+        <div class="line"><span class="k">Client</span><b>${esc(o.name||"—")}</b></div>
+        <div class="line"><span class="k">Téléphone</span><b>${esc(o.phone||"—")}</b></div>
+        <div class="line"><span class="k">Retrait / livraison</span><b>${esc(o.shipping||"—")}</b></div>
+        <div class="line"><span class="k">Date</span><b>${esc(quand)}</b></div>
+        <div class="line"><span class="k">Règlement</span><span class="pay">${isPaid?"PAYÉ":"NON RÉGLÉ — À ENCAISSER"}</span></div>
+      </div>
+      <table><thead><tr><th style="text-align:left">Produit</th><th>Qté</th><th style="text-align:right">Prix</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="tot"><span>TOTAL</span><span>${Number(o.total).toFixed(2)} €</span></div>
+      ${anyW?`<div class="wtot"><span>Poids total indicatif</span><span>${fmtW(totW)}</span></div>`:""}
+      ${o.note?`<div class="note"><b>Note :</b> ${esc(o.note)}</div>`:""}
+      <div class="ft">à contre-temps — Fournil vivant · 4 rue des Vignes Rousses, 63360 Gerzat · 06 01 48 28 90<br>imprimé le ${new Date().toLocaleString("fr-FR")}</div>
+      <button class="pbtn" onclick="window.print()">🖨 IMPRIMER</button>
+    </div>
   </div>
-  <table><thead><tr><th style="text-align:left;font-size:11px;color:#666;padding:4px">PRODUIT</th><th style="font-size:11px;color:#666;padding:4px">QTÉ</th><th style="text-align:right;font-size:11px;color:#666;padding:4px">PRIX</th></tr></thead><tbody>${rows}</tbody></table>
-  <div class="tot"><span>TOTAL</span><span>${Number(o.total).toFixed(2)} €</span></div>
-  ${o.note?`<div class="box" style="margin-top:14px;background:#fff8ee"><b>Note :</b> ${esc(o.note)}</div>`:""}
-  <button onclick="window.print()" style="margin-top:20px;padding:10px 18px;font-size:14px;cursor:pointer">🖨 Imprimer</button>
-  <script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script>
+  <script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script>
   </body></html>`;
   const w=window.open("","_blank","width=640,height=800");
   if(!w){ alert("Autorisez les fenêtres pop-up pour imprimer."); return; }
