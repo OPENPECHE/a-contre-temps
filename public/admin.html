@@ -735,7 +735,7 @@ async function awardLoyalty(o){
     else    await sbFetch("loyalty",{method:"POST",body:JSON.stringify(body)});
     await sbFetch(`orders?id=eq.${o.id}`,{method:"PATCH",body:JSON.stringify({loyalty_awarded:true})});
     allOrders=allOrders.map(x=>x.id===o.id?{...x,loyalty_awarded:true}:x);
-    alert(`🥖 +1 tampon de fidélité pour ${o.name||phone} (${stamps}/10)`+(won?` — 🎉 un pain offert gagné !`:``));
+    alert(`🥖 +1 tampon de fidélité pour ${o.name||phone} (${stamps}/10)`+(won?` — 🎉 un produit offert gagné !`:``));
   }catch(e){ console.error("loyalty",e); }
 }
 

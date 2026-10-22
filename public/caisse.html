@@ -372,7 +372,7 @@ function promptLoyalty(){
   var ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
   ov.innerHTML = '<div class="card">'
     + '<h3>🥖 Carte de fidélité</h3>'
-    + '<div class="sub">Entrez votre numéro de portable pour gagner un tampon.<br>10 tampons = <b>un pain offert</b>.</div>'
+    + '<div class="sub">Entrez votre numéro de portable pour gagner un tampon.<br>10 tampons = <b>un produit offert</b>.</div>'
     + '<input class="fi" id="loyPhone" inputmode="numeric" autocomplete="off" placeholder="06 12 34 56 78" style="font-size:24px;text-align:center;letter-spacing:2px;margin-top:12px;" />'
     + '<div id="loyMsg" class="sub" style="min-height:20px;margin-top:8px;text-align:center;color:var(--rd);"></div>'
     + '<button class="big ok" id="loyGo" style="margin-top:4px;">Valider ma carte</button>'
@@ -406,12 +406,49 @@ function loyaltyUpsert(phone){
 }
 function creditLoyalty(phone, ov){
   var msg=ov.querySelector("#loyMsg"); msg.style.color="var(--is)"; msg.textContent="…";
+  attachPhoneToLastSale(phone);
   if (!navigator.onLine){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); return; }
   loyaltyUpsert(phone)
-    .then(function(res){ res.phone=phone; showLoyaltyResult(ov, res); })
+    .then(function(res){
+      res.phone=phone;
+      return loadLoyaltyHistory(phone).then(function(h){ res.hist=h; showLoyaltyResult(ov, res); });
+    })
     .catch(function(){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); });
 }
 function queueLoyalty(phone){ loyaltyQueue.push({phone:phone, ts:Date.now()}); LS.set("caisse_loyalty_queue", loyaltyQueue); }
+
+/* Rattache la dernière vente au numéro (pour l'historique de consommation). */
+function attachPhoneToLastSale(phone){
+  if (!lastSale) return;
+  lastSale.phone = phone;                 // tague l'objet (et la file si pas encore synchro)
+  LS.set("caisse_queue", queue);
+  if (navigator.onLine){
+    sbFetch("caisse_ventes?local_id=eq."+encodeURIComponent(lastSale.local_id),
+            { method:"PATCH", body:JSON.stringify({ phone:phone }) }).catch(function(){});
+  }
+}
+
+/* Charge l'historique du client et en tire un résumé { count, avg, top[] }. */
+function loadLoyaltyHistory(phone){
+  return sbFetch("caisse_ventes?phone=eq."+encodeURIComponent(phone)+"&select=total,items,created_at&order=created_at.desc&limit=100")
+    .then(function(r){ return r.json(); })
+    .then(function(rows){ return summarizeHistory(Array.isArray(rows)?rows:[]); })
+    .catch(function(){ return null; });
+}
+function summarizeHistory(rows){
+  if (!rows.length) return null;
+  var sum=0, prod={};
+  rows.forEach(function(s){
+    sum += Number(s.total)||0;
+    (s.items||[]).forEach(function(it){
+      if (!it || !it.name || Number(it.price)<0) return;   // ignore remises
+      prod[it.name] = (prod[it.name]||0) + (Number(it.qty)||1);
+    });
+  });
+  var top = Object.keys(prod).map(function(k){ return {name:k, qty:prod[k]}; })
+                  .sort(function(a,b){ return b.qty-a.qty; }).slice(0,3);
+  return { count:rows.length, avg: sum/rows.length, top:top };
+}
 
 function showLoyaltyResult(ov, res, mode){
   var c=ov.querySelector(".card");
@@ -421,19 +458,26 @@ function showLoyaltyResult(ov, res, mode){
       +'<button class="big ok" id="loyClose" style="margin-top:12px;">Fermer</button>';
   } else {
     var dots=''; for (var i=0;i<10;i++){ dots+='<span style="display:inline-block;width:22px;height:22px;border-radius:50%;margin:3px;border:2px solid var(--bd);background:'+(i<res.stamps?'var(--bd)':'transparent')+';"></span>'; }
-    c.innerHTML='<h3 style="text-align:center;">'+(res.won?'🎉 Un pain offert gagné !':'🥖 Tampon ajouté !')+'</h3>'
+    var h=res.hist, usual = (h && h.top && h.top.length) ? h.top[0].name : null;
+    var histHtml = h ? ('<div class="sub" style="text-align:center;margin-top:10px;border-top:1px solid var(--bs);padding-top:10px;">'
+        + '<b>'+h.count+' passage'+(h.count>1?'s':'')+'</b> · panier moyen '+eur(h.avg)
+        + (usual ? ('<br>Habituel : <b style="color:var(--bd)">'+esc(usual)+'</b>'+(h.top[1]?' · '+esc(h.top[1].name):'')) : '')
+        + '</div>') : '';
+    var rewardHtml = res.free>0 ? ('<div style="text-align:center;color:var(--ru);margin-top:10px;font-weight:600;background:var(--cr);border-radius:10px;padding:10px;">🎁 '+res.free+' produit'+(res.free>1?'s':'')+' offert'+(res.free>1?'s':'')+' à donner'
+        + (usual ? '<br><span style="font-weight:400;">Proposez-lui son habituel : <b>'+esc(usual)+'</b></span>' : '')
+        + '</div><button class="big ghost" id="loyUse" style="margin-top:10px;">J\'ai donné le produit offert ➖</button>') : '';
+    c.innerHTML='<h3 style="text-align:center;">'+(res.won?'🎉 Un produit offert gagné !':'🥖 Tampon ajouté !')+'</h3>'
       +'<div style="text-align:center;margin:12px 0 6px;line-height:1;">'+dots+'</div>'
       +'<div class="sub" style="text-align:center;">'+res.stamps+' / 10 tampons</div>'
-      +(res.free>0?('<div class="sub" style="text-align:center;color:var(--ru);margin-top:8px;font-weight:600;">🥖 '+res.free+' pain'+(res.free>1?'s':'')+' offert'+(res.free>1?'s':'')+' à récupérer</div>'
-                   +'<button class="big ghost" id="loyUse" style="margin-top:10px;">J\'ai donné 1 pain offert ➖</button>'):'')
+      + histHtml + rewardHtml
       +'<button class="big ok" id="loyClose" style="margin-top:12px;">Fermer</button>';
     var useBtn=c.querySelector("#loyUse");
     if (useBtn) useBtn.onclick = function(){
       useBtn.disabled=true; useBtn.textContent="…";
       sbFetch("loyalty?phone=eq."+encodeURIComponent(res.phone||""),
               { method:"PATCH", body:JSON.stringify({ free_breads:Math.max(0,res.free-1), updated_at:new Date().toISOString() }) })
-        .then(function(r){ if(!r.ok) throw new Error(); res.free=Math.max(0,res.free-1); showLoyaltyResult(ov, res); toast("Pain offert remis 🥖"); })
-        .catch(function(){ useBtn.disabled=false; useBtn.textContent="J'ai donné 1 pain offert ➖"; toast("Échec, réessayez"); });
+        .then(function(r){ if(!r.ok) throw new Error(); res.free=Math.max(0,res.free-1); showLoyaltyResult(ov, res); toast("Produit offert remis 🎁"); })
+        .catch(function(){ useBtn.disabled=false; useBtn.textContent="J'ai donné le produit offert ➖"; toast("Échec, réessayez"); });
     };
   }
   ov.querySelector("#loyClose").onclick = function(){ ov.remove(); };

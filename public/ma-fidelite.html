@@ -53,7 +53,7 @@
 
 <div class="wrap">
   <div class="card" id="card">
-    <p class="intro">1 achat = <b>1 tampon</b>. À <b>10 tampons</b>, un pain au levain vous est offert 🥖<br>Entrez votre numéro de portable pour voir votre carte.</p>
+    <p class="intro">1 achat = <b>1 tampon</b>. À <b>10 tampons</b>, un produit vous est offert 🎁<br>Entrez votre numéro de portable pour voir votre carte.</p>
     <label for="phone">Votre numéro de portable</label>
     <input class="fi" id="phone" inputmode="numeric" autocomplete="tel" placeholder="06 12 34 56 78" />
     <div class="err" id="err"></div>
@@ -80,17 +80,32 @@ document.getElementById("go").onclick=lookup;
 phone.addEventListener("keydown",function(e){ if(e.key==="Enter") lookup(); });
 if(normPhone(phone.value).length===10) lookup();
 
+function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €"; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c];}); }
+
 function lookup(){
   var p=normPhone(phone.value);
   if(p.length<10){ err.textContent="Entrez un numéro à 10 chiffres."; return; }
   try{ localStorage.setItem("acontretemps_phone",p); }catch(e){}
   var go=document.getElementById("go"); go.disabled=true; go.textContent="…";
-  sb("loyalty?phone=eq."+encodeURIComponent(p)+"&select=*").then(function(r){return r.json();}).then(function(rows){
-    render(p,(rows&&rows[0])||null);
+  Promise.all([
+    sb("loyalty?phone=eq."+encodeURIComponent(p)+"&select=*").then(function(r){return r.json();}).catch(function(){return null;}),
+    sb("caisse_ventes?phone=eq."+encodeURIComponent(p)+"&select=total,items,created_at&order=created_at.desc&limit=100").then(function(r){return r.json();}).catch(function(){return [];})
+  ]).then(function(out){
+    var row=(Array.isArray(out[0])&&out[0][0])||null;
+    render(p,row,summarize(Array.isArray(out[1])?out[1]:[]));
   }).catch(function(){ err.textContent="Connexion impossible, réessayez."; go.disabled=false; go.textContent="Voir ma carte"; });
 }
 
-function render(p,row){
+function summarize(rows){
+  if(!rows.length) return null;
+  var sum=0, prod={};
+  rows.forEach(function(s){ sum+=Number(s.total)||0; (s.items||[]).forEach(function(it){ if(!it||!it.name||Number(it.price)<0) return; prod[it.name]=(prod[it.name]||0)+(Number(it.qty)||1); }); });
+  var top=Object.keys(prod).map(function(k){return {name:k,qty:prod[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,4);
+  return { count:rows.length, avg:sum/rows.length, top:top };
+}
+
+function render(p,row,hist){
   var stamps=row?row.stamps:0, free=row?row.free_breads:0, total=row?row.total_stamps:0;
   var dots=""; for(var i=0;i<10;i++){ dots+='<span class="dot'+(i<stamps?' on':'')+'"></span>'; }
   var html='<div class="result">'
@@ -98,9 +113,15 @@ function render(p,row){
     +'<div class="count">'+fmtPhone(p)+'</div>'
     +'<div class="dots">'+dots+'</div>'
     +'<div class="count"><b>'+stamps+' / 10</b> tampons'+(total?(' · '+total+' au total'):'')+'</div>';
-  if(free>0) html+='<div class="free">🥖 '+free+' pain'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>';
+  if(free>0) html+='<div class="free">🎁 '+free+' produit'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>';
   else if(!row) html+='<div class="free" style="background:var(--pp);color:var(--is);font-weight:400;">Pas encore de tampon sur ce numéro — rendez-vous au marché pour votre premier achat 🥖</div>';
-  else html+='<div class="count" style="margin-top:14px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre pain offert !</div>';
+  else html+='<div class="count" style="margin-top:14px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre produit offert !</div>';
+  if(hist && hist.top.length){
+    html+='<div style="margin-top:18px;border-top:1px solid var(--bs);padding-top:14px;text-align:left;">'
+      +'<div style="font-size:13px;color:var(--is);margin-bottom:6px;">Vos produits préférés</div>';
+    hist.top.forEach(function(t){ html+='<div style="font-size:14px;padding:3px 0;">🥖 '+esc(t.name)+' <span style="color:var(--is)">· ×'+t.qty+'</span></div>'; });
+    html+='<div style="font-size:12px;color:var(--is);margin-top:8px;">'+hist.count+' passage'+(hist.count>1?'s':'')+' · panier moyen '+eur(hist.avg)+'</div></div>';
+  }
   html+='<button class="btn ghost" id="again" style="margin-top:18px;">Un autre numéro</button></div>';
   document.getElementById("card").innerHTML=html;
   document.getElementById("again").onclick=function(){ location.href="/ma-fidelite"; };
