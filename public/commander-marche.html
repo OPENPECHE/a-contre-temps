@@ -76,6 +76,10 @@
 </header>
 
 <div class="wrap">
+  <a href="/ma-fidelite" style="display:block;text-decoration:none;margin:18px 0 4px;background:var(--cr);border:1px solid #E7D6C2;border-radius:14px;padding:14px 16px;color:var(--ink);">
+    <div style="font-family:var(--serif);font-size:16px;color:var(--bd);">🥖 Carte de fidélité</div>
+    <div style="font-size:13px;color:var(--is);margin-top:2px;">1 achat = 1 tampon · 10 tampons = <b style="color:var(--ru)">un pain offert</b>. Donnez votre numéro à l'achat. <span style="color:var(--bd);font-weight:600;white-space:nowrap;">Voir ma carte →</span></div>
+  </a>
   <div id="catalog"><p style="color:var(--is);padding:30px 0;text-align:center;">Chargement du catalogue…</p></div>
 </div>
 
@@ -227,10 +231,13 @@ function showSuccess(ov, info, paid){
   ov.querySelector(".sheet").innerHTML='<div class="ok-screen"><div style="font-size:44px;">🥖</div><div class="big">'+(paid?"Paiement confirmé&nbsp;!":"Réservation enregistrée&nbsp;!")+'</div>'
     +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Nous préparons votre commande pour le <strong>'+esc(info.date)+'</strong> au <strong>'+esc(info.market)+'</strong>.</p>'
     +'<p style="color:var(--is);margin-top:8px;">'+(paid?"Votre commande est payée. ":"Règlement sur place. ")+'Un e‑mail de confirmation vous a été envoyé.</p>'
-    +'<button class="btn go" id="okClose" style="margin-top:20px;">Fermer</button></div>';
+    +'<p style="color:var(--ru);margin-top:12px;font-weight:600;">🥖 +1 tampon de fidélité au retrait de votre commande.</p>'
+    +'<a href="/ma-fidelite" style="display:inline-block;margin-top:6px;color:var(--bd);font-size:13px;">Voir ma carte de fidélité →</a><br>'
+    +'<button class="btn go" id="okClose" style="margin-top:16px;">Fermer</button></div>';
   ov.querySelector("#okClose").onclick=function(){ ov.remove(); document.querySelectorAll(".step").forEach(function(st){ st.querySelector("[data-add]").hidden=false; ["[data-mz]","[data-q]","[data-pl]"].forEach(function(s){st.querySelector(s).hidden=true;}); }); window.scrollTo(0,0); };
 }
 function finishOrder(ov, items, info, payMethod, status, paid){
+  try{ localStorage.setItem("acontretemps_phone", String(info.phone||"").replace(/\D/g,"")); }catch(e){}
   var order={ name:info.name, email:info.mail, phone:info.phone,
     items:items.map(function(l){return {name:l.name,price:l.price,qty:l.qty};}),
     total:info.total, status:status, shipping:"Retrait marché — "+info.market, pickup_date:info.date,
@@ -240,7 +247,7 @@ function finishOrder(ov, items, info, payMethod, status, paid){
 }
 function placeOrder(ov, items, info){
   var go=ov.querySelector("#coGo"); go.disabled=true; go.textContent="Envoi…";
-  finishOrder(ov, items, info, "Sur place (marché)", "nouvelle", false).catch(function(){ ov.querySelector("#coErr").textContent="Oups, l'envoi a échoué. Réessayez."; go.disabled=false; go.textContent="Valider ma réservation"; });
+  finishOrder(ov, items, info, "Sur place (marché)", "new", false).catch(function(){ ov.querySelector("#coErr").textContent="Oups, l'envoi a échoué. Réessayez."; go.disabled=false; go.textContent="Valider ma réservation"; });
 }
 function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
 function startOnline(ov, items, info){
@@ -260,7 +267,7 @@ function startOnline(ov, items, info){
           onResponse:function(type, body){
             if(type==="success" || (body && (body.status==="PAID" || body.status==="SUCCESSFUL"))){
               try{ window.SumUpCard.unmount(); }catch(_){}
-              finishOrder(ov, items, info, "Payé en ligne (SumUp)", "payée", true).catch(function(){ sheet.querySelector("#wErr").textContent="Paiement OK mais erreur d'enregistrement — contactez-nous au 06 01 48 28 90."; });
+              finishOrder(ov, items, info, "Payé en ligne (SumUp)", "confirmed", true).catch(function(){ sheet.querySelector("#wErr").textContent="Paiement OK mais erreur d'enregistrement — contactez-nous au 06 01 48 28 90."; });
             } else if (type==="error"){ sheet.querySelector("#wErr").textContent="Le paiement a échoué. Réessayez."; }
           }
         });

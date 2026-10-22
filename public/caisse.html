@@ -240,7 +240,7 @@ function setNet(){
   var el = document.getElementById("net");
   el.className = "net " + (on ? "on" : "off");
   document.getElementById("netLabel").textContent = on ? (queue.length ? ("En ligne · "+queue.length+" à sync") : "En ligne") : "Hors ligne";
-  if (on) syncQueue();
+  if (on) { syncQueue(); flushLoyalty(); }
 }
 window.addEventListener("online", setNet);
 window.addEventListener("offline", setNet);
@@ -351,6 +351,7 @@ function recordSale(method, extra){
   document.body.classList.remove("noteopen");
   toast("Encaissé " + eur(sale.total) + " · " + ({especes:"espèces",carte:"carte",sumup:"SumUp"}[method]));
   syncQueue();
+  promptLoyalty();
 }
 function syncQueue(){
   if (!navigator.onLine || !queue.length || syncQueue._busy) return;
@@ -360,6 +361,91 @@ function syncQueue(){
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(){ queue = queue.slice(batch.length); LS.set("caisse_queue", queue); syncQueue._busy=false; setNet(); })
     .catch(function(){ syncQueue._busy=false; });
+}
+
+/* ───────────────── Fidélité (carte à tampons par n° de téléphone) ───────────────── */
+var loyaltyQueue = LS.get("caisse_loyalty_queue", []);
+function normPhone(s){ return String(s||"").replace(/\D/g,""); }
+function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g, "$1 ").trim(); }
+
+function promptLoyalty(){
+  var ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
+  ov.innerHTML = '<div class="card">'
+    + '<h3>🥖 Carte de fidélité</h3>'
+    + '<div class="sub">Entrez votre numéro de portable pour gagner un tampon.<br>10 tampons = <b>un pain offert</b>.</div>'
+    + '<input class="fi" id="loyPhone" inputmode="numeric" autocomplete="off" placeholder="06 12 34 56 78" style="font-size:24px;text-align:center;letter-spacing:2px;margin-top:12px;" />'
+    + '<div id="loyMsg" class="sub" style="min-height:20px;margin-top:8px;text-align:center;color:var(--rd);"></div>'
+    + '<button class="big ok" id="loyGo" style="margin-top:4px;">Valider ma carte</button>'
+    + '<button class="big ghost" id="loySkip" style="margin-top:10px;">Sans carte · passer</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+  var inp=ov.querySelector("#loyPhone");
+  inp.addEventListener("input", function(){ var c=normPhone(inp.value).slice(0,10); inp.value=fmtPhone(c); });
+  setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
+  ov.querySelector("#loySkip").onclick = function(){ ov.remove(); };
+  ov.querySelector("#loyGo").onclick = function(){
+    var p=normPhone(inp.value);
+    if (p.length < 10){ ov.querySelector("#loyMsg").textContent="Numéro à 10 chiffres, s'il vous plaît."; return; }
+    creditLoyalty(p, ov);
+  };
+}
+
+function loyaltyUpsert(phone){
+  // Lit la carte puis renvoie la promesse d'écriture ; résout {stamps,free,won}.
+  return sbFetch("loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*")
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var cur=(rows&&rows[0])||null, won=false;
+      var stamps=(cur?cur.stamps:0)+1, free=(cur?cur.free_breads:0), total=(cur?cur.total_stamps:0)+1;
+      if (stamps>=10){ stamps-=10; free+=1; won=true; }
+      var body={ phone:phone, stamps:stamps, free_breads:free, total_stamps:total,
+                 last_order_at:new Date().toISOString(), updated_at:new Date().toISOString() };
+      return sbFetch("loyalty", { method:"POST", body:JSON.stringify(body) })
+        .then(function(r2){ if(!r2.ok) throw new Error(r2.status); return {stamps:stamps, free:free, won:won}; });
+    });
+}
+function creditLoyalty(phone, ov){
+  var msg=ov.querySelector("#loyMsg"); msg.style.color="var(--is)"; msg.textContent="…";
+  if (!navigator.onLine){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); return; }
+  loyaltyUpsert(phone)
+    .then(function(res){ res.phone=phone; showLoyaltyResult(ov, res); })
+    .catch(function(){ queueLoyalty(phone); showLoyaltyResult(ov, null, "offline"); });
+}
+function queueLoyalty(phone){ loyaltyQueue.push({phone:phone, ts:Date.now()}); LS.set("caisse_loyalty_queue", loyaltyQueue); }
+
+function showLoyaltyResult(ov, res, mode){
+  var c=ov.querySelector(".card");
+  if (mode==="offline"){
+    c.innerHTML='<h3>🥖 Tampon enregistré</h3>'
+      +'<div class="sub">Hors ligne pour le moment — votre tampon sera crédité dès le retour du réseau. Merci !</div>'
+      +'<button class="big ok" id="loyClose" style="margin-top:12px;">Fermer</button>';
+  } else {
+    var dots=''; for (var i=0;i<10;i++){ dots+='<span style="display:inline-block;width:22px;height:22px;border-radius:50%;margin:3px;border:2px solid var(--bd);background:'+(i<res.stamps?'var(--bd)':'transparent')+';"></span>'; }
+    c.innerHTML='<h3 style="text-align:center;">'+(res.won?'🎉 Un pain offert gagné !':'🥖 Tampon ajouté !')+'</h3>'
+      +'<div style="text-align:center;margin:12px 0 6px;line-height:1;">'+dots+'</div>'
+      +'<div class="sub" style="text-align:center;">'+res.stamps+' / 10 tampons</div>'
+      +(res.free>0?('<div class="sub" style="text-align:center;color:var(--ru);margin-top:8px;font-weight:600;">🥖 '+res.free+' pain'+(res.free>1?'s':'')+' offert'+(res.free>1?'s':'')+' à récupérer</div>'
+                   +'<button class="big ghost" id="loyUse" style="margin-top:10px;">J\'ai donné 1 pain offert ➖</button>'):'')
+      +'<button class="big ok" id="loyClose" style="margin-top:12px;">Fermer</button>';
+    var useBtn=c.querySelector("#loyUse");
+    if (useBtn) useBtn.onclick = function(){
+      useBtn.disabled=true; useBtn.textContent="…";
+      sbFetch("loyalty?phone=eq."+encodeURIComponent(res.phone||""),
+              { method:"PATCH", body:JSON.stringify({ free_breads:Math.max(0,res.free-1), updated_at:new Date().toISOString() }) })
+        .then(function(r){ if(!r.ok) throw new Error(); res.free=Math.max(0,res.free-1); showLoyaltyResult(ov, res); toast("Pain offert remis 🥖"); })
+        .catch(function(){ useBtn.disabled=false; useBtn.textContent="J'ai donné 1 pain offert ➖"; toast("Échec, réessayez"); });
+    };
+  }
+  ov.querySelector("#loyClose").onclick = function(){ ov.remove(); };
+}
+
+function flushLoyalty(){
+  if (!navigator.onLine || !loyaltyQueue.length || flushLoyalty._busy) return;
+  flushLoyalty._busy=true;
+  var job=loyaltyQueue[0];
+  loyaltyUpsert(job.phone)
+    .then(function(){ loyaltyQueue.shift(); LS.set("caisse_loyalty_queue", loyaltyQueue); flushLoyalty._busy=false; if(loyaltyQueue.length) flushLoyalty(); })
+    .catch(function(){ flushLoyalty._busy=false; });
 }
 
 /* Espèces / Carte (hors terminal) */

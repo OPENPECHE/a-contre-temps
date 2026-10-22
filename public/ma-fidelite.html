@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ma carte de fidélité — à contre-temps, Fournil vivant</title>
+<meta name="description" content="Consultez votre carte de fidélité à contre-temps : 1 achat = 1 tampon, 10 tampons = un pain au levain offert." />
+<meta name="robots" content="noindex, follow" />
+<link rel="canonical" href="https://www.fournilvivant.fr/ma-fidelite" />
+<link rel="icon" type="image/png" href="/icons/icon-192.png" />
+<meta name="theme-color" content="#7C97AC" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:inherit;}
+  header{background:var(--b);color:var(--cr);text-align:center;padding:34px 20px 34px;}
+  header .heart{height:62px;width:auto;margin:0 auto 14px;display:block;}
+  header .brand{font-family:var(--serif);font-size:32px;font-style:italic;line-height:1.1;}
+  header .sub{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin-top:8px;}
+  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(19px,3.4vw,24px);margin-top:22px;opacity:.95;}
+  .wrap{max-width:460px;margin:0 auto;padding:26px 18px 50px;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:18px;padding:24px 20px;box-shadow:0 8px 28px rgba(43,41,37,.07);}
+  label{display:block;font-size:12px;color:var(--is);margin:0 0 6px;}
+  .fi{width:100%;padding:14px 13px;border:1px solid var(--bs);border-radius:12px;font-size:22px;font-family:var(--sans);background:#fff;color:var(--ink);text-align:center;letter-spacing:2px;}
+  .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;background:var(--bd);color:var(--cr);}
+  .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);}
+  .err{color:var(--rd);font-size:13px;min-height:18px;margin-top:8px;text-align:center;}
+  .intro{text-align:center;color:var(--is);font-size:14px;margin-bottom:18px;}
+  .intro b{color:var(--ru);}
+  /* carte résultat */
+  .result{text-align:center;}
+  .result .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:2px 0 4px;}
+  .dots{margin:16px 0 8px;line-height:1;}
+  .dot{display:inline-block;width:26px;height:26px;border-radius:50%;margin:4px;border:2px solid var(--bd);vertical-align:middle;}
+  .dot.on{background:var(--bd);}
+  .count{font-size:15px;color:var(--is);}
+  .free{margin-top:16px;background:var(--cr);border-radius:12px;padding:14px;color:var(--ru);font-weight:600;}
+  .foot{text-align:center;font-size:12px;color:var(--is);margin-top:22px;}
+  .foot a{color:var(--bd);font-weight:500;}
+</style>
+</head>
+<body>
+<header>
+  <img class="heart" src="/heart-cream.png" alt="" />
+  <div class="brand">à contre-temps</div>
+  <div class="sub">Fournil vivant · Créateur d'instants</div>
+  <h1>Ma carte de fidélité</h1>
+</header>
+
+<div class="wrap">
+  <div class="card" id="card">
+    <p class="intro">1 achat = <b>1 tampon</b>. À <b>10 tampons</b>, un pain au levain vous est offert 🥖<br>Entrez votre numéro de portable pour voir votre carte.</p>
+    <label for="phone">Votre numéro de portable</label>
+    <input class="fi" id="phone" inputmode="numeric" autocomplete="tel" placeholder="06 12 34 56 78" />
+    <div class="err" id="err"></div>
+    <button class="btn" id="go">Voir ma carte</button>
+  </div>
+  <p class="foot"><a href="/commander-marche">← Commander au marché</a></p>
+</div>
+
+<script>
+var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co";
+var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+function sb(path){ return fetch(SB_URL+"/rest/v1/"+path,{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}); }
+function normPhone(s){ return String(s||"").replace(/\D/g,""); }
+function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
+
+var phone=document.getElementById("phone"), err=document.getElementById("err");
+phone.addEventListener("input",function(){ var c=normPhone(phone.value).slice(0,10); phone.value=fmtPhone(c); err.textContent=""; });
+
+// pré-remplissage si le client a déjà commandé sur cet appareil
+try{ var saved=localStorage.getItem("acontretemps_phone"); if(saved) phone.value=fmtPhone(saved); }catch(e){}
+var qp=new URLSearchParams(location.search).get("tel"); if(qp){ phone.value=fmtPhone(normPhone(qp)); }
+
+document.getElementById("go").onclick=lookup;
+phone.addEventListener("keydown",function(e){ if(e.key==="Enter") lookup(); });
+if(normPhone(phone.value).length===10) lookup();
+
+function lookup(){
+  var p=normPhone(phone.value);
+  if(p.length<10){ err.textContent="Entrez un numéro à 10 chiffres."; return; }
+  try{ localStorage.setItem("acontretemps_phone",p); }catch(e){}
+  var go=document.getElementById("go"); go.disabled=true; go.textContent="…";
+  sb("loyalty?phone=eq."+encodeURIComponent(p)+"&select=*").then(function(r){return r.json();}).then(function(rows){
+    render(p,(rows&&rows[0])||null);
+  }).catch(function(){ err.textContent="Connexion impossible, réessayez."; go.disabled=false; go.textContent="Voir ma carte"; });
+}
+
+function render(p,row){
+  var stamps=row?row.stamps:0, free=row?row.free_breads:0, total=row?row.total_stamps:0;
+  var dots=""; for(var i=0;i<10;i++){ dots+='<span class="dot'+(i<stamps?' on':'')+'"></span>'; }
+  var html='<div class="result">'
+    +'<div class="big">Bonjour 👋</div>'
+    +'<div class="count">'+fmtPhone(p)+'</div>'
+    +'<div class="dots">'+dots+'</div>'
+    +'<div class="count"><b>'+stamps+' / 10</b> tampons'+(total?(' · '+total+' au total'):'')+'</div>';
+  if(free>0) html+='<div class="free">🥖 '+free+' pain'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>';
+  else if(!row) html+='<div class="free" style="background:var(--pp);color:var(--is);font-weight:400;">Pas encore de tampon sur ce numéro — rendez-vous au marché pour votre premier achat 🥖</div>';
+  else html+='<div class="count" style="margin-top:14px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre pain offert !</div>';
+  html+='<button class="btn ghost" id="again" style="margin-top:18px;">Un autre numéro</button></div>';
+  document.getElementById("card").innerHTML=html;
+  document.getElementById("again").onclick=function(){ location.href="/ma-fidelite"; };
+}
+</script>
+</body>
+</html>

@@ -713,6 +713,30 @@ async function updateStatus(id,status){
   await sbFetch(`orders?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({status})});
   allOrders=allOrders.map(o=>o.id===id?{...o,status}:o);
   renderOrders();
+  // Fidélité : +1 tampon quand la commande est remise (livrée), une seule fois.
+  if(status==="delivered"){
+    const o=allOrders.find(x=>x.id===id);
+    if(o && !o.loyalty_awarded) await awardLoyalty(o);
+  }
+}
+
+// ── Fidélité (carte à tampons par n° de téléphone) ─────────────────────────────
+const loyPhone=s=>String(s||"").replace(/\D/g,"");
+async function awardLoyalty(o){
+  const phone=loyPhone(o.phone);
+  if(phone.length<10){ return; } // pas de numéro exploitable → pas de tampon
+  try{
+    const rows=await sbFetch(`loyalty?phone=eq.${encodeURIComponent(phone)}&select=*`);
+    const cur=(Array.isArray(rows)&&rows[0])||null;
+    let stamps=(cur?cur.stamps:0)+1, free=(cur?cur.free_breads:0), total=(cur?cur.total_stamps:0)+1, won=false;
+    if(stamps>=10){ stamps-=10; free+=1; won=true; }
+    const body={phone,name:o.name||null,stamps,free_breads:free,total_stamps:total,last_order_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    if(cur) await sbFetch(`loyalty?phone=eq.${encodeURIComponent(phone)}`,{method:"PATCH",body:JSON.stringify(body)});
+    else    await sbFetch("loyalty",{method:"POST",body:JSON.stringify(body)});
+    await sbFetch(`orders?id=eq.${o.id}`,{method:"PATCH",body:JSON.stringify({loyalty_awarded:true})});
+    allOrders=allOrders.map(x=>x.id===o.id?{...x,loyalty_awarded:true}:x);
+    alert(`🥖 +1 tampon de fidélité pour ${o.name||phone} (${stamps}/10)`+(won?` — 🎉 un pain offert gagné !`:``));
+  }catch(e){ console.error("loyalty",e); }
 }
 
 // ── Clients (comptes + invités, via /api/clients) ──────────────────────────────
