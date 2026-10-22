@@ -2,7 +2,7 @@
 // Périmètre : /borne uniquement (n'interfère pas avec /caisse ni le reste du site).
 // La borne a besoin du réseau pour fonctionner ; le cache sert juste à ouvrir
 // l'app en plein écran rapidement. Supabase / /api passent toujours par le réseau.
-var CACHE = "borne-v1";
+var CACHE = "borne-v2";
 var SHELL = "/borne";
 
 self.addEventListener("install", function(e){

@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
   :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -72,12 +73,21 @@
 <div class="screen" id="ask">
   <h2>Votre carte de fidélité</h2>
   <div class="amt" id="askAmt"></div>
+  <button id="scanBtn" style="margin:12px auto 4px;background:var(--bd);color:var(--cr);border:none;border-radius:999px;padding:13px 26px;font-size:clamp(15px,2.4vw,18px);font-weight:600;font-family:var(--sans);cursor:pointer;">📷 Scanner mon QR code</button>
+  <div style="font-size:13px;color:var(--is);margin:6px 0 2px;">ou tapez votre numéro :</div>
   <div class="disp" id="disp"><span class="ph">Tapez votre numéro</span></div>
   <div class="pad" id="pad"></div>
   <div class="actions">
     <button class="no" id="noCard">Je n'ai pas de carte</button>
     <button class="ok" id="okCard" disabled>Valider ✓</button>
   </div>
+</div>
+
+<div class="screen" id="scan" style="display:none;background:#111;">
+  <video id="scanVideo" playsinline muted style="width:min(92vw,520px);border-radius:16px;background:#000;"></video>
+  <div style="color:#fff;margin-top:16px;font-size:clamp(16px,2.6vw,20px);font-weight:600;">Présentez votre QR code à la caméra</div>
+  <div id="scanMsg" style="color:#fff;opacity:.7;font-size:13px;margin-top:8px;"></div>
+  <button id="scanCancel" style="margin-top:22px;background:#fff;color:var(--bd);border:none;border-radius:14px;padding:15px 28px;font-size:17px;font-weight:600;cursor:pointer;font-family:var(--sans);">Annuler</button>
 </div>
 
 <div class="screen" id="thanks">
@@ -109,7 +119,7 @@ function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Obj
 function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
 function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €"; }
-function show(id){ ["idle","ask","thanks","create","setup"].forEach(function(s){ document.getElementById(s).style.display = (s===id?"flex":"none"); }); }
+function show(id){ ["idle","ask","thanks","create","setup","scan"].forEach(function(s){ document.getElementById(s).style.display = (s===id?"flex":"none"); }); if(id!=="scan") stopScan(); }
 
 var CODE = (new URLSearchParams(location.search).get("code")||"").trim().toUpperCase();
 try{ if(CODE) localStorage.setItem("borne_code",CODE); else CODE=(localStorage.getItem("borne_code")||"").trim().toUpperCase(); }catch(e){}
@@ -147,6 +157,37 @@ function paintEntry(){
 }
 document.getElementById("okCard").onclick=submit;
 document.getElementById("noCard").onclick=function(){ sendBack(null); };
+
+/* ─── Scan du QR code de la carte client ─── */
+var scanStream=null, scanRAF=null, scanCv=document.createElement("canvas"), scanCx=scanCv.getContext("2d");
+document.getElementById("scanBtn").onclick=startScan;
+document.getElementById("scanCancel").onclick=function(){ stopScan(); show("ask"); };
+function startScan(){
+  show("scan");
+  var v=document.getElementById("scanVideo"), msg=document.getElementById("scanMsg");
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ msg.textContent="Caméra non disponible sur cet appareil."; return; }
+  msg.textContent="Activation de la caméra…";
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})
+    .then(function(stream){ scanStream=stream; v.srcObject=stream; v.setAttribute("playsinline","true"); v.play(); msg.textContent = window.jsQR? "Présentez le QR face à la caméra" : "Lecteur QR indisponible — tapez votre numéro."; scanRAF=requestAnimationFrame(scanLoop); })
+    .catch(function(){ msg.textContent="Accès caméra refusé. Tapez votre numéro."; });
+}
+function scanLoop(){
+  var v=document.getElementById("scanVideo");
+  if(scanStream && v.readyState===v.HAVE_ENOUGH_DATA && window.jsQR){
+    scanCv.width=v.videoWidth; scanCv.height=v.videoHeight;
+    scanCx.drawImage(v,0,0,scanCv.width,scanCv.height);
+    try{
+      var img=scanCx.getImageData(0,0,scanCv.width,scanCv.height);
+      var code=jsQR(img.data,img.width,img.height,{inversionAttempts:"attemptBoth"});
+      if(code&&code.data){ var ph=normPhone(code.data); if(ph.length>=10){ stopScan(); entry=ph; sendBack(ph); return; } }
+    }catch(e){}
+  }
+  if(scanStream) scanRAF=requestAnimationFrame(scanLoop);
+}
+function stopScan(){
+  if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF=null; }
+  if(scanStream){ try{ scanStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} scanStream=null; }
+}
 
 function openAsk(amount){
   entry=""; paintEntry();
