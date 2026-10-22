@@ -168,14 +168,15 @@ function openCheckout(){
   var recap=items.map(function(l){ return '<div class="rc"><span>'+l.qty+' × '+esc(l.name)+'</span><span>'+eur(l.price*l.qty)+'</span></div>'; }).join("");
   var opts=markets.map(function(m){ return '<option value="'+esc(m.name)+'" data-id="'+m.id+'">'+esc(m.name)+'</option>'; }).join("");
   var ov=document.createElement("div"); ov.className="ov";
-  ov.innerHTML='<div class="sheet"><h2>Votre réservation</h2><div class="sub">Retrait sur notre stand au marché — paiement sur place.</div>'
+  ov.innerHTML='<div class="sheet"><h2>Votre réservation</h2><div class="sub">Retrait sur notre stand au marché.</div>'
     + recap + '<div class="rc tot"><span>Total</span><span>'+eur(cartTotal())+'</span></div>'
     + '<label>Marché de retrait</label><select class="fi" id="coMarket">'+(opts||'<option value="">(aucun marché actif)</option>')+'</select>'
     + '<label>Date de retrait (jour du marché)</label><select class="fi" id="coDate"></select>'
     + '<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" />'
     + '<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />'
     + '<label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />'
-    + '<div class="note">💳 Vous réglez <strong>sur place au marché</strong> (espèces ou carte). Cette réservation nous permet de préparer votre commande.</div>'
+    + '<label>Paiement</label><div style="display:flex;gap:8px;"><button type="button" id="payPlace">💵 Sur place</button><button type="button" id="payOnline">💳 En ligne</button></div>'
+    + '<div class="note" id="payNote"></div>'
     + '<div class="err" id="coErr"></div>'
     + '<button class="btn go" id="coGo">Valider ma réservation</button>'
     + '<button class="btn ghost" id="coC">Continuer mes achats</button></div>';
@@ -190,42 +191,81 @@ function openCheckout(){
       return '<option value="'+iso+'">'+JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()]+'</option>';
     }).join("") : '<option value="">(aucune date disponible)</option>';
   }
-  ov.querySelector("#coMarket").onchange=fillDates; fillDates();
+  var payMode="place";
+  function paintPay(){
+    var p=ov.querySelector("#payPlace"), o=ov.querySelector("#payOnline");
+    var off="flex:1;padding:12px;border-radius:10px;border:1px solid var(--bs);background:var(--pp);color:var(--bd);font-size:14px;cursor:pointer;";
+    var on="flex:1;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bd);color:var(--cr);font-size:14px;cursor:pointer;";
+    p.style.cssText = payMode==="place"?on:off; o.style.cssText = payMode==="online"?on:off;
+    ov.querySelector("#payNote").textContent = payMode==="place" ? "Vous réglez sur place au marché (espèces ou carte)." : "Paiement carte sécurisé maintenant — commande confirmée et payée.";
+    ov.querySelector("#coGo").textContent = payMode==="place" ? "Valider ma réservation" : ("Payer "+eur(cartTotal()));
+  }
+  ov.querySelector("#payPlace").onclick=function(){ payMode="place"; paintPay(); };
+  ov.querySelector("#payOnline").onclick=function(){ payMode="online"; paintPay(); };
+  ov.querySelector("#coMarket").onchange=fillDates; fillDates(); paintPay();
   ov.querySelector("#coC").onclick=function(){ ov.remove(); };
-  ov.querySelector("#coGo").onclick=function(){ submitOrder(ov, items); };
+  ov.querySelector("#coGo").onclick=function(){
+    var info=collect(ov); if(!info) return;
+    if(payMode==="place") placeOrder(ov, items, info); else startOnline(ov, items, info);
+  };
 }
-function submitOrder(ov, items){
+function collect(ov){
+  var err=ov.querySelector("#coErr"); err.textContent="";
   var market=ov.querySelector("#coMarket").value.trim();
   var date=ov.querySelector("#coDate").value;
   var name=ov.querySelector("#coName").value.trim();
   var phone=ov.querySelector("#coPhone").value.trim();
   var mail=ov.querySelector("#coMail").value.trim();
-  var err=ov.querySelector("#coErr");
-  if(!market){ err.textContent="Choisissez un marché."; return; }
-  if(!date){ err.textContent="Choisissez une date de retrait."; return; }
-  if(!name){ err.textContent="Indiquez votre nom."; return; }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ err.textContent="E‑mail invalide."; return; }
-  if(!phone){ err.textContent="Indiquez un téléphone (pour vous prévenir)."; return; }
-  var go=ov.querySelector("#coGo"); go.disabled=true; go.textContent="Envoi…"; err.textContent="";
-  var order={ name:name, email:mail, phone:phone,
+  if(!market){ err.textContent="Choisissez un marché."; return null; }
+  if(!date){ err.textContent="Choisissez une date de retrait."; return null; }
+  if(!name){ err.textContent="Indiquez votre nom."; return null; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ err.textContent="E‑mail invalide."; return null; }
+  if(!phone){ err.textContent="Indiquez un téléphone."; return null; }
+  return { market:market, date:date, name:name, phone:phone, mail:mail, total:cartTotal() };
+}
+function showSuccess(ov, info, paid){
+  ov.querySelector(".sheet").innerHTML='<div class="ok-screen"><div style="font-size:44px;">🥖</div><div class="big">'+(paid?"Paiement confirmé&nbsp;!":"Réservation enregistrée&nbsp;!")+'</div>'
+    +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Nous préparons votre commande pour le <strong>'+esc(info.date)+'</strong> au <strong>'+esc(info.market)+'</strong>.</p>'
+    +'<p style="color:var(--is);margin-top:8px;">'+(paid?"Votre commande est payée. ":"Règlement sur place. ")+'Un e‑mail de confirmation vous a été envoyé.</p>'
+    +'<button class="btn go" id="okClose" style="margin-top:20px;">Fermer</button></div>';
+  ov.querySelector("#okClose").onclick=function(){ ov.remove(); document.querySelectorAll(".step").forEach(function(st){ st.querySelector("[data-add]").hidden=false; ["[data-mz]","[data-q]","[data-pl]"].forEach(function(s){st.querySelector(s).hidden=true;}); }); window.scrollTo(0,0); };
+}
+function finishOrder(ov, items, info, payMethod, status, paid){
+  var order={ name:info.name, email:info.mail, phone:info.phone,
     items:items.map(function(l){return {name:l.name,price:l.price,qty:l.qty};}),
-    total:cartTotal(), status:"nouvelle",
-    shipping:"Retrait marché — "+market, pickup_date:date,
-    payment_method:"Sur place (marché)",
-    note:"Commande marché — retrait "+market+" le "+date };
-  sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(d){
-      var saved=(d&&d[0])?d[0]:order;
-      // email de confirmation (best effort)
-      fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){});
-      cart={}; updateBar();
-      ov.querySelector(".sheet").innerHTML='<div class="ok-screen"><div style="font-size:44px;">🥖</div><div class="big">Réservation enregistrée&nbsp;!</div>'
-        +'<p style="color:var(--is);">Merci '+esc(name.split(" ")[0])+'. Nous préparons votre commande pour le <strong>'+esc(date)+'</strong> au <strong>'+esc(market)+'</strong>.</p>'
-        +'<p style="color:var(--is);margin-top:8px;">Un e‑mail de confirmation vous a été envoyé. Règlement sur place.</p>'
-        +'<button class="btn go" id="okClose" style="margin-top:20px;">Fermer</button></div>';
-      ov.querySelector("#okClose").onclick=function(){ ov.remove(); document.querySelectorAll(".step").forEach(function(st){ var k=st.getAttribute("data-k"); st.querySelector("[data-add]").hidden=false; ["[data-mz]","[data-q]","[data-pl]"].forEach(function(s){st.querySelector(s).hidden=true;}); }); window.scrollTo(0,0); };
-    })
-    .catch(function(){ err.textContent="Oups, l'envoi a échoué. Réessayez dans un instant."; go.disabled=false; go.textContent="Valider ma réservation"; });
+    total:info.total, status:status, shipping:"Retrait marché — "+info.market, pickup_date:info.date,
+    payment_method:payMethod, note:"Commande marché — retrait "+info.market+" le "+info.date+(paid?" — PAYÉ EN LIGNE":"") };
+  return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); cart={}; updateBar(); showSuccess(ov, info, paid); });
+}
+function placeOrder(ov, items, info){
+  var go=ov.querySelector("#coGo"); go.disabled=true; go.textContent="Envoi…";
+  finishOrder(ov, items, info, "Sur place (marché)", "nouvelle", false).catch(function(){ ov.querySelector("#coErr").textContent="Oups, l'envoi a échoué. Réessayez."; go.disabled=false; go.textContent="Valider ma réservation"; });
+}
+function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
+function startOnline(ov, items, info){
+  var go=ov.querySelector("#coGo"), err=ov.querySelector("#coErr");
+  go.disabled=true; go.textContent="Préparation du paiement…";
+  fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:info.total, description:"Commande marché "+info.market})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(!j.ok || !j.checkout_id){ err.textContent="Paiement en ligne indisponible"+(j.error?" : "+j.error:"")+". Choisissez « Sur place »."; go.disabled=false; go.textContent="Payer "+eur(info.total); return; }
+      var sheet=ov.querySelector(".sheet");
+      sheet.innerHTML='<h2>Paiement par carte</h2><div class="sub">Montant : <strong>'+eur(info.total)+'</strong> — '+esc(info.market)+' le '+esc(info.date)+'</div>'
+        + '<div id="sumup-card" style="margin-top:12px;"></div><div class="err" id="wErr"></div>'
+        + '<button class="btn ghost" id="wCancel" style="margin-top:12px;">Annuler</button>';
+      sheet.querySelector("#wCancel").onclick=function(){ ov.remove(); };
+      loadSumUpSDK(function(){
+        if(!window.SumUpCard){ sheet.querySelector("#wErr").textContent="Module de paiement indisponible. Réessayez ou payez sur place."; return; }
+        window.SumUpCard.mount({ id:"sumup-card", checkoutId:j.checkout_id, locale:"fr-FR", showSubmitButton:true,
+          onResponse:function(type, body){
+            if(type==="success" || (body && (body.status==="PAID" || body.status==="SUCCESSFUL"))){
+              try{ window.SumUpCard.unmount(); }catch(_){}
+              finishOrder(ov, items, info, "Payé en ligne (SumUp)", "payée", true).catch(function(){ sheet.querySelector("#wErr").textContent="Paiement OK mais erreur d'enregistrement — contactez-nous au 06 01 48 28 90."; });
+            } else if (type==="error"){ sheet.querySelector("#wErr").textContent="Le paiement a échoué. Réessayez."; }
+          }
+        });
+      });
+    }).catch(function(){ err.textContent="Erreur réseau. Réessayez."; go.disabled=false; go.textContent="Payer "+eur(info.total); });
 }
 
 updateBar();
