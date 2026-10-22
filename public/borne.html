@@ -167,7 +167,7 @@ function startScan(){
   var v=document.getElementById("scanVideo"), msg=document.getElementById("scanMsg");
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ msg.textContent="Caméra non disponible sur cet appareil."; return; }
   msg.textContent="Activation de la caméra…";
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"}}})
     .then(function(stream){ scanStream=stream; v.srcObject=stream; v.setAttribute("playsinline","true"); v.play(); msg.textContent = window.jsQR? "Présentez le QR face à la caméra" : "Lecteur QR indisponible — tapez votre numéro."; scanRAF=requestAnimationFrame(scanLoop); })
     .catch(function(){ msg.textContent="Accès caméra refusé. Tapez votre numéro."; });
 }
@@ -198,23 +198,33 @@ function submit(){
   if(entry.length<10) return;
   sendBack(entry);
 }
+function markDone(phone){ sb("pos_link?code=eq."+encodeURIComponent(CODE),{method:"PATCH",body:JSON.stringify({state:"done",phone:phone||null,updated_at:new Date().toISOString()})}).catch(function(){}); }
 function sendBack(phone){
   if(busy) return; busy=true;
-  sb("pos_link?code=eq."+encodeURIComponent(CODE),{method:"PATCH",body:JSON.stringify({state:"submitted",phone:phone,updated_at:new Date().toISOString()})})
-    .then(function(){
-      busy=false;
-      if(phone){
-        // on attend l'issue de la caisse (ok / pas de compte)
-        document.getElementById("thxBig").innerHTML='⌛';
-        document.getElementById("thxSub").textContent="Un instant…";
-        show("thanks");
-      } else {
-        document.getElementById("thxBig").textContent="À bientôt !";
-        document.getElementById("thxSub").textContent="";
-        show("thanks");
-      }
-    })
-    .catch(function(){ busy=false; });
+  if(!phone){
+    markDone(null); busy=false;
+    document.getElementById("thxBig").textContent="À bientôt !"; document.getElementById("thxSub").textContent=""; show("thanks"); idleFallback(); return;
+  }
+  document.getElementById("thxBig").innerHTML='⌛'; document.getElementById("thxSub").textContent="Un instant…"; show("thanks");
+  // La borne crédite elle-même (résultat instantané), puis prévient la caisse.
+  borneCredit(phone).then(function(res){
+    busy=false; markDone(phone);
+    if(res.outcome==="noaccount"){ showCreate(); return; }
+    document.getElementById("thxBig").textContent = res.won? "🎉 Produit offert !" : "Merci !";
+    document.getElementById("thxSub").innerHTML = "Tampon <b>"+res.stamps+" / 10</b> enregistré 🥖"+(res.free>0?(" · "+res.free+" offert"+(res.free>1?"s":"")):"");
+    show("thanks"); idleFallback();
+  }).catch(function(){ busy=false; markDone(phone); document.getElementById("thxBig").textContent="Oups"; document.getElementById("thxSub").textContent="Réseau indisponible."; idleFallback(); });
+}
+function borneCredit(phone){
+  var hh={apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json"};
+  return fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*",{headers:hh}).then(function(r){return r.json();}).then(function(rows){
+    var cur=(Array.isArray(rows)&&rows[0])||null;
+    if(!cur || !cur.registered) return {outcome:"noaccount"};
+    var won=false, stamps=cur.stamps+1, free=cur.free_breads, total=cur.total_stamps+1;
+    if(stamps>=10){ stamps-=10; free+=1; won=true; }
+    var body={stamps:stamps,free_breads:free,total_stamps:total,last_order_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    return fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(phone),{method:"PATCH",headers:hh,body:JSON.stringify(body)}).then(function(){ return {outcome:"ok",stamps:stamps,free:free,won:won}; });
+  });
 }
 function showThanks(){
   document.getElementById("thxBig").textContent="Merci !";
@@ -226,7 +236,7 @@ function showCreate(){ show("create"); idleFallback(); }
 function idleFallback(){ clearTimeout(idleFallback._t); idleFallback._t=setTimeout(function(){ var a=document.getElementById("ask").style.display, s=document.getElementById("setup").style.display; if(a==="none"&&s==="none") show("idle"); }, 10000); }
 
 function startPolling(){
-  tick(); setInterval(tick, 1200);
+  tick(); setInterval(tick, 700);
 }
 function tick(){
   sb("pos_link?code=eq."+encodeURIComponent(CODE)+"&select=state,amount,updated_at")
@@ -235,9 +245,7 @@ function tick(){
       var row=(Array.isArray(rows)&&rows[0])||null;
       var st=row?row.state:"idle";
       if(st==="asking" && lastState!=="asking"){ openAsk(row.amount); }
-      else if(st==="ok" && lastState!=="ok"){ showThanks(); }
-      else if(st==="noaccount" && lastState!=="noaccount"){ showCreate(); }
-      else if(st==="idle" && lastState!=="idle"){ if(document.getElementById("setup").style.display==="none") show("idle"); }
+      else if(st==="idle" && lastState!=="idle"){ var sc=document.getElementById("scan").style.display, su=document.getElementById("setup").style.display; if(sc==="none"&&su==="none") show("idle"); }
       lastState=st;
     })
     .catch(function(){});

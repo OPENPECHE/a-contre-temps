@@ -428,18 +428,23 @@ function askViaBorne(amount){
       .then(function(r){ return r.json(); })
       .then(function(rows){
         var row=(Array.isArray(rows)&&rows[0])||null; if(!row||done) return;
-        if (row.state==="submitted"){
+        if (row.state==="done"){
           done=true; clearInterval(poll);
           var ph=normPhone(row.phone||"");
           if (ph.length<10){ resetBorne(); ov.remove(); toast("Vente close · sans carte"); return; }
-          creditLoyalty(ph, ov).then(function(outcome){
-            var st = outcome==="noaccount" ? "noaccount" : "ok";
-            setBorneState(st);
-            setTimeout(function(){ borneIdleIfState(st); }, outcome==="noaccount" ? 8000 : 4000);
-          });
+          // La borne a DÉJÀ crédité → on lit et on affiche (pas de nouveau crédit).
+          sbFetch("loyalty?phone=eq."+encodeURIComponent(ph)+"&select=*")
+            .then(function(r2){ return r2.json(); })
+            .then(function(lrows){
+              var cur=(Array.isArray(lrows)&&lrows[0])||null;
+              setTimeout(resetBorne, 4000);
+              if (!cur || !cur.registered){ showNotRegistered(ov); return; }
+              attachPhoneToLastSale(ph);
+              loadLoyaltyHistory(ph).then(function(h){ showLoyaltyResult(ov, { stamps:cur.stamps, free:cur.free_breads, won:false, phone:ph, hist:h }); });
+            }).catch(function(){ resetBorne(); ov.remove(); });
         }
       }).catch(function(){});
-  }, 1200);
+  }, 700);
   ov.querySelector("#loyCancel").onclick = function(){ done=true; clearInterval(poll); resetBorne(); ov.remove(); };
 }
 
