@@ -400,6 +400,15 @@ function setBorneState(st){
           { method:"PATCH", body:JSON.stringify({ state:st, updated_at:new Date().toISOString() }) }).catch(function(){});
 }
 function resetBorne(){ setBorneState("idle"); }
+// Remet la borne en veille seulement si elle est toujours sur l'issue affichée
+// (évite d'écraser une nouvelle vente lancée entre-temps).
+function borneIdleIfState(fromState){
+  if (!borneCode) return;
+  sbFetch("pos_link?code=eq."+encodeURIComponent(borneCode)+"&select=state")
+    .then(function(r){ return r.json(); })
+    .then(function(rows){ var st=(Array.isArray(rows)&&rows[0])?rows[0].state:"idle"; if(st===fromState) resetBorne(); })
+    .catch(function(){});
+}
 function askViaBorne(amount){
   var ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
   ov.innerHTML='<div class="card" style="text-align:center;">'
@@ -424,8 +433,9 @@ function askViaBorne(amount){
           var ph=normPhone(row.phone||"");
           if (ph.length<10){ resetBorne(); ov.remove(); toast("Vente close · sans carte"); return; }
           creditLoyalty(ph, ov).then(function(outcome){
-            setBorneState(outcome==="noaccount" ? "noaccount" : "ok");
-            setTimeout(resetBorne, outcome==="noaccount" ? 8000 : 4000);
+            var st = outcome==="noaccount" ? "noaccount" : "ok";
+            setBorneState(st);
+            setTimeout(function(){ borneIdleIfState(st); }, outcome==="noaccount" ? 8000 : 4000);
           });
         }
       }).catch(function(){});
