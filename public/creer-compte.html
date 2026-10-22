@@ -32,12 +32,14 @@
   .row2>div{flex:1;}
   .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:18px;background:var(--bd);color:var(--cr);}
   .btn:disabled{opacity:.6;}
+  .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);margin-top:10px;}
   .msg{font-size:13px;min-height:18px;margin-top:10px;text-align:center;}
   .msg.err{color:var(--rd);}
   .foot{text-align:center;font-size:13px;color:var(--is);margin-top:18px;}
   .foot a{color:var(--bd);font-weight:500;}
   .ok-screen{text-align:center;padding:14px 6px;}
   .ok-screen .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:8px 0;}
+  .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:30px;text-align:center;letter-spacing:12px;font-family:var(--sans);font-weight:600;color:var(--bd);}
 </style>
 </head>
 <body>
@@ -59,10 +61,8 @@
     <input class="fi" id="phone" inputmode="numeric" autocomplete="tel" placeholder="06 12 34 56 78" />
     <label for="email">E‑mail</label>
     <input class="fi" id="email" type="email" autocomplete="email" placeholder="votre@email.fr" />
-    <label for="pass">Mot de passe <span style="color:var(--is)">(6 caractères min.)</span></label>
-    <input class="fi" id="pass" type="password" autocomplete="new-password" />
     <div class="msg err" id="msg"></div>
-    <button class="btn" id="go">Créer mon compte</button>
+    <button class="btn" id="go">Recevoir mon code</button>
   </div>
   <p class="foot">Vous avez déjà un compte ? <a href="/mon-compte">Se connecter</a></p>
 </div>
@@ -72,68 +72,92 @@ var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co";
 var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
 function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
+var pending=null; // {prenom,nom,phone,email}
 
 var phone=document.getElementById("phone"), msg=document.getElementById("msg");
 phone.addEventListener("input",function(){ phone.value=fmtPhone(normPhone(phone.value).slice(0,10)); });
 try{ var sp=localStorage.getItem("acontretemps_phone"); if(sp) phone.value=fmtPhone(sp); }catch(e){}
 
-document.getElementById("go").onclick=signup;
+document.getElementById("go").onclick=sendCode;
 
-function signup(){
+function sendCode(){
   var prenom=document.getElementById("prenom").value.trim();
   var nom=document.getElementById("nom").value.trim();
   var ph=normPhone(phone.value);
   var email=document.getElementById("email").value.trim();
-  var pass=document.getElementById("pass").value;
   msg.className="msg err"; msg.textContent="";
   if(!prenom||!nom){ msg.textContent="Indiquez vos prénom et nom."; return; }
   if(ph.length<10){ msg.textContent="Numéro de portable à 10 chiffres."; return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.textContent="E‑mail invalide."; return; }
-  if(pass.length<6){ msg.textContent="Mot de passe : 6 caractères minimum."; return; }
   try{ localStorage.setItem("acontretemps_phone",ph); }catch(e){}
-  var go=document.getElementById("go"); go.disabled=true; go.textContent="Création…";
+  pending={prenom:prenom,nom:nom,phone:ph,email:email};
+  var go=document.getElementById("go"); go.disabled=true; go.textContent="Envoi du code…";
 
-  fetch(SB_URL+"/auth/v1/signup",{method:"POST",
+  fetch(SB_URL+"/auth/v1/otp",{method:"POST",
     headers:{apikey:SB_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({ email:email, password:pass, data:{ prenom:prenom, nom:nom, phone:ph } })
-  }).then(function(r){ return r.json().then(function(j){ return {status:r.status, j:j}; }); })
+    body:JSON.stringify({ email:email, create_user:true, data:{ prenom:prenom, nom:nom, phone:ph } })
+  }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,status:r.status,j:j}; }); })
   .then(function(res){
-    var j=res.j;
-    if(res.status>=400 || j.error || j.msg || j.error_description){
-      var m=(j.msg||j.error_description||j.error||"").toString();
-      if(/registered|already/i.test(m)) msg.innerHTML="Ce compte existe déjà. <a href=\"/mon-compte\" style=\"color:var(--bd)\">Se connecter →</a>";
-      else msg.textContent="Création impossible : "+(m||("erreur "+res.status));
-      go.disabled=false; go.textContent="Créer mon compte"; return;
-    }
-    // lie le nom à la carte de fidélité (sans toucher aux tampons existants)
-    linkLoyalty(ph, prenom+" "+nom);
-    var token=j.access_token || (j.session&&j.session.access_token);
-    if(token){ try{ localStorage.setItem("act_token",token); }catch(e){} success(prenom, true); }
-    else success(prenom, false); // confirmation e‑mail requise
+    if(!res.ok){ msg.textContent="Impossible d'envoyer le code ("+(res.j.msg||res.j.error_description||res.status)+")."; go.disabled=false; go.textContent="Recevoir mon code"; return; }
+    showCodeStep();
   })
-  .catch(function(){ msg.textContent="Connexion impossible, réessayez."; go.disabled=false; go.textContent="Créer mon compte"; });
+  .catch(function(){ msg.textContent="Connexion impossible, réessayez."; go.disabled=false; go.textContent="Recevoir mon code"; });
 }
 
-function linkLoyalty(ph, name){
+function showCodeStep(){
+  document.getElementById("card").innerHTML=
+     '<p class="intro">Un <b>code à 6 chiffres</b> vient d\'être envoyé à<br><b style="color:var(--bd)">'+pending.email.replace(/</g,"")+'</b></p>'
+    +'<label for="code">Votre code</label>'
+    +'<input class="code-in" id="code" inputmode="numeric" maxlength="6" placeholder="••••••" />'
+    +'<div class="msg err" id="msg2"></div>'
+    +'<button class="btn" id="verify">Valider et créer mon compte</button>'
+    +'<button class="btn ghost" id="resend">Renvoyer un code</button>';
+  var code=document.getElementById("code");
+  setTimeout(function(){ try{ code.focus(); }catch(e){} },60);
+  code.addEventListener("input",function(){ code.value=code.value.replace(/\D/g,"").slice(0,6); });
+  document.getElementById("verify").onclick=verifyCode;
+  document.getElementById("resend").onclick=function(){ var email=pending.email; fetch(SB_URL+"/auth/v1/otp",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,create_user:true,data:{prenom:pending.prenom,nom:pending.nom,phone:pending.phone}})}); document.getElementById("msg2").style.color="var(--is)"; document.getElementById("msg2").textContent="Nouveau code envoyé."; };
+}
+
+function verifyCode(){
+  var code=document.getElementById("code").value.replace(/\D/g,"");
+  var msg2=document.getElementById("msg2");
+  if(code.length<6){ msg2.textContent="Entrez les 6 chiffres."; return; }
+  var b=document.getElementById("verify"); b.disabled=true; b.textContent="Vérification…";
+  fetch(SB_URL+"/auth/v1/verify",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({ type:"email", email:pending.email, token:code })
+  }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+  .then(function(res){
+    if(!res.ok || !res.j.access_token){ msg2.textContent="Code incorrect ou expiré."; b.disabled=false; b.textContent="Valider et créer mon compte"; return; }
+    try{ localStorage.setItem("act_token",res.j.access_token); localStorage.setItem("act_refresh",res.j.refresh_token); }catch(e){}
+    // enregistre les infos sur le compte + active la carte fidélité
+    saveProfile(res.j.access_token);
+    success(pending.prenom);
+  })
+  .catch(function(){ msg2.textContent="Connexion impossible, réessayez."; b.disabled=false; b.textContent="Valider et créer mon compte"; });
+}
+
+function saveProfile(token){
+  // met à jour les métadonnées (prénom/nom/téléphone) même pour un compte existant
+  fetch(SB_URL+"/auth/v1/user",{method:"PUT",headers:{apikey:SB_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"},
+    body:JSON.stringify({ data:{ prenom:pending.prenom, nom:pending.nom, phone:pending.phone } })}).catch(function(){});
+  // lie à la carte de fidélité (registered = true) sans écraser les tampons
   var h={apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json"};
+  var name=pending.prenom+" "+pending.nom, ph=pending.phone;
   fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph)+"&select=phone",{headers:h})
     .then(function(r){return r.json();}).then(function(rows){
-      if(Array.isArray(rows)&&rows[0]){
-        fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph),{method:"PATCH",headers:h,body:JSON.stringify({name:name,registered:true,updated_at:new Date().toISOString()})});
-      } else {
-        fetch(SB_URL+"/rest/v1/loyalty",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},h),body:JSON.stringify({phone:ph,name:name,registered:true,stamps:0,free_breads:0,total_stamps:0,updated_at:new Date().toISOString()})});
-      }
+      if(Array.isArray(rows)&&rows[0]) fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(ph),{method:"PATCH",headers:h,body:JSON.stringify({name:name,registered:true,updated_at:new Date().toISOString()})});
+      else fetch(SB_URL+"/rest/v1/loyalty",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},h),body:JSON.stringify({phone:ph,name:name,registered:true,stamps:0,free_breads:0,total_stamps:0,updated_at:new Date().toISOString()})});
     }).catch(function(){});
 }
 
-function success(prenom, loggedIn){
+function success(prenom){
   document.getElementById("card").innerHTML='<div class="ok-screen">'
     +'<div style="font-size:42px;">🥖</div>'
-    +'<div class="big">Bienvenue '+prenom.replace(/</g,"")+' !</div>'
-    +'<p style="color:var(--is);">Votre compte fidélité est créé.'+(loggedIn?'':' Vérifiez votre e‑mail pour l\'activer.')+'</p>'
+    +'<div class="big">Bienvenue '+String(prenom).replace(/</g,"")+' !</div>'
+    +'<p style="color:var(--is);">Votre compte fidélité est créé et activé.</p>'
     +'<p style="color:var(--is);margin-top:8px;">Au marché, donnez votre numéro à l\'encaissement pour gagner vos tampons.</p>'
-    +(loggedIn?'<a href="/mon-compte" class="btn" style="display:block;text-decoration:none;text-align:center;">Voir ma carte de fidélité</a>'
-             :'<a href="/mon-compte" class="btn" style="display:block;text-decoration:none;text-align:center;">Se connecter</a>')
+    +'<a href="/mon-compte" class="btn" style="display:block;text-decoration:none;text-align:center;">Voir ma carte de fidélité</a>'
     +'</div>';
 }
 </script>

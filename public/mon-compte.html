@@ -25,8 +25,10 @@
   header h1{font-family:var(--serif);font-weight:400;font-size:clamp(18px,3.4vw,23px);margin-top:18px;opacity:.95;}
   .wrap{max-width:440px;margin:0 auto;padding:24px 18px 50px;}
   .card{background:#fff;border:1px solid var(--bs);border-radius:18px;padding:22px 20px;box-shadow:0 8px 28px rgba(43,41,37,.07);}
+  .intro{text-align:center;color:var(--is);font-size:14px;margin-bottom:6px;}
   label{display:block;font-size:12px;color:var(--is);margin:12px 0 5px;}
   .fi{width:100%;padding:13px;border:1px solid var(--bs);border-radius:11px;font-size:16px;font-family:var(--sans);background:#fff;color:var(--ink);}
+  .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:30px;text-align:center;letter-spacing:12px;font-family:var(--sans);font-weight:600;color:var(--bd);}
   .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:16px;background:var(--bd);color:var(--cr);}
   .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);}
   .btn:disabled{opacity:.6;}
@@ -62,48 +64,83 @@ function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" �
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c];}); }
 function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
-function getToken(){ try{ return localStorage.getItem("act_token"); }catch(e){ return null; } }
-function setToken(t){ try{ t?localStorage.setItem("act_token",t):localStorage.removeItem("act_token"); }catch(e){} }
+function getAT(){ try{ return localStorage.getItem("act_token"); }catch(e){ return null; } }
+function getRT(){ try{ return localStorage.getItem("act_refresh"); }catch(e){ return null; } }
+function setTokens(a,r){ try{ if(a){localStorage.setItem("act_token",a);} else {localStorage.removeItem("act_token");} if(r){localStorage.setItem("act_refresh",r);} else if(r===null){localStorage.removeItem("act_refresh");} }catch(e){} }
 
 var card=document.getElementById("card"), foot=document.getElementById("foot");
+var pendingEmail=null;
 start();
 
+function fetchUser(token){ return fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+token}}).then(function(r){ return r.ok?r.json():null; }); }
+
 function start(){
-  var t=getToken();
-  if(!t){ showLogin(); return; }
-  fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+t}})
-    .then(function(r){ if(!r.ok) throw new Error("auth"); return r.json(); })
-    .then(function(u){ showAccount(u); })
-    .catch(function(){ setToken(null); showLogin(); });
+  var at=getAT(), rt=getRT();
+  if(!at && !rt){ showLogin(); return; }
+  fetchUser(at).then(function(u){
+    if(u){ showAccount(u); return; }
+    // token expiré → refresh
+    if(!rt){ setTokens(null,null); showLogin(); return; }
+    fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:rt})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){
+        if(!j||!j.access_token){ setTokens(null,null); showLogin(); return; }
+        setTokens(j.access_token,j.refresh_token);
+        fetchUser(j.access_token).then(function(u2){ u2?showAccount(u2):showLogin(); });
+      }).catch(function(){ showLogin(); });
+  }).catch(function(){ showLogin(); });
 }
 
+/* ---- Connexion par code e‑mail ---- */
 function showLogin(msgText){
   foot.innerHTML='Pas encore de compte ? <a href="/creer-compte">Créer mon compte</a>';
-  card.innerHTML='<label for="email">E‑mail</label><input class="fi" id="email" type="email" autocomplete="email" placeholder="votre@email.fr" />'
-    +'<label for="pass">Mot de passe</label><input class="fi" id="pass" type="password" autocomplete="current-password" />'
+  card.innerHTML='<p class="intro">Connectez‑vous pour voir votre carte de fidélité. Vous recevrez un <b>code à 6 chiffres</b> par e‑mail.</p>'
+    +'<label for="email">Votre e‑mail</label><input class="fi" id="email" type="email" autocomplete="email" placeholder="votre@email.fr" />'
     +'<div class="msg" id="msg">'+(msgText||"")+'</div>'
-    +'<button class="btn" id="login">Se connecter</button>';
-  document.getElementById("login").onclick=function(){
-    var email=document.getElementById("email").value.trim(), pass=document.getElementById("pass").value;
-    var msg=document.getElementById("msg"); msg.textContent="";
-    if(!email||!pass){ msg.textContent="Entrez votre e‑mail et mot de passe."; return; }
-    var b=document.getElementById("login"); b.disabled=true; b.textContent="Connexion…";
-    fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,password:pass})})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if(j.access_token){ setToken(j.access_token); card.innerHTML='<p class="count" style="text-align:center;padding:20px 0;">Chargement…</p>'; start(); }
-        else { msg.textContent="E‑mail ou mot de passe incorrect."; b.disabled=false; b.textContent="Se connecter"; }
+    +'<button class="btn" id="send">Recevoir mon code</button>';
+  document.getElementById("send").onclick=function(){
+    var email=document.getElementById("email").value.trim(), msg=document.getElementById("msg"); msg.textContent="";
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.textContent="E‑mail invalide."; return; }
+    pendingEmail=email;
+    var b=document.getElementById("send"); b.disabled=true; b.textContent="Envoi…";
+    fetch(SB_URL+"/auth/v1/otp",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,create_user:false})})
+      .then(function(r){ return r.json().then(function(j){return {ok:r.ok,j:j};}); })
+      .then(function(res){ if(!res.ok){ msg.textContent="Envoi impossible ("+(res.j.msg||res.j.error_description||"")+")."; b.disabled=false; b.textContent="Recevoir mon code"; return; } showCode(); })
+      .catch(function(){ msg.textContent="Connexion impossible, réessayez."; b.disabled=false; b.textContent="Recevoir mon code"; });
+  };
+}
+function showCode(){
+  card.innerHTML='<p class="intro">Code envoyé à <b style="color:var(--bd)">'+esc(pendingEmail)+'</b></p>'
+    +'<label for="code">Votre code à 6 chiffres</label>'
+    +'<input class="code-in" id="code" inputmode="numeric" maxlength="6" placeholder="••••••" />'
+    +'<div class="msg" id="msg"></div>'
+    +'<button class="btn" id="verify">Se connecter</button>'
+    +'<button class="btn ghost" id="back">← Changer d\'e‑mail</button>';
+  var code=document.getElementById("code"); setTimeout(function(){try{code.focus();}catch(e){}},60);
+  code.addEventListener("input",function(){ code.value=code.value.replace(/\D/g,"").slice(0,6); });
+  document.getElementById("back").onclick=function(){ showLogin(); };
+  document.getElementById("verify").onclick=function(){
+    var c=code.value.replace(/\D/g,""), msg=document.getElementById("msg");
+    if(c.length<6){ msg.textContent="Entrez les 6 chiffres."; return; }
+    var b=document.getElementById("verify"); b.disabled=true; b.textContent="Vérification…";
+    fetch(SB_URL+"/auth/v1/verify",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({type:"email",email:pendingEmail,token:c})})
+      .then(function(r){ return r.json().then(function(j){return {ok:r.ok,j:j};}); })
+      .then(function(res){
+        if(!res.ok||!res.j.access_token){ msg.textContent="Code incorrect ou expiré."; b.disabled=false; b.textContent="Se connecter"; return; }
+        setTokens(res.j.access_token,res.j.refresh_token);
+        card.innerHTML='<p class="count" style="text-align:center;padding:20px 0;">Chargement…</p>'; start();
       })
       .catch(function(){ msg.textContent="Connexion impossible, réessayez."; b.disabled=false; b.textContent="Se connecter"; });
   };
 }
 
+/* ---- Compte connecté ---- */
 function showAccount(user){
   var meta=(user&&user.user_metadata)||{};
   var prenom=meta.prenom||"", phone=normPhone(meta.phone||"");
   foot.innerHTML='<a href="#" id="logout">Se déconnecter</a>';
-  foot.querySelector("#logout").onclick=function(e){ e.preventDefault(); setToken(null); location.reload(); };
-  if(!phone){ card.innerHTML='<p class="count" style="text-align:center;">Aucun numéro associé à ce compte. Contactez-nous.</p>'; return; }
+  foot.querySelector("#logout").onclick=function(e){ e.preventDefault(); setTokens(null,null); location.reload(); };
+  if(!phone){ card.innerHTML='<p class="count" style="text-align:center;">Aucun numéro associé à ce compte.<br><a href="/creer-compte" style="color:var(--bd)">Compléter mon compte →</a></p>'; return; }
   Promise.all([
     fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(function(r){return r.json();}).catch(function(){return null;}),
     fetch(SB_URL+"/rest/v1/caisse_ventes?phone=eq."+encodeURIComponent(phone)+"&select=total,items,created_at&order=created_at.desc&limit=100",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(function(r){return r.json();}).catch(function(){return [];})
@@ -112,7 +149,6 @@ function showAccount(user){
     render(prenom, phone, row, summarize(Array.isArray(out[1])?out[1]:[]));
   });
 }
-
 function summarize(rows){
   if(!rows.length) return null;
   var sum=0, prod={};
@@ -120,7 +156,6 @@ function summarize(rows){
   var top=Object.keys(prod).map(function(k){return {name:k,qty:prod[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,4);
   return { count:rows.length, avg:sum/rows.length, top:top };
 }
-
 function render(prenom, phone, row, hist){
   var stamps=row?row.stamps:0, free=row?row.free_breads:0, total=row?row.total_stamps:0;
   var dots=""; for(var i=0;i<10;i++){ dots+='<span class="dot'+(i<stamps?' on':'')+'"></span>'; }
@@ -144,10 +179,7 @@ function render(prenom, phone, row, hist){
       +'<div style="font-size:12px;color:var(--is);">Montrez ce code (ou donnez votre numéro) à l\'encaissement.</div></div>';
   html+='<a href="/commander-marche" class="btn ghost" style="display:block;text-decoration:none;text-align:center;margin-top:18px;">Commander au marché</a></div>';
   card.innerHTML=html;
-  try{
-    var qel=document.getElementById("myqr");
-    if(qel && window.QRCode){ new QRCode(qel, { text:phone, width:168, height:168, colorDark:"#2B2925", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); }
-  }catch(e){}
+  try{ var qel=document.getElementById("myqr"); if(qel&&window.QRCode){ new QRCode(qel,{ text:phone, width:168, height:168, colorDark:"#2B2925", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); } }catch(e){}
 }
 </script>
 </body>
