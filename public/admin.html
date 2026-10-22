@@ -216,6 +216,20 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
             <input class="fi" id="new-price" type="number" step="0.5" placeholder="Prix" style="margin-top:4px" />
           </div>
         </div>
+        <div style="margin-bottom:8px">
+          <label style="font-size:11px;color:var(--is)">Description (optionnel)</label>
+          <textarea class="fi" id="new-desc" rows="2" placeholder="Courte description du produit…" style="margin-top:4px;width:100%;resize:vertical"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px">
+          <div>
+            <label style="font-size:11px;color:var(--is)">Prix au kilo € / kg (optionnel)</label>
+            <input class="fi" id="new-pkg" type="number" step="0.1" placeholder="— €/kg" style="margin-top:4px" />
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--is)">Poids en grammes (optionnel)</label>
+            <input class="fi" id="new-weight" type="number" step="10" placeholder="— g" style="margin-top:4px" />
+          </div>
+        </div>
         <div style="display:flex;gap:7px">
           <button class="btn bp bsm" onclick="addProduct()">Ajouter</button>
           <button class="btn bg bsm" onclick="toggleNewProd()">Annuler</button>
@@ -912,36 +926,56 @@ async function renameCategory(oldCat){
 }
 function productRow(p){
   const editing=editingProdId===p.id;
+  const esc=s=>String(s==null?"":s).replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  if(editing){
+    return `<div class="prow" style="flex-direction:column;align-items:stretch;gap:7px" id="prow-${p.id}">
+      <input class="einp" id="ename-${p.id}" style="width:100%" value="${esc(p.name)}" placeholder="Nom de l'article" />
+      <textarea class="einp" id="edesc-${p.id}" rows="2" style="width:100%;resize:vertical" placeholder="Description (optionnel)">${esc(p.description)}</textarea>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--is)">Prix</span>
+        <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:70px;text-align:right" value="${p.price}" /><span style="font-size:11px;color:var(--is)">€</span>
+        <span style="font-size:11px;color:var(--is);margin-left:6px">Prix/kg</span>
+        <input class="einp" id="epkg-${p.id}" type="number" step="0.1" style="width:70px;text-align:right" value="${p.price_per_kg==null?'':p.price_per_kg}" placeholder="—" /><span style="font-size:11px;color:var(--is)">€/kg</span>
+        <span style="font-size:11px;color:var(--is);margin-left:6px">Poids</span>
+        <input class="einp" id="eweight-${p.id}" type="number" step="10" style="width:70px;text-align:right" value="${p.weight_g==null?'':p.weight_g}" placeholder="—" /><span style="font-size:11px;color:var(--is)">g</span>
+        <button class="btn bp bsm" style="padding:3px 10px;margin-left:auto" onclick="saveProd('${p.id}')">✓ Enregistrer</button>
+        <button class="btn bg bsm" style="padding:3px 8px" onclick="cancelEditProd()">✕</button>
+      </div>
+    </div>`;
+  }
+  const meta=[]; if(p.weight_g) meta.push(Number(p.weight_g)>=1000?(Number(p.weight_g)/1000)+" kg":Number(p.weight_g)+" g");
+  if(p.price_per_kg) meta.push(Number(p.price_per_kg).toFixed(2)+" €/kg");
   return `<div class="prow" style="opacity:${p.active?1:.45}" id="prow-${p.id}">
     <button class="tog${p.active?" on":""}" onclick="toggleProd('${p.id}')" title="${p.active?"Désactiver":"Activer"}">
       ${p.active?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:""}
     </button>
-    <div style="flex:1">
-      ${editing?`<input class="einp" id="ename-${p.id}" style="width:100%" value="${p.name.replace(/"/g,'&quot;')}" />`:`<p style="font-size:13px">${p.name}</p>`}
+    <div style="flex:1;min-width:0">
+      <p style="font-size:13px">${esc(p.name)}</p>
+      ${p.description?`<p style="font-size:11px;color:var(--is);margin-top:2px">${esc(p.description)}</p>`:""}
+      ${meta.length?`<p style="font-size:11px;color:var(--ru);margin-top:2px">${meta.join(" · ")}</p>`:""}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      ${editing?`
-        <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:65px;text-align:right" value="${p.price}" />
-        <span style="font-size:11px;color:var(--is)">€</span>
-        <button class="btn bp bsm" style="padding:3px 8px" onclick="saveProd('${p.id}')">✓</button>
-        <button class="btn bg bsm" style="padding:3px 6px" onclick="cancelEditProd()">✕</button>
-      `:`
-        <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
-        <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu, options & photo">📋 Détail</button>
-        <button class="btn bg bsm" style="padding:3px 6px" onclick="startEditProd('${p.id}','${p.name.replace(/'/g,"\\'")}',${p.price})">✏</button>
-        <button class="btn bsm" style="padding:3px 6px;border:1px solid var(--rd)22;background:transparent;color:var(--rd)" onclick="deleteProd('${p.id}')">✕</button>
-      `}
+      <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
+      <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu, options & photo">📋 Détail</button>
+      <button class="btn bg bsm" style="padding:3px 6px" onclick="startEditProd('${p.id}')">✏</button>
+      <button class="btn bsm" style="padding:3px 6px;border:1px solid var(--rd)22;background:transparent;color:var(--rd)" onclick="deleteProd('${p.id}')">✕</button>
     </div>
   </div>`;
 }
 function toggleNewProd(){const f=document.getElementById("new-prod-form");f.style.display=f.style.display==="none"?"block":"none";}
-function startEditProd(id,name,price){editingProdId=id;renderProducts();}
+function startEditProd(id){editingProdId=id;renderProducts();}
 function cancelEditProd(){editingProdId=null;renderProducts();}
 async function saveProd(id){
-  const name=document.getElementById("ename-"+id).value;
+  const name=document.getElementById("ename-"+id).value.trim();
   const price=parseFloat(document.getElementById("eprice-"+id).value)||0;
-  await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({name,price})});
-  allProducts=allProducts.map(p=>p.id===id?{...p,name,price}:p);
+  const description=document.getElementById("edesc-"+id).value.trim()||null;
+  const pkgRaw=document.getElementById("epkg-"+id).value;
+  const wRaw=document.getElementById("eweight-"+id).value;
+  const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
+  const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
+  const patch={name,price,description,price_per_kg,weight_g};
+  await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)});
+  allProducts=allProducts.map(p=>p.id===id?{...p,...patch}:p);
   editingProdId=null;renderProducts();
 }
 async function toggleProd(id){
@@ -957,10 +991,15 @@ async function addProduct(){
     : selVal;
   const name=document.getElementById("new-name").value.trim();
   const price=parseFloat(document.getElementById("new-price").value)||0;
-  if(!cat||!name||!price){alert("Remplis tous les champs.");return;}
+  if(!cat||!name||!price){alert("Remplis la catégorie, le nom et le prix.");return;}
+  const description=document.getElementById("new-desc").value.trim()||null;
+  const pkgRaw=document.getElementById("new-pkg").value;
+  const wRaw=document.getElementById("new-weight").value;
+  const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
+  const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
   const id="p"+Date.now().toString(36);
   const pos=Math.max(0,...allProducts.map(p=>p.position||0))+1;
-  const row={id,cat,name,price,active:true,position:pos};
+  const row={id,cat,name,price,active:true,position:pos,description,price_per_kg,weight_g};
   try {
     const data=await sbFetch("products",{method:"POST",body:JSON.stringify(row)});
     if(!data||(!Array.isArray(data)&&!data.id)){
@@ -991,6 +1030,9 @@ async function addProduct(){
   document.getElementById("new-cat-custom").style.display="none";
   document.getElementById("new-name").value="";
   document.getElementById("new-price").value="";
+  document.getElementById("new-desc").value="";
+  document.getElementById("new-pkg").value="";
+  document.getElementById("new-weight").value="";
   toggleNewProd();renderProducts();
 }
 async function deleteProd(id){
