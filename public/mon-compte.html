@@ -42,6 +42,9 @@
   .dot.on{background:var(--bd);}
   .count{font-size:15px;color:var(--is);}
   .free{margin-top:16px;background:var(--cr);border-radius:12px;padding:14px;color:var(--ru);font-weight:600;}
+  .sec{font-family:var(--serif);font-size:19px;color:var(--bd);margin:24px 0 14px;padding-top:20px;border-top:1px solid var(--bs);font-weight:500;}
+  .row2{display:flex;gap:10px;}
+  .row2>div{flex:1;min-width:0;}
 </style>
 </head>
 <body>
@@ -135,18 +138,20 @@ function showCode(){
 }
 
 /* ---- Compte connecté ---- */
+function OSTAT(k){ var m={new:["Nouvelle","#7C97AC"],nouvelle:["Nouvelle","#7C97AC"],confirmed:["Confirmée","#A6713F"],"payée":["Payée","#4A7C59"],ready:["Prête","#4A7C59"],delivered:["Livrée","#4A7C59"],cancelled:["Annulée","#A63333"]}; return m[k]||["En cours","#7C97AC"]; }
 function showAccount(user){
   var meta=(user&&user.user_metadata)||{};
-  var prenom=meta.prenom||"", phone=normPhone(meta.phone||"");
+  var phone=normPhone(meta.phone||""), email=user.email||"", token=getAT();
   foot.innerHTML='<a href="#" id="logout">Se déconnecter</a>';
   foot.querySelector("#logout").onclick=function(e){ e.preventDefault(); setTokens(null,null); location.reload(); };
-  if(!phone){ card.innerHTML='<p class="count" style="text-align:center;">Aucun numéro associé à ce compte.<br><a href="/creer-compte" style="color:var(--bd)">Compléter mon compte →</a></p>'; return; }
+  var h={apikey:SB_KEY,Authorization:"Bearer "+SB_KEY};
   Promise.all([
-    fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(function(r){return r.json();}).catch(function(){return null;}),
-    fetch(SB_URL+"/rest/v1/caisse_ventes?phone=eq."+encodeURIComponent(phone)+"&select=total,items,created_at&order=created_at.desc&limit=100",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(function(r){return r.json();}).catch(function(){return [];})
+    phone?fetch(SB_URL+"/rest/v1/loyalty?phone=eq."+encodeURIComponent(phone)+"&select=*",{headers:h}).then(function(r){return r.json();}).catch(function(){return null;}):Promise.resolve(null),
+    phone?fetch(SB_URL+"/rest/v1/caisse_ventes?phone=eq."+encodeURIComponent(phone)+"&select=total,items,created_at&order=created_at.desc&limit=100",{headers:h}).then(function(r){return r.json();}).catch(function(){return [];}):Promise.resolve([]),
+    email?fetch(SB_URL+"/rest/v1/orders?email=eq."+encodeURIComponent(email)+"&select=*&order=created_at.desc&limit=50",{headers:h}).then(function(r){return r.json();}).catch(function(){return [];}):Promise.resolve([])
   ]).then(function(out){
     var row=(Array.isArray(out[0])&&out[0][0])||null;
-    render(prenom, phone, row, summarize(Array.isArray(out[1])?out[1]:[]));
+    render(user, token, row, summarize(Array.isArray(out[1])?out[1]:[]), Array.isArray(out[2])?out[2]:[]);
   });
 }
 function summarize(rows){
@@ -156,30 +161,66 @@ function summarize(rows){
   var top=Object.keys(prod).map(function(k){return {name:k,qty:prod[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,4);
   return { count:rows.length, avg:sum/rows.length, top:top };
 }
-function render(prenom, phone, row, hist){
+function render(user, token, row, hist, orders){
+  var meta=(user&&user.user_metadata)||{};
+  var prenom=meta.prenom||"", nom=meta.nom||"", phone=normPhone(meta.phone||""), email=user.email||"";
   var stamps=row?row.stamps:0, free=row?row.free_breads:0, total=row?row.total_stamps:0;
   var dots=""; for(var i=0;i<10;i++){ dots+='<span class="dot'+(i<stamps?' on':'')+'"></span>'; }
-  var html='<div class="result">'
+
+  var loy='<div class="result">'
     +'<div class="big">Bonjour '+esc(prenom||"")+' 👋</div>'
-    +'<div class="count">'+fmtPhone(phone)+'</div>'
     +'<div class="dots">'+dots+'</div>'
-    +'<div class="count"><b>'+stamps+' / 10</b> tampons'+(total?(' · '+total+' au total'):'')+'</div>';
-  if(free>0) html+='<div class="free">🎁 '+free+' produit'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>';
-  else html+='<div class="count" style="margin-top:14px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre produit offert !</div>';
-  if(hist && hist.top.length){
-    html+='<div style="margin-top:18px;border-top:1px solid var(--bs);padding-top:14px;text-align:left;">'
-      +'<div style="font-size:13px;color:var(--is);margin-bottom:6px;">Vos produits préférés</div>';
-    hist.top.forEach(function(t){ html+='<div style="font-size:14px;padding:3px 0;">🥖 '+esc(t.name)+' <span style="color:var(--is)">· ×'+t.qty+'</span></div>'; });
-    html+='<div style="font-size:12px;color:var(--is);margin-top:8px;">'+hist.count+' passage'+(hist.count>1?'s':'')+' · panier moyen '+eur(hist.avg)+'</div></div>';
+    +'<div class="count"><b>'+stamps+' / 10</b> tampons'+(total?(' · '+total+' au total'):'')+'</div>'
+    +(free>0?('<div class="free">🎁 '+free+' produit'+(free>1?'s':'')+' offert'+(free>1?'s':'')+' à récupérer sur notre stand !</div>')
+            :('<div class="count" style="margin-top:12px;color:var(--is);">Plus que '+(10-stamps)+' tampon'+((10-stamps)>1?'s':'')+' avant votre produit offert !</div>'));
+  if(phone){
+    loy+='<div style="margin-top:16px;"><div style="font-size:12px;color:var(--is);margin-bottom:8px;">🎟️ Votre carte à présenter au marché</div>'
+      +'<div id="myqr" style="display:inline-block;padding:10px;background:#fff;border:1px solid var(--bs);border-radius:12px;"></div>'
+      +'<div style="font-size:14px;font-weight:600;color:var(--bd);margin-top:6px;">'+fmtPhone(phone)+'</div></div>';
   }
-  html+='<div style="margin-top:20px;border-top:1px solid var(--bs);padding-top:16px;">'
-      +'<div style="font-size:13px;color:var(--is);margin-bottom:10px;">🎟️ Votre carte à présenter au marché</div>'
-      +'<div id="myqr" style="display:inline-block;padding:12px;background:#fff;border:1px solid var(--bs);border-radius:14px;"></div>'
-      +'<div style="font-size:15px;font-weight:600;color:var(--bd);margin-top:8px;">'+fmtPhone(phone)+'</div>'
-      +'<div style="font-size:12px;color:var(--is);">Montrez ce code (ou donnez votre numéro) à l\'encaissement.</div></div>';
-  html+='<a href="/commander-marche" class="btn ghost" style="display:block;text-decoration:none;text-align:center;margin-top:18px;">Commander au marché</a></div>';
-  card.innerHTML=html;
-  try{ var qel=document.getElementById("myqr"); if(qel&&window.QRCode){ new QRCode(qel,{ text:phone, width:168, height:168, colorDark:"#2B2925", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); } }catch(e){}
+  loy+='</div>';
+
+  var infos='<h2 class="sec">Mes informations</h2>'
+    +'<div class="row2"><div><label>Prénom</label><input class="fi" id="f_prenom" value="'+esc(prenom)+'"/></div><div><label>Nom</label><input class="fi" id="f_nom" value="'+esc(nom)+'"/></div></div>'
+    +'<label>E‑mail</label><input class="fi" value="'+esc(email)+'" disabled style="opacity:.6;background:var(--pp)"/>'
+    +'<label>Téléphone <span style="color:var(--ru)">(carte de fidélité)</span></label><input class="fi" id="f_phone" inputmode="numeric" value="'+esc(fmtPhone(phone))+'" placeholder="06 12 34 56 78"/>'
+    +'<label>Adresse</label><input class="fi" id="f_adr" placeholder="N° et rue" value="'+esc(meta.adresse||"")+'"/>'
+    +'<div class="row2"><div><label>Code postal</label><input class="fi" id="f_cp" inputmode="numeric" value="'+esc(meta.cp||"")+'"/></div><div><label>Ville</label><input class="fi" id="f_ville" value="'+esc(meta.ville||"")+'"/></div></div>'
+    +'<div class="msg" id="pmsg" style="color:var(--gn)"></div>'
+    +'<button class="btn" id="saveProf">Enregistrer mes informations</button>';
+
+  var cmd='<h2 class="sec">Mes commandes</h2>';
+  if(orders && orders.length){
+    cmd+=orders.map(function(o){
+      var st=OSTAT(o.status);
+      var its=(o.items||[]).map(function(it){return (it.qty||1)+"× "+esc(it.name);}).join(", ");
+      var d=o.created_at?new Date(o.created_at).toLocaleDateString("fr-FR"):"";
+      return '<div style="border:1px solid var(--bs);border-radius:12px;padding:12px;margin-bottom:10px;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--is)">'+d+(o.pickup_date?(' · retrait le '+esc(o.pickup_date)):'')+'</span>'
+        +'<span style="font-size:11px;font-weight:600;color:'+st[1]+';border:1px solid '+st[1]+'66;border-radius:6px;padding:2px 8px;white-space:nowrap;">'+st[0]+'</span></div>'
+        +'<div style="font-size:13px;margin-top:6px;">'+its+'</div>'
+        +'<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;"><span style="color:var(--is)">'+esc(o.shipping||o.payment_method||"")+'</span><b style="color:var(--bd)">'+eur(o.total)+'</b></div>'
+        +'</div>';
+    }).join("");
+  } else {
+    cmd+='<p class="count" style="font-size:14px;">Aucune commande pour le moment. <a href="/commander-marche" style="color:var(--bd);font-weight:600;">Commander au marché →</a></p>';
+  }
+
+  card.innerHTML=loy+infos+cmd
+    +'<a href="/commander-marche" class="btn ghost" style="display:block;text-decoration:none;text-align:center;margin-top:18px;">Commander au marché</a>';
+
+  try{ var qel=document.getElementById("myqr"); if(qel&&window.QRCode){ new QRCode(qel,{ text:phone, width:150, height:150, colorDark:"#2B2925", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); } }catch(e){}
+
+  document.getElementById("saveProf").onclick=function(){
+    var data={ prenom:document.getElementById("f_prenom").value.trim(), nom:document.getElementById("f_nom").value.trim(),
+      phone:normPhone(document.getElementById("f_phone").value), adresse:document.getElementById("f_adr").value.trim(),
+      cp:document.getElementById("f_cp").value.trim(), ville:document.getElementById("f_ville").value.trim() };
+    var m=document.getElementById("pmsg"), b=document.getElementById("saveProf"); m.textContent=""; b.disabled=true; b.textContent="Enregistrement…";
+    fetch(SB_URL+"/auth/v1/user",{method:"PUT",headers:{apikey:SB_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({data:data})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(u){ if(u){ m.style.color="var(--gn)"; m.textContent="✓ Informations enregistrées."; } else { m.style.color="var(--rd)"; m.textContent="Échec, réessayez."; } b.disabled=false; b.textContent="Enregistrer mes informations"; })
+      .catch(function(){ m.style.color="var(--rd)"; m.textContent="Connexion impossible."; b.disabled=false; b.textContent="Enregistrer mes informations"; });
+  };
 }
 </script>
 </body>
