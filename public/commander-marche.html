@@ -65,6 +65,19 @@
   .err{color:var(--rd);font-size:13px;min-height:18px;margin-top:8px;}
   .ok-screen{text-align:center;padding:30px 10px;}
   .ok-screen .big{font-family:var(--serif);font-size:26px;color:var(--bd);margin:10px 0;}
+  /* étapes du tunnel : choix du lieu / de la date */
+  .picks{display:flex;flex-direction:column;gap:10px;margin:14px 0 4px;}
+  .pick{width:100%;text-align:left;padding:15px 16px;border:1px solid var(--bs);background:#fff;border-radius:12px;font-size:16px;font-weight:500;color:var(--bd);cursor:pointer;font-family:var(--sans);transition:border-color .15s;}
+  .pick:hover,.pick:focus{border-color:var(--bd);outline:none;}
+  .pick .d2{display:block;font-size:12px;font-weight:400;color:var(--is);margin-top:2px;}
+  .lnk{background:none;border:none;color:var(--bd);font-size:13px;cursor:pointer;padding:0;margin-bottom:12px;font-family:var(--sans);text-decoration:underline;}
+  .confirm{background:var(--cr);border-radius:12px;padding:13px 15px;font-size:14.5px;color:var(--ink);margin:4px 0 14px;line-height:1.75;}
+  .steps{display:flex;gap:6px;margin-bottom:14px;}
+  .steps .s{flex:1;height:4px;border-radius:2px;background:var(--bs);}
+  .steps .s.on{background:var(--bd);}
+  .pay2{display:flex;gap:8px;margin-top:6px;}
+  .pay2 button{flex:1;padding:13px;border-radius:10px;border:1px solid var(--bs);background:#fff;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;font-family:var(--sans);}
+  .pay2 button.on{border-color:var(--bd);background:var(--bd);color:var(--cr);}
   footer{text-align:center;font-size:12px;color:var(--is);padding:26px 18px 10px;}
   footer a{color:var(--bd);}
   /* barre de navigation (même charte que le reste du site) */
@@ -233,68 +246,110 @@ function bindSteps(){
 document.getElementById("barGo").onclick=function(){ if(cartCount()>0) openCheckout(); };
 function openCheckout(){
   var items=[]; for(var k in cart){ items.push(cart[k]); }
-  var recap=items.map(function(l){ return '<div class="rc"><span>'+l.qty+' × '+esc(l.name)+'</span><span>'+eur(l.price*l.qty)+'</span></div>'; }).join("");
-  var opts=markets.map(function(m){ return '<option value="'+esc(m.name)+'" data-id="'+m.id+'">'+esc(m.name)+'</option>'; }).join("");
   var ov=document.createElement("div"); ov.className="ov";
-  ov.innerHTML='<div class="sheet"><h2>Votre réservation</h2><div class="sub">Retrait sur notre stand au marché.</div>'
-    + recap + '<div class="rc tot"><span>Total</span><span>'+eur(cartTotal())+'</span></div>'
-    + '<label>Marché de retrait</label><select class="fi" id="coMarket">'+(opts||'<option value="">(aucun marché actif)</option>')+'</select>'
-    + '<label>Date de retrait (jour du marché)</label><select class="fi" id="coDate"></select>'
-    + (currentUser?'<div class="sub" style="color:var(--gn);margin-top:6px;">✓ Connecté en tant que '+esc(currentUser.name||currentUser.email)+'</div>':'')
-    + '<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" value="'+esc(currentUser?currentUser.name:"")+'" />'
-    + '<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" value="'+esc(currentUser?currentUser.phone:"")+'" />'
-    + '<label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" value="'+esc(currentUser?currentUser.email:"")+'" />'
-    + '<label>Paiement</label><div style="display:flex;gap:8px;"><button type="button" id="payPlace">💵 Sur place</button><button type="button" id="payOnline">💳 En ligne</button></div>'
-    + '<div class="note" id="payNote"></div>'
-    + '<div class="err" id="coErr"></div>'
-    + '<button class="btn go" id="coGo">Valider ma réservation</button>'
-    + '<button class="btn ghost" id="coC">Continuer mes achats</button></div>';
+  ov.innerHTML='<div class="sheet"></div>';
   document.body.appendChild(ov);
-  function fillDates(){
-    var mSel=ov.querySelector("#coMarket"); var opt=mSel.options[mSel.selectedIndex];
-    var id=opt?opt.getAttribute("data-id"):null;
-    var days=(id && marketDays[id] && marketDays[id].length)?marketDays[id]:[0];
-    var dates=upcomingDates(days);
-    ov.querySelector("#coDate").innerHTML = dates.length ? dates.map(function(dt){
-      var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
-      return '<option value="'+iso+'">'+JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()]+'</option>';
-    }).join("") : '<option value="">(aucune date disponible)</option>';
-  }
+  var sheet=ov.querySelector(".sheet");
+  // choix déliberés du client — aucune valeur pré-sélectionnée
+  var state={ market:null, marketId:null, days:[], date:null, dateLabel:"" };
   var payMode="place";
-  function paintPay(){
-    var p=ov.querySelector("#payPlace"), o=ov.querySelector("#payOnline");
-    var off="flex:1;padding:12px;border-radius:10px;border:1px solid var(--bs);background:var(--pp);color:var(--bd);font-size:14px;cursor:pointer;";
-    var on="flex:1;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bd);color:var(--cr);font-size:14px;cursor:pointer;";
-    p.style.cssText = payMode==="place"?on:off; o.style.cssText = payMode==="online"?on:off;
-    ov.querySelector("#payNote").textContent = payMode==="place" ? "Vous réglez sur place au marché (espèces ou carte)." : "Paiement carte sécurisé maintenant — commande confirmée et payée.";
-    ov.querySelector("#coGo").textContent = payMode==="place" ? "Valider ma réservation" : ("Payer "+eur(cartTotal()));
+
+  function stepsBar(n){ // n = étape active (1,2,3)
+    return '<div class="steps"><div class="s'+(n>=1?" on":"")+'"></div><div class="s'+(n>=2?" on":"")+'"></div><div class="s'+(n>=3?" on":"")+'"></div></div>';
   }
-  ov.querySelector("#payPlace").onclick=function(){ payMode="place"; paintPay(); };
-  ov.querySelector("#payOnline").onclick=function(){ payMode="online"; paintPay(); };
-  ov.querySelector("#coMarket").onchange=fillDates; fillDates(); paintPay();
-  ov.querySelector("#coC").onclick=function(){ ov.remove(); };
-  ov.querySelector("#coGo").onclick=function(){
-    var info=collect(ov); if(!info) return;
-    if(payMode==="place") placeOrder(ov, items, info); else startOnline(ov, items, info);
-  };
+  function recapHtml(){
+    var r=items.map(function(l){ return '<div class="rc"><span>'+l.qty+' × '+esc(l.name)+'</span><span>'+eur(l.price*l.qty)+'</span></div>'; }).join("");
+    return r+'<div class="rc tot"><span>Total</span><span>'+eur(cartTotal())+'</span></div>';
+  }
+
+  /* ── Étape 1 : où retirer ? ── */
+  function stepLieu(){
+    var btns = markets.length ? markets.map(function(m){
+      var days=(marketDays[m.id]&&marketDays[m.id].length)?marketDays[m.id]:[0];
+      var jours=days.map(function(d){return JOURS[d];}).join(", ");
+      return '<button type="button" class="pick" data-id="'+m.id+'" data-name="'+esc(m.name)+'">📍 '+esc(m.name)+'<span class="d2">'+jours+(m.address?' · '+esc(m.address):'')+'</span></button>';
+    }).join("") : '<div class="sub">Aucun marché n’est programmé pour le moment. Contactez-nous.</div>';
+    sheet.innerHTML=stepsBar(1)
+      +'<h2>Où retirer votre commande ?</h2>'
+      +'<div class="sub">Votre commande est à <b>retirer sur notre stand</b>, le jour du marché. Choisissez votre marché :</div>'
+      +recapHtml()
+      +'<div class="picks">'+btns+'</div>'
+      +'<button class="btn ghost" id="coC">Continuer mes achats</button>';
+    sheet.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){
+      state.market=b.getAttribute("data-name"); state.marketId=b.getAttribute("data-id");
+      state.days=(marketDays[state.marketId]&&marketDays[state.marketId].length)?marketDays[state.marketId]:[0];
+      state.date=null; state.dateLabel=""; stepDate();
+    }; });
+    sheet.querySelector("#coC").onclick=function(){ ov.remove(); };
+  }
+
+  /* ── Étape 2 : quelle date ? ── */
+  function stepDate(){
+    var dates=upcomingDates(state.days);
+    var btns = dates.length ? dates.map(function(dt){
+      var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+      var label=JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()];
+      return '<button type="button" class="pick" data-iso="'+iso+'" data-label="'+esc(label)+'">🗓️ '+label+'</button>';
+    }).join("") : '<div class="sub">Aucune date de marché disponible pour le moment.</div>';
+    sheet.innerHTML=stepsBar(2)
+      +'<button class="lnk" id="bk">← Changer de marché</button>'
+      +'<h2>Pour quelle date ?</h2>'
+      +'<div class="sub">📍 Marché : <b style="color:var(--bd)">'+esc(state.market)+'</b>. Choisissez votre jour de retrait :</div>'
+      +'<div class="picks">'+btns+'</div>';
+    sheet.querySelector("#bk").onclick=stepLieu;
+    sheet.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){
+      state.date=b.getAttribute("data-iso"); state.dateLabel=b.getAttribute("data-label"); stepInfos();
+    }; });
+  }
+
+  /* ── Étape 3 : coordonnées + paiement ── */
+  function stepInfos(){
+    sheet.innerHTML=stepsBar(3)
+      +'<button class="lnk" id="bk">← Changer le lieu ou la date</button>'
+      +'<h2>Vos coordonnées</h2>'
+      +'<div class="confirm">📍 Retrait : <b>'+esc(state.market)+'</b><br>🗓️ Le <b>'+esc(state.dateLabel)+'</b></div>'
+      +recapHtml()
+      +(currentUser?'<div class="sub" style="color:var(--gn);margin-top:8px;">✓ Connecté en tant que '+esc(currentUser.name||currentUser.email)+'</div>':'')
+      +'<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" value="'+esc(currentUser?currentUser.name:"")+'" />'
+      +'<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" value="'+esc(currentUser?currentUser.phone:"")+'" />'
+      +'<label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" value="'+esc(currentUser?currentUser.email:"")+'" />'
+      +'<label>Paiement</label><div class="pay2"><button type="button" id="payPlace">💵 Sur place</button><button type="button" id="payOnline">💳 En ligne</button></div>'
+      +'<div class="note" id="payNote"></div>'
+      +'<div class="err" id="coErr"></div>'
+      +'<button class="btn go" id="coGo">Valider ma réservation</button>';
+    sheet.querySelector("#bk").onclick=stepLieu;
+    function paintPay(){
+      sheet.querySelector("#payPlace").classList.toggle("on", payMode==="place");
+      sheet.querySelector("#payOnline").classList.toggle("on", payMode==="online");
+      sheet.querySelector("#payNote").textContent = payMode==="place" ? "Vous réglez sur place au marché (espèces ou carte)." : "Paiement carte sécurisé maintenant — commande confirmée et payée.";
+      sheet.querySelector("#coGo").textContent = payMode==="place" ? "Valider ma réservation" : ("Payer "+eur(cartTotal()));
+    }
+    sheet.querySelector("#payPlace").onclick=function(){ payMode="place"; paintPay(); };
+    sheet.querySelector("#payOnline").onclick=function(){ payMode="online"; paintPay(); };
+    paintPay();
+    sheet.querySelector("#coGo").onclick=function(){
+      var info=collectInfos(ov, state); if(!info) return;
+      if(payMode==="place") placeOrder(ov, items, info); else startOnline(ov, items, info);
+    };
+  }
+
+  stepLieu();
 }
-function collect(ov){
+function collectInfos(ov, state){
   var err=ov.querySelector("#coErr"); err.textContent="";
-  var market=ov.querySelector("#coMarket").value.trim();
-  var date=ov.querySelector("#coDate").value;
   var name=ov.querySelector("#coName").value.trim();
   var phone=ov.querySelector("#coPhone").value.trim();
   var mail=ov.querySelector("#coMail").value.trim();
-  if(!market){ err.textContent="Choisissez un marché."; return null; }
-  if(!date){ err.textContent="Choisissez une date de retrait."; return null; }
+  if(!state.market){ err.textContent="Choisissez un marché."; return null; }
+  if(!state.date){ err.textContent="Choisissez une date de retrait."; return null; }
   if(!name){ err.textContent="Indiquez votre nom."; return null; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ err.textContent="E‑mail invalide."; return null; }
   if(!phone){ err.textContent="Indiquez un téléphone."; return null; }
-  return { market:market, date:date, name:name, phone:phone, mail:mail, total:cartTotal() };
+  return { market:state.market, date:state.date, dateLabel:state.dateLabel||state.date, name:name, phone:phone, mail:mail, total:cartTotal() };
 }
 function showSuccess(ov, info, paid){
   ov.querySelector(".sheet").innerHTML='<div class="ok-screen"><div style="font-size:44px;">🥖</div><div class="big">'+(paid?"Paiement confirmé&nbsp;!":"Réservation enregistrée&nbsp;!")+'</div>'
-    +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Nous préparons votre commande pour le <strong>'+esc(info.date)+'</strong> au <strong>'+esc(info.market)+'</strong>.</p>'
+    +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Nous préparons votre commande pour le <strong>'+esc(info.dateLabel||info.date)+'</strong> au <strong>'+esc(info.market)+'</strong>.</p>'
     +'<p style="color:var(--is);margin-top:8px;">'+(paid?"Votre commande est payée. ":"Règlement sur place. ")+'Un e‑mail de confirmation vous a été envoyé.</p>'
     +'<p style="color:var(--ru);margin-top:12px;font-weight:600;">🥖 +1 tampon de fidélité au retrait de votre commande.</p>'
     +'<a href="/ma-fidelite" style="display:inline-block;margin-top:6px;color:var(--bd);font-size:13px;">Voir ma carte de fidélité →</a><br>'
