@@ -98,7 +98,7 @@
 </header>
 
 <div class="wrap">
-  <div style="margin:18px 0 4px;background:var(--cr);border:1px solid #E7D6C2;border-radius:14px;padding:14px 16px;color:var(--ink);">
+  <div id="accBanner" style="margin:18px 0 4px;background:var(--cr);border:1px solid #E7D6C2;border-radius:14px;padding:14px 16px;color:var(--ink);">
     <div style="font-family:var(--serif);font-size:16px;color:var(--bd);">🥖 Carte de fidélité</div>
     <div style="font-size:13px;color:var(--is);margin-top:2px;">1 achat = 1 tampon · 10 tampons = <b style="color:var(--ru)">un produit offert</b>.</div>
     <div style="font-size:13.5px;margin-top:8px;font-weight:600;">
@@ -131,6 +131,27 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){retur
 var cart = {};   // key -> {name, price, qty}
 var markets = [];
 var marketDays = {};   // pickup_point_id -> [day_of_week...] (0 = dimanche)
+var currentUser = null;  // {prenom, nom, phone, email, name} si connecté
+
+/* ───── Session client (connexion partagée avec /mon-compte) ───── */
+function loadUser(){
+  var at, rt; try{ at=localStorage.getItem("act_token"); rt=localStorage.getItem("act_refresh"); }catch(e){}
+  if(!at && !rt) return;
+  fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+at}}).then(function(r){return r.ok?r.json():null;}).then(function(u){
+    if(u){ setUser(u); return; }
+    if(!rt) return;
+    fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:rt})}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(j&&j.access_token){ try{localStorage.setItem("act_token",j.access_token);localStorage.setItem("act_refresh",j.refresh_token);}catch(e){} fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+j.access_token}}).then(function(r){return r.ok?r.json():null;}).then(function(u2){ if(u2) setUser(u2); }); }
+    }).catch(function(){});
+  }).catch(function(){});
+}
+function setUser(u){
+  var m=u.user_metadata||{};
+  currentUser={ prenom:m.prenom||"", nom:m.nom||"", phone:(m.phone||"").replace(/\D/g,""), email:u.email||"", name:[m.prenom,m.nom].filter(Boolean).join(" ").trim() };
+  var el=document.getElementById("accBanner");
+  if(el) el.innerHTML='<div style="font-family:var(--serif);font-size:16px;color:var(--bd);">🥖 Bonjour '+esc(currentUser.prenom||currentUser.name||"")+' 👋</div>'
+    +'<div style="font-size:13px;color:var(--is);margin-top:2px;">Vos informations seront pré‑remplies à la commande. <a href="/mon-compte" style="color:var(--bd);font-weight:600;">Ma carte de fidélité →</a></div>';
+}
 
 function cartTotal(){ var t=0; for(var k in cart){ t+=cart[k].price*cart[k].qty; } return Math.round(t*100)/100; }
 function cartCount(){ var n=0; for(var k in cart){ n+=cart[k].qty; } return n; }
@@ -219,9 +240,10 @@ function openCheckout(){
     + recap + '<div class="rc tot"><span>Total</span><span>'+eur(cartTotal())+'</span></div>'
     + '<label>Marché de retrait</label><select class="fi" id="coMarket">'+(opts||'<option value="">(aucun marché actif)</option>')+'</select>'
     + '<label>Date de retrait (jour du marché)</label><select class="fi" id="coDate"></select>'
-    + '<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" />'
-    + '<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />'
-    + '<label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />'
+    + (currentUser?'<div class="sub" style="color:var(--gn);margin-top:6px;">✓ Connecté en tant que '+esc(currentUser.name||currentUser.email)+'</div>':'')
+    + '<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" value="'+esc(currentUser?currentUser.name:"")+'" />'
+    + '<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" value="'+esc(currentUser?currentUser.phone:"")+'" />'
+    + '<label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" value="'+esc(currentUser?currentUser.email:"")+'" />'
     + '<label>Paiement</label><div style="display:flex;gap:8px;"><button type="button" id="payPlace">💵 Sur place</button><button type="button" id="payOnline">💳 En ligne</button></div>'
     + '<div class="note" id="payNote"></div>'
     + '<div class="err" id="coErr"></div>'
@@ -319,6 +341,7 @@ function startOnline(ov, items, info){
 }
 
 updateBar();
+loadUser();
 loadMarkets().then(loadCatalog);
 </script>
 </body>
