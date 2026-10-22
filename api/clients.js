@@ -36,14 +36,17 @@ export default async function handler(req, res) {
   try {
     // ── LISTE fusionnée ──────────────────────────────────────────────────────
     if (action === "list") {
-      const [accsR, ordersR, subsR] = await Promise.all([
+      const [accsR, ordersR, subsR, authR] = await Promise.all([
         sb("clients?select=id,email,name,phone,address,city,zip"),
         sb("orders?select=name,email,phone,total,created_at&order=created_at.desc"),
         sb("newsletter_subscribers?select=email&active=eq.true"),
+        authAdmin("users?per_page=1000"),
       ]);
       const accounts = await accsR.json().catch(() => []);
       const orders = await ordersR.json().catch(() => []);
       const subs = await subsR.json().catch(() => []);
+      const authJson = await authR.json().catch(() => ({}));
+      const authUsers = Array.isArray(authJson) ? authJson : (authJson.users || []);
       const subSet = new Set((Array.isArray(subs) ? subs : []).map(s => (s.email || "").toLowerCase()));
 
       const map = {};
@@ -53,6 +56,26 @@ export default async function handler(req, res) {
         map[key] = { id: a.id, email: a.email, name: a.name || "", phone: a.phone || "",
           address: a.address || "", city: a.city || "", zip: a.zip || "",
           hasAccount: true, orders: 0, total: 0, last: null };
+      });
+      // Comptes Supabase Auth (inscriptions par code e-mail)
+      authUsers.forEach(u => {
+        const key = (u.email || "").toLowerCase();
+        if (!key) return;
+        const m = u.user_metadata || {};
+        const nom = [m.prenom, m.nom].filter(Boolean).join(" ").trim();
+        if (!map[key]) {
+          map[key] = { id: u.id, email: u.email, name: nom, phone: m.phone || "",
+            address: m.adresse || "", city: m.ville || "", zip: m.cp || "",
+            hasAccount: true, orders: 0, total: 0, last: null };
+        } else {
+          map[key].hasAccount = true;
+          if (!map[key].id) map[key].id = u.id;
+          if (!map[key].name && nom) map[key].name = nom;
+          if (!map[key].phone && m.phone) map[key].phone = m.phone;
+          if (!map[key].address && m.adresse) map[key].address = m.adresse;
+          if (!map[key].city && m.ville) map[key].city = m.ville;
+          if (!map[key].zip && m.cp) map[key].zip = m.cp;
+        }
       });
       (Array.isArray(orders) ? orders : []).forEach(o => {
         const key = (o.email || "").toLowerCase();
@@ -89,6 +112,18 @@ export default async function handler(req, res) {
       if (!password || password.length < 6) return res.status(400).json({ error: "Mot de passe trop court (min 6)." });
       const r = await authAdmin("users/" + id, { method: "PUT", body: JSON.stringify({ password }) });
       if (!r.ok) return res.status(500).json({ error: "Changement de mot de passe impossible" });
+      return res.status(200).json({ success: true });
+    }
+
+    // ── SUPPRIMER un compte client ─────────────────────────────────────────────
+    if (action === "delete") {
+      const { id, email } = req.body;
+      if (!id) return res.status(400).json({ error: "Ce client n'a pas de compte supprimable." });
+      const rA = await authAdmin("users/" + id, { method: "DELETE" });
+      // Supprime aussi la fiche client + la newsletter (best effort)
+      await sb("clients?id=eq." + id, { method: "DELETE", headers: { Prefer: "return=minimal" } }).catch(() => {});
+      if (email) await sb("newsletter_subscribers?email=eq." + encodeURIComponent(String(email).toLowerCase()), { method: "DELETE", headers: { Prefer: "return=minimal" } }).catch(() => {});
+      if (!rA.ok) { const t = await rA.text().catch(() => ""); return res.status(500).json({ error: "Suppression impossible : " + t.slice(0, 120) }); }
       return res.status(200).json({ success: true });
     }
 

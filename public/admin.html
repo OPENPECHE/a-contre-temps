@@ -847,6 +847,10 @@ function clientFiche(c){
         <button class="btn bg bsm" onclick="setClientPwd('${escJs(id)}')">Changer le mot de passe</button>
         <span id="cf-pwdmsg-${id}" style="font-size:12px"></span>
       </div>
+      <div style="padding-top:.85rem;margin-top:.5rem;border-top:1px solid var(--bs)">
+        <button class="btn bsm" style="border:1px solid var(--rd);background:transparent;color:var(--rd)" onclick="deleteClient('${escJs(id)}')">🗑 Supprimer le compte</button>
+        <span style="font-size:11px;color:var(--is);margin-left:8px">Supprime définitivement le compte (connexion). Irréversible.</span>
+      </div>
     `:`<p style="font-size:12px;color:var(--is)">Client invité (sans compte) : édition des infos et mot de passe indisponibles. Tu peux quand même l'inscrire à la newsletter ci-dessus.</p>`}
   </div>`;
 }
@@ -882,6 +886,14 @@ async function toggleClientNews(email,checked){
   const c=findClient(email);
   const r=await fetch("/api/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:clientsToken,action:"newsletter",email,subscribe:checked})});
   if(r.ok && c){ c.newsletter=checked; renderClientsStats(); }
+}
+async function deleteClient(email){
+  const c=findClient(email); if(!c) return;
+  if(!confirm(`Supprimer définitivement le compte de ${c.name||c.email} (${c.email}) ?\n\nLe client ne pourra plus se connecter. Cette action est irréversible.`)) return;
+  const r=await fetch("/api/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:clientsToken,action:"delete",id:c.id,email:c.email})});
+  const d=await r.json().catch(()=>({}));
+  if(r.ok && d.success){ allClients=allClients.filter(x=>x.email!==c.email); expandedClient=null; renderClientsStats(); renderClients(); alert("Compte supprimé ✓"); }
+  else alert("Suppression impossible : "+(d.error||("erreur "+r.status)));
 }
 
 // ── Products ──────────────────────────────────────────────────────────────────
