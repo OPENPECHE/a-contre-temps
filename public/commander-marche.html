@@ -98,6 +98,7 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){retur
 
 var cart = {};   // key -> {name, price, qty}
 var markets = [];
+var marketDays = {};   // pickup_point_id -> [day_of_week...] (0 = dimanche)
 
 function cartTotal(){ var t=0; for(var k in cart){ t+=cart[k].price*cart[k].qty; } return Math.round(t*100)/100; }
 function cartCount(){ var n=0; for(var k in cart){ n+=cart[k].qty; } return n; }
@@ -109,7 +110,19 @@ function updateBar(){
 }
 
 function loadMarkets(){
-  return sb("pickup_points?type=eq.market&active=eq.true&select=id,name&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){ markets=Array.isArray(d)?d:[]; });
+  return sb("pickup_points?type=eq.market&active=eq.true&select=id,name&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){ markets=Array.isArray(d)?d:[];
+    return sb("market_schedules?type=eq.recurring&active=eq.true&select=pickup_point_id,day_of_week").then(function(r){return r.json();}).then(function(sc){
+      (Array.isArray(sc)?sc:[]).forEach(function(x){ if(x.day_of_week==null) return; (marketDays[x.pickup_point_id]=marketDays[x.pickup_point_id]||[]).push(Number(x.day_of_week)); });
+    }).catch(function(){});
+  });
+}
+var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+function upcomingDates(days){
+  if(!days||!days.length) days=[0]; // défaut dimanche
+  var res=[], d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+1);
+  for(var i=0;i<70 && res.length<8;i++){ if(days.indexOf(d.getDay())>=0) res.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return res;
 }
 function loadCatalog(){
   sb("caisse_articles?active=eq.true&select=id,name,price,category,position&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){
@@ -153,14 +166,12 @@ document.getElementById("barGo").onclick=function(){ if(cartCount()>0) openCheck
 function openCheckout(){
   var items=[]; for(var k in cart){ items.push(cart[k]); }
   var recap=items.map(function(l){ return '<div class="rc"><span>'+l.qty+' × '+esc(l.name)+'</span><span>'+eur(l.price*l.qty)+'</span></div>'; }).join("");
-  var opts=markets.map(function(m){ return '<option value="'+esc(m.name)+'">'+esc(m.name)+'</option>'; }).join("");
-  var today=new Date(); today.setDate(today.getDate()+1);
-  var minDate=today.toISOString().slice(0,10);
+  var opts=markets.map(function(m){ return '<option value="'+esc(m.name)+'" data-id="'+m.id+'">'+esc(m.name)+'</option>'; }).join("");
   var ov=document.createElement("div"); ov.className="ov";
   ov.innerHTML='<div class="sheet"><h2>Votre réservation</h2><div class="sub">Retrait sur notre stand au marché — paiement sur place.</div>'
     + recap + '<div class="rc tot"><span>Total</span><span>'+eur(cartTotal())+'</span></div>'
     + '<label>Marché de retrait</label><select class="fi" id="coMarket">'+(opts||'<option value="">(aucun marché actif)</option>')+'</select>'
-    + '<label>Date de retrait</label><input class="fi" id="coDate" type="date" min="'+minDate+'" />'
+    + '<label>Date de retrait (jour du marché)</label><select class="fi" id="coDate"></select>'
     + '<label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" />'
     + '<label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />'
     + '<label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />'
@@ -169,6 +180,17 @@ function openCheckout(){
     + '<button class="btn go" id="coGo">Valider ma réservation</button>'
     + '<button class="btn ghost" id="coC">Continuer mes achats</button></div>';
   document.body.appendChild(ov);
+  function fillDates(){
+    var mSel=ov.querySelector("#coMarket"); var opt=mSel.options[mSel.selectedIndex];
+    var id=opt?opt.getAttribute("data-id"):null;
+    var days=(id && marketDays[id] && marketDays[id].length)?marketDays[id]:[0];
+    var dates=upcomingDates(days);
+    ov.querySelector("#coDate").innerHTML = dates.length ? dates.map(function(dt){
+      var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+      return '<option value="'+iso+'">'+JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()]+'</option>';
+    }).join("") : '<option value="">(aucune date disponible)</option>';
+  }
+  ov.querySelector("#coMarket").onchange=fillDates; fillDates();
   ov.querySelector("#coC").onclick=function(){ ov.remove(); };
   ov.querySelector("#coGo").onclick=function(){ submitOrder(ov, items); };
 }
