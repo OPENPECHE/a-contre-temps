@@ -21,7 +21,7 @@
   header .heart{height:54px;width:auto;margin:0 auto 12px;display:block;}
   header .brand{font-family:var(--serif);font-size:30px;font-style:italic;line-height:1.1;}
   header .sub{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin-top:8px;}
-  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(18px,3.4vw,23px);margin-top:18px;opacity:.95;}
+  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(25px,5vw,32px);margin-top:14px;}
   .wrap{max-width:440px;margin:0 auto;padding:24px 18px 50px;}
   .card{background:#fff;border:1px solid var(--bs);border-radius:18px;padding:22px 20px;box-shadow:0 8px 28px rgba(43,41,37,.07);}
   .intro{text-align:center;color:var(--is);font-size:14px;margin-bottom:16px;}
@@ -40,14 +40,28 @@
   .ok-screen{text-align:center;padding:14px 6px;}
   .ok-screen .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:8px 0;}
   .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:28px;text-align:center;letter-spacing:7px;font-family:var(--sans);font-weight:600;color:var(--bd);}
+  .topnav{background:var(--bd);}
+  .topnav .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;max-width:760px;margin:0 auto;}
+  .topnav .brand{display:inline-flex;align-items:center;gap:9px;font-family:var(--serif);font-size:22px;color:var(--cr);text-decoration:none;letter-spacing:-.01em;}
+  .topnav .brand img{height:26px;width:auto;display:block;}
+  .topnav .navr{display:flex;gap:16px;align-items:center;}
+  .topnav .navlink{color:var(--cr);text-decoration:none;font-size:13px;font-weight:500;opacity:.92;}
+  .topnav .cta{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--bd);background:var(--cr);padding:9px 16px;border-radius:999px;text-decoration:none;white-space:nowrap;}
 </style>
 </head>
 <body>
+<nav class="topnav">
+  <div class="nav">
+    <a href="/" class="brand"><img src="/heart-cream.png" alt="" /> à contre-temps</a>
+    <div class="navr">
+      <a href="/commander-marche" class="navlink">Commander</a>
+      <a href="/" class="cta">Accueil</a>
+    </div>
+  </div>
+</nav>
 <header>
   <img class="heart" src="/heart-cream.png" alt="" />
-  <div class="brand">à contre-temps</div>
-  <div class="sub">Fournil vivant · Créateur d'instants</div>
-  <h1>Créer mon compte fidélité</h1>
+  <h1>Créer mon compte</h1>
 </header>
 
 <div class="wrap">
