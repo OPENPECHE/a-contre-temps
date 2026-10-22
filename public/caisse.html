@@ -157,6 +157,7 @@
   <button class="tbtn" id="btnArticles">Articles</button>
   <button class="tbtn" id="btnDay">Journée</button>
   <button class="tbtn" id="btnStats">Stats</button>
+  <button class="tbtn" id="btnBorne">🖥️ Borne</button>
   <button class="tbtn" id="btnInstall" style="display:none;background:var(--cr);color:var(--bd)">Installer l'app</button>
   <button class="tbtn" id="btnLock">Verrouiller</button>
 </div>
@@ -221,6 +222,7 @@ var lastSale = null;
 var discount = { mode:null, value:0 };   // mode: null | 'pct' | 'eur'
 var currentLieu = LS.get("caisse_lieu", "");
 var lieuxConnus = LS.get("caisse_lieux", []);
+var borneCode = (LS.get("caisse_borne_code", "") || "").toUpperCase();
 
 /* Identité (facture / ticket) — micro-entreprise, franchise en base de TVA */
 var SELLER = {
@@ -369,6 +371,7 @@ function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g, "$1 ").trim(); }
 
 function promptLoyalty(){
+  if (borneCode){ askViaBorne(lastSale ? lastSale.total : 0); return; }
   var ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
   ov.innerHTML = '<div class="card">'
     + '<h3>🥖 Carte de fidélité</h3>'
@@ -388,6 +391,42 @@ function promptLoyalty(){
     if (p.length < 10){ ov.querySelector("#loyMsg").textContent="Numéro à 10 chiffres, s'il vous plaît."; return; }
     creditLoyalty(p, ov);
   };
+}
+
+/* Mode 2 tablettes : on demande le numéro sur la borne client, réponse en direct. */
+function resetBorne(){
+  if (!borneCode) return;
+  sbFetch("pos_link?code=eq."+encodeURIComponent(borneCode),
+          { method:"PATCH", body:JSON.stringify({ state:"idle", phone:null, updated_at:new Date().toISOString() }) }).catch(function(){});
+}
+function askViaBorne(amount){
+  var ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
+  ov.innerHTML='<div class="card" style="text-align:center;">'
+    +'<h3>🥖 Carte de fidélité</h3>'
+    +'<div class="sub">👉 Le client saisit son numéro sur la borne…</div>'
+    +'<div style="font-size:42px;margin:16px 0;">⌛</div>'
+    +'<div id="loyMsg" style="display:none;"></div>'
+    +'<button class="big ghost" id="loyCancel">Annuler · sans carte</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  var done=false;
+  // Déclenche la demande sur la borne (upsert).
+  sbFetch("pos_link", { method:"POST", body:JSON.stringify({ code:borneCode, state:"asking", phone:null, amount:amount||0, updated_at:new Date().toISOString() }) }).catch(function(){});
+  var poll=setInterval(function(){
+    if (done) return;
+    sbFetch("pos_link?code=eq."+encodeURIComponent(borneCode)+"&select=state,phone")
+      .then(function(r){ return r.json(); })
+      .then(function(rows){
+        var row=(Array.isArray(rows)&&rows[0])||null; if(!row||done) return;
+        if (row.state==="done"){
+          done=true; clearInterval(poll); resetBorne();
+          var ph=normPhone(row.phone||"");
+          if (ph.length>=10){ creditLoyalty(ph, ov); }
+          else { ov.remove(); toast("Vente close · sans carte"); }
+        }
+      }).catch(function(){});
+  }, 1200);
+  ov.querySelector("#loyCancel").onclick = function(){ done=true; clearInterval(poll); resetBorne(); ov.remove(); };
 }
 
 function loyaltyUpsert(phone){
@@ -1032,6 +1071,28 @@ function checkPin(){
   else { document.getElementById("pinErr").textContent="Code incorrect"; pinBuf=""; drawDots(); setTimeout(function(){document.getElementById("pinErr").textContent="";},1500); }
 }
 document.getElementById("btnLock").onclick = function(){ LS.set("caisse_unlocked_ts",0); pinBuf=""; drawDots(); document.getElementById("pinScreen").classList.remove("hidden"); };
+
+/* Borne client (2 tablettes) : appairage par code partagé. */
+function updateBorneLabel(){ var b=document.getElementById("btnBorne"); if(b) b.style.background = borneCode ? "var(--cr)" : ""; if(b) b.style.color = borneCode ? "var(--bd)" : ""; }
+document.getElementById("btnBorne").onclick = function(){
+  var ov=document.createElement("div"); ov.className="ov";
+  ov.innerHTML='<div class="card"><h3>🖥️ Borne client (2 tablettes)</h3>'
+    +'<div class="sub">Sur la 2<sup>e</sup> tablette, ouvrez <b>fournilvivant.fr/borne</b> et entrez le même code. À l\'encaissement, le client tapera son numéro sur la borne.</div>'
+    +'<input class="fi" id="brCode" placeholder="Ex : ENNEZAT" value="'+esc(borneCode)+'" style="margin-top:12px;text-transform:uppercase;text-align:center;letter-spacing:2px;" />'
+    +'<div class="sub" style="margin-top:8px;">'+(borneCode?('Borne active : <b style="color:var(--bd)">'+esc(borneCode)+'</b>'):'Borne non configurée (le numéro est demandé sur cette tablette).')+'</div>'
+    +'<button class="big ok" id="brGo" style="margin-top:6px;">Activer la borne</button>'
+    +(borneCode?'<button class="big ghost" id="brOff" style="margin-top:10px;color:var(--rd);">Désactiver (revenir à 1 tablette)</button>':'')
+    +'<button class="big ghost" id="brC" style="margin-top:10px;">Fermer</button></div>';
+  document.body.appendChild(ov);
+  ov.querySelector("#brGo").onclick=function(){
+    var c=(ov.querySelector("#brCode").value||"").trim().toUpperCase();
+    if(!c){ toast("Entrez un code"); return; }
+    borneCode=c; LS.set("caisse_borne_code", borneCode); resetBorne(); updateBorneLabel(); ov.remove(); toast("Borne activée : "+borneCode);
+  };
+  if(borneCode){ ov.querySelector("#brOff").onclick=function(){ borneCode=""; LS.set("caisse_borne_code",""); updateBorneLabel(); ov.remove(); toast("Borne désactivée"); }; }
+  ov.querySelector("#brC").onclick=function(){ ov.remove(); };
+};
+updateBorneLabel();
 
 /* ───────────────── Init ───────────────── */
 buildPad(); drawDots();
