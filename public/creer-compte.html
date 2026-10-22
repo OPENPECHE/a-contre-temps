@@ -39,7 +39,7 @@
   .foot a{color:var(--bd);font-weight:500;}
   .ok-screen{text-align:center;padding:14px 6px;}
   .ok-screen .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:8px 0;}
-  .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:30px;text-align:center;letter-spacing:12px;font-family:var(--sans);font-weight:600;color:var(--bd);}
+  .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:28px;text-align:center;letter-spacing:7px;font-family:var(--sans);font-weight:600;color:var(--bd);}
 </style>
 </head>
 <body>
@@ -108,13 +108,13 @@ function showCodeStep(){
   document.getElementById("card").innerHTML=
      '<p class="intro">Un <b>code à 6 chiffres</b> vient d\'être envoyé à<br><b style="color:var(--bd)">'+pending.email.replace(/</g,"")+'</b></p>'
     +'<label for="code">Votre code</label>'
-    +'<input class="code-in" id="code" inputmode="numeric" maxlength="6" placeholder="••••••" />'
+    +'<input class="code-in" id="code" inputmode="numeric" maxlength="8" placeholder="••••••" />'
     +'<div class="msg err" id="msg2"></div>'
     +'<button class="btn" id="verify">Valider et créer mon compte</button>'
     +'<button class="btn ghost" id="resend">Renvoyer un code</button>';
   var code=document.getElementById("code");
   setTimeout(function(){ try{ code.focus(); }catch(e){} },60);
-  code.addEventListener("input",function(){ code.value=code.value.replace(/\D/g,"").slice(0,6); });
+  code.addEventListener("input",function(){ code.value=code.value.replace(/\D/g,"").slice(0,8); });
   document.getElementById("verify").onclick=verifyCode;
   document.getElementById("resend").onclick=function(){ var email=pending.email; fetch(SB_URL+"/auth/v1/otp",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email,create_user:true,data:{prenom:pending.prenom,nom:pending.nom,phone:pending.phone}})}); document.getElementById("msg2").style.color="var(--is)"; document.getElementById("msg2").textContent="Nouveau code envoyé."; };
 }

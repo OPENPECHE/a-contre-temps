@@ -28,7 +28,7 @@
   .intro{text-align:center;color:var(--is);font-size:14px;margin-bottom:6px;}
   label{display:block;font-size:12px;color:var(--is);margin:12px 0 5px;}
   .fi{width:100%;padding:13px;border:1px solid var(--bs);border-radius:11px;font-size:16px;font-family:var(--sans);background:#fff;color:var(--ink);}
-  .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:30px;text-align:center;letter-spacing:12px;font-family:var(--sans);font-weight:600;color:var(--bd);}
+  .code-in{width:100%;padding:14px;border:1px solid var(--bs);border-radius:12px;font-size:28px;text-align:center;letter-spacing:7px;font-family:var(--sans);font-weight:600;color:var(--bd);}
   .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:16px;background:var(--bd);color:var(--cr);}
   .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);}
   .btn:disabled{opacity:.6;}
@@ -112,12 +112,12 @@ function showLogin(msgText){
 function showCode(){
   card.innerHTML='<p class="intro">Code envoyé à <b style="color:var(--bd)">'+esc(pendingEmail)+'</b></p>'
     +'<label for="code">Votre code à 6 chiffres</label>'
-    +'<input class="code-in" id="code" inputmode="numeric" maxlength="6" placeholder="••••••" />'
+    +'<input class="code-in" id="code" inputmode="numeric" maxlength="8" placeholder="••••••" />'
     +'<div class="msg" id="msg"></div>'
     +'<button class="btn" id="verify">Se connecter</button>'
     +'<button class="btn ghost" id="back">← Changer d\'e‑mail</button>';
   var code=document.getElementById("code"); setTimeout(function(){try{code.focus();}catch(e){}},60);
-  code.addEventListener("input",function(){ code.value=code.value.replace(/\D/g,"").slice(0,6); });
+  code.addEventListener("input",function(){ code.value=code.value.replace(/\D/g,"").slice(0,8); });
   document.getElementById("back").onclick=function(){ showLogin(); };
   document.getElementById("verify").onclick=function(){
     var c=code.value.replace(/\D/g,""), msg=document.getElementById("msg");
