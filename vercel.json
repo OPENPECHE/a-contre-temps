@@ -8,6 +8,7 @@
     { "source": "/qr", "destination": "/qr.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/caisse", "destination": "/caisse.html" },
+    { "source": "/commander", "destination": "/commander.html" },
     { "source": "/commander-marche", "destination": "/commander-marche.html" },
     { "source": "/ma-fidelite", "destination": "/ma-fidelite.html" },
     { "source": "/creer-compte", "destination": "/creer-compte.html" },
