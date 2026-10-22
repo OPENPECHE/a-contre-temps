@@ -128,16 +128,21 @@ function upcomingDates(days){
   for(var i=0;i<70 && res.length<8;i++){ if(days.indexOf(d.getDay())>=0) res.push(new Date(d)); d.setDate(d.getDate()+1); }
   return res;
 }
+function fmtWeight(g){ g=Number(g); return g>=1000 ? (g/1000).toString().replace(".",",")+" kg" : g+" g"; }
+function eurKg(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €/kg"; }
 function loadCatalog(){
-  sb("caisse_articles?active=eq.true&select=id,name,price,category,position&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){
+  sb("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,description,weight_g,price_per_kg,position&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){
     if(!Array.isArray(d)||!d.length){ document.getElementById("catalog").innerHTML='<p style="color:var(--is);padding:30px 0;text-align:center;">Catalogue bientôt disponible.</p>'; return; }
-    var g={}, order=[]; d.forEach(function(a){ if(!(a.price>0)) return; var c=a.category||"Autres"; if(!g[c]){g[c]=[];order.push(c);} g[c].push(a); });
+    var g={}, order=[]; d.forEach(function(a){ if(!(a.price>0)) return; var c=a.cat||"Autres"; if(!g[c]){g[c]=[];order.push(c);} g[c].push(a); });
     var html="";
     order.forEach(function(c){
       html+='<div class="cat">'+esc(c)+'</div>';
       g[c].forEach(function(a){
         var key="a_"+a.id;
-        html+='<div class="item"><div class="in"><b>'+esc(a.name)+'</b><span>'+eur(a.price)+'</span></div>'
+        var sub=[]; if(a.weight_g) sub.push(fmtWeight(a.weight_g)); if(a.price_per_kg) sub.push(eurKg(a.price_per_kg));
+        html+='<div class="item"><div class="in"><b>'+esc(a.name)+'</b>'
+          +(a.description?'<em style="display:block;font-style:normal;font-size:12.5px;color:var(--is);font-weight:400;margin-top:2px;line-height:1.35;">'+esc(a.description)+'</em>':'')
+          +'<span>'+eur(a.price)+(sub.length?' <span style="color:var(--is);font-weight:400;">· '+sub.join(" · ")+'</span>':'')+'</span></div>'
           +'<div class="step" data-k="'+key+'">'
           +'<button class="add" data-add>Ajouter</button>'
           +'<button class="mz" data-mz hidden>−</button><span class="q mz" data-q hidden>0</span><button class="mz" data-pl hidden>+</button>'

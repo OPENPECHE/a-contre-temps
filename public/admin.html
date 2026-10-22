@@ -230,6 +230,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
             <input class="fi" id="new-weight" type="number" step="10" placeholder="— g" style="margin-top:4px" />
           </div>
         </div>
+        <label style="font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:10px">
+          <input type="checkbox" id="new-market" checked style="width:16px;height:16px" />
+          🛒 Afficher sur la page de commande au marché
+        </label>
         <div style="display:flex;gap:7px">
           <button class="btn bp bsm" onclick="addProduct()">Ajouter</button>
           <button class="btn bg bsm" onclick="toggleNewProd()">Annuler</button>
@@ -931,6 +935,10 @@ function productRow(p){
     return `<div class="prow" style="flex-direction:column;align-items:stretch;gap:7px" id="prow-${p.id}">
       <input class="einp" id="ename-${p.id}" style="width:100%" value="${esc(p.name)}" placeholder="Nom de l'article" />
       <textarea class="einp" id="edesc-${p.id}" rows="2" style="width:100%;resize:vertical" placeholder="Description (optionnel)">${esc(p.description)}</textarea>
+      <label style="font-size:12px;color:var(--is);display:flex;align-items:center;gap:7px;cursor:pointer">
+        <input type="checkbox" id="emarket-${p.id}" ${p.on_market?"checked":""} style="width:16px;height:16px" />
+        🛒 Afficher sur la page de commande (marché)
+      </label>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--is)">Prix</span>
         <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:70px;text-align:right" value="${p.price}" /><span style="font-size:11px;color:var(--is)">€</span>
@@ -950,7 +958,7 @@ function productRow(p){
       ${p.active?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:""}
     </button>
     <div style="flex:1;min-width:0">
-      <p style="font-size:13px">${esc(p.name)}</p>
+      <p style="font-size:13px">${esc(p.name)}${p.on_market?` <span style="font-size:10px;color:#4A7C59;border:1px solid #4A7C5955;border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap">🛒 Marché</span>`:""}</p>
       ${p.description?`<p style="font-size:11px;color:var(--is);margin-top:2px">${esc(p.description)}</p>`:""}
       ${meta.length?`<p style="font-size:11px;color:var(--ru);margin-top:2px">${meta.join(" · ")}</p>`:""}
     </div>
@@ -973,7 +981,8 @@ async function saveProd(id){
   const wRaw=document.getElementById("eweight-"+id).value;
   const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
   const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
-  const patch={name,price,description,price_per_kg,weight_g};
+  const on_market=!!document.getElementById("emarket-"+id)?.checked;
+  const patch={name,price,description,price_per_kg,weight_g,on_market};
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)});
   allProducts=allProducts.map(p=>p.id===id?{...p,...patch}:p);
   editingProdId=null;renderProducts();
@@ -997,9 +1006,10 @@ async function addProduct(){
   const wRaw=document.getElementById("new-weight").value;
   const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
   const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
+  const on_market=!!document.getElementById("new-market")?.checked;
   const id="p"+Date.now().toString(36);
   const pos=Math.max(0,...allProducts.map(p=>p.position||0))+1;
-  const row={id,cat,name,price,active:true,position:pos,description,price_per_kg,weight_g};
+  const row={id,cat,name,price,active:true,position:pos,description,price_per_kg,weight_g,on_market};
   try {
     const data=await sbFetch("products",{method:"POST",body:JSON.stringify(row)});
     if(!data||(!Array.isArray(data)&&!data.id)){
@@ -1033,6 +1043,7 @@ async function addProduct(){
   document.getElementById("new-desc").value="";
   document.getElementById("new-pkg").value="";
   document.getElementById("new-weight").value="";
+  document.getElementById("new-market").checked=true;
   toggleNewProd();renderProducts();
 }
 async function deleteProd(id){
