@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -136,8 +137,17 @@ function render(prenom, phone, row, hist){
     hist.top.forEach(function(t){ html+='<div style="font-size:14px;padding:3px 0;">🥖 '+esc(t.name)+' <span style="color:var(--is)">· ×'+t.qty+'</span></div>'; });
     html+='<div style="font-size:12px;color:var(--is);margin-top:8px;">'+hist.count+' passage'+(hist.count>1?'s':'')+' · panier moyen '+eur(hist.avg)+'</div></div>';
   }
+  html+='<div style="margin-top:20px;border-top:1px solid var(--bs);padding-top:16px;">'
+      +'<div style="font-size:13px;color:var(--is);margin-bottom:10px;">🎟️ Votre carte à présenter au marché</div>'
+      +'<div id="myqr" style="display:inline-block;padding:12px;background:#fff;border:1px solid var(--bs);border-radius:14px;"></div>'
+      +'<div style="font-size:15px;font-weight:600;color:var(--bd);margin-top:8px;">'+fmtPhone(phone)+'</div>'
+      +'<div style="font-size:12px;color:var(--is);">Montrez ce code (ou donnez votre numéro) à l\'encaissement.</div></div>';
   html+='<a href="/commander-marche" class="btn ghost" style="display:block;text-decoration:none;text-align:center;margin-top:18px;">Commander au marché</a></div>';
   card.innerHTML=html;
+  try{
+    var qel=document.getElementById("myqr");
+    if(qel && window.QRCode){ new QRCode(qel, { text:phone, width:168, height:168, colorDark:"#2B2925", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); }
+  }catch(e){}
 }
 </script>
 </body>
