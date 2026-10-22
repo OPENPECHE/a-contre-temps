@@ -900,17 +900,30 @@ function renderProducts(){
     sel.innerHTML=`<option value="">-- Choisir --</option>${cats.map(c=>`<option value="${c}">${c}</option>`).join("")}<option value="__new__">+ Nouvelle catégorie...</option>`;
     sel.value=cur;
   }
-  document.getElementById("products-list").innerHTML=cats.map(cat=>`
+  document.getElementById("products-list").innerHTML=cats.map(cat=>{
+    const cprods=allProducts.filter(p=>p.cat===cat);
+    const catOn=cprods.length>0 && cprods.every(p=>p.on_market);
+    return `
     <div style="margin-bottom:1.25rem">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.6rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.6rem;flex-wrap:wrap">
         <p style="font-size:10px;letter-spacing:.15em;color:var(--ru)">${cat.toUpperCase()}</p>
+        <button onclick="toggleCatMarket(this.getAttribute('data-cat'))" data-cat="${cat}" title="Afficher cette catégorie sur la page Commander au marché"
+          style="font-size:10px;font-weight:600;border:1px solid ${catOn?'#4A7C59':'var(--bs)'};background:${catOn?'#4A7C5915':'transparent'};color:${catOn?'#4A7C59':'var(--is)'};border-radius:5px;padding:2px 8px;cursor:pointer">${catOn?'🛒 Sur le marché':'◻ Pas au marché'}</button>
         <button onclick="renameCategory(this.getAttribute('data-cat'))" data-cat="${cat}"
           style="font-size:10px;color:var(--is);border:1px solid var(--bs);background:transparent;border-radius:5px;padding:2px 7px;cursor:pointer">✏ Renommer</button>
       </div>
       <div class="card card0">
-        ${allProducts.filter(p=>p.cat===cat).map(p=>productRow(p)).join("")}
+        ${cprods.map(p=>productRow(p)).join("")}
       </div>
-    </div>`).join("")+`<p style="font-size:11px;color:var(--is)">Un article décoché est masqué sur le site. Modifications instantanées.</p>`;
+    </div>`;}).join("")+`<p style="font-size:11px;color:var(--is)">« 🛒 Sur le marché » = la catégorie apparaît sur la page de commande. Un article décoché est masqué. Modifications instantanées.</p>`;
+}
+async function toggleCatMarket(cat){
+  const cprods=allProducts.filter(p=>p.cat===cat);
+  const catOn=cprods.length>0 && cprods.every(p=>p.on_market);
+  const val=!catOn;
+  await sbFetch(`products?cat=eq.${encodeURIComponent(cat)}`,{method:"PATCH",body:JSON.stringify({on_market:val})});
+  allProducts=allProducts.map(p=>p.cat===cat?{...p,on_market:val}:p);
+  renderProducts();
 }
 
 function onCatSelect(val){
