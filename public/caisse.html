@@ -564,7 +564,7 @@ function summarizeHistory(rows){
   });
   var top = Object.keys(prod).map(function(k){ return {name:k, qty:prod[k]}; })
                   .sort(function(a,b){ return b.qty-a.qty; }).slice(0,3);
-  return { count:rows.length, avg: sum/rows.length, top:top };
+  return { count:rows.length, avg: sum/rows.length, top:top, rows:rows.slice(0,20) };
 }
 
 function showLoyaltyResult(ov, res, mode){
@@ -580,13 +580,21 @@ function showLoyaltyResult(ov, res, mode){
         + '<b>'+h.count+' passage'+(h.count>1?'s':'')+'</b> · panier moyen '+eur(h.avg)
         + (usual ? ('<br>Habituel : <b style="color:var(--bd)">'+esc(usual)+'</b>'+(h.top[1]?' · '+esc(h.top[1].name):'')) : '')
         + '</div>') : '';
+    var MOIS2=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+    function dshort(dt){ var d=new Date(dt); return d.getDate()+" "+MOIS2[d.getMonth()]; }
+    function itsum(its){ return (its||[]).filter(function(i){return i&&i.name&&Number(i.price)>=0;}).map(function(i){return (i.qty||1)+"× "+i.name;}).join(", "); }
+    var listHtml = (h && h.rows && h.rows.length) ? ('<div style="text-align:left;margin-top:10px;border-top:1px solid var(--bs);padding-top:8px;">'
+        + '<div class="sub" style="font-weight:600;margin-bottom:4px;">🧾 Historique de commandes</div>'
+        + '<div style="max-height:190px;overflow:auto;">'
+        + h.rows.map(function(s){ return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px solid #EFE9E1;"><span><b>'+dshort(s.created_at)+'</b> · <span style="color:var(--is)">'+esc(itsum(s.items))+'</span></span><b style="white-space:nowrap;">'+eur(s.total)+'</b></div>'; }).join("")
+        + '</div></div>') : '';
     var rewardHtml = res.free>0 ? ('<div style="text-align:center;color:var(--ru);margin-top:10px;font-weight:600;background:var(--cr);border-radius:10px;padding:10px;">🎁 '+res.free+' produit'+(res.free>1?'s':'')+' offert'+(res.free>1?'s':'')+' à donner'
         + (usual ? '<br><span style="font-weight:400;">Proposez-lui son habituel : <b>'+esc(usual)+'</b></span>' : '')
         + '</div><button class="big ghost" id="loyUse" style="margin-top:10px;">J\'ai donné le produit offert ➖</button>') : '';
     c.innerHTML='<h3 style="text-align:center;">'+(res.won?'🎉 Un produit offert gagné !':'🥖 Tampon ajouté !')+'</h3>'
       +'<div style="text-align:center;margin:12px 0 6px;line-height:1;">'+dots+'</div>'
       +'<div class="sub" style="text-align:center;">'+res.stamps+' / 10 tampons</div>'
-      + histHtml + rewardHtml
+      + histHtml + rewardHtml + listHtml
       +'<button class="big ok" id="loyClose" style="margin-top:12px;">Fermer</button>';
     var useBtn=c.querySelector("#loyUse");
     if (useBtn) useBtn.onclick = function(){
