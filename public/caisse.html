@@ -260,6 +260,7 @@ function mapProducts(d){
     return { id:p.id, name:p.name, price:Number(p.price)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0 };
   });
 }
+var INSTANTS_LABEL = "NOS INSTANTS";   // libellé du rayon « instants » dans la caisse
 function instantLabel(name){ return String(name||"").split("—")[0].trim(); }
 function loadArticles(){
   if (!navigator.onLine){ renderArticles(); return; }
@@ -270,7 +271,7 @@ function loadArticles(){
     var market = mapProducts(res[0]);
     // « Nos instants » (brunch, apéro, café gourmand) — regroupés en bas de la caisse
     var instants = (Array.isArray(res[1])?res[1]:[]).map(function(p){
-      return { id:p.id, name:instantLabel(p.name), price:Number(p.price)||0, category:"Nos instants", color:"#3E5A70" };
+      return { id:p.id, name:instantLabel(p.name), price:Number(p.price)||0, category:INSTANTS_LABEL, color:"#3E5A70" };
     });
     articles = market.concat(instants);
     LS.set("caisse_articles_cache", articles); renderArticles();

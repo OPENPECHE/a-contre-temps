@@ -29,10 +29,10 @@
   header p{font-size:14px;opacity:.9;max-width:560px;margin:10px auto 0;font-weight:300;}
   .wrap{max-width:760px;margin:0 auto;padding:0 18px;}
   .cat{font-family:var(--serif);font-size:20px;color:var(--bd);margin:26px 2px 10px;padding-bottom:6px;border-bottom:2px solid var(--bs);}
-  .item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 2px;border-bottom:1px solid #EFE9E1;}
+  .item{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:15px 2px;border-bottom:1px solid #EFE9E1;}
   .item .in{flex:1;min-width:0;}
   .item .in b{font-weight:600;font-size:15.5px;color:var(--ink);line-height:1.25;}
-  .item .in em{display:block;font-style:normal;font-size:12.5px;color:var(--is);font-weight:400;margin-top:4px;line-height:1.35;}
+  .item .in em{display:block;font-style:normal;font-size:12.5px;color:var(--is);font-weight:400;margin-top:4px;line-height:1.45;white-space:pre-line;}
   .item .in .det{display:block;width:fit-content;font-size:11px;color:var(--is);font-weight:500;margin-top:7px;background:var(--pp);border:1px solid var(--bs);border-radius:6px;padding:2px 8px;letter-spacing:.01em;}
   .item .right{display:flex;flex-direction:row;align-items:center;gap:12px;flex-shrink:0;}
   .item .right .pr{font-size:16px;font-weight:600;color:var(--bd);white-space:nowrap;line-height:1;min-width:52px;text-align:right;}
@@ -209,7 +209,7 @@ function loadCatalog(){
     d.forEach(function(a){ if(!(a.price>0)) return; var c=a.cat||"Autres"; if(!catGroups[c]){catGroups[c]=[];catOrder.push(c);} catGroups[c].push(a); });
     // Onglet « Les instants » (brunch, apéro, café gourmand, planche) — réservables au marché
     var inst=(Array.isArray(res[1])?res[1]:[]).filter(function(p){return p.price>0;}).map(function(p){
-      return { id:p.id, name:p.name, price:p.price, cat:"Les instants", description:(String(p.description||"").split("\n")[0]||""), weight_g:null, price_per_kg:null };
+      return { id:p.id, name:p.name, price:p.price, cat:"Les instants", description:(p.description||""), weight_g:null, price_per_kg:null };
     });
     if(inst.length){ catGroups["Les instants"]=inst; catOrder.push("Les instants"); }
     if(!catOrder.length){ document.getElementById("catalog").innerHTML='<p style="color:var(--is);padding:30px 0;text-align:center;">Catalogue bientôt disponible.</p>'; return; }
