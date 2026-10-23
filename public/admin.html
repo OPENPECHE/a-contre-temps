@@ -969,7 +969,9 @@ async function loadClientHistory(c){
   if(!c) return;
   const el=document.getElementById("cf-hist-"+c.email); if(!el) return;
   const esc=s=>String(s==null?"":s).replace(/[&<>]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[x]));
-  const phone=(c.phone||"").replace(/\D/g,"");
+  let phone=(c.phone||"").replace(/\D/g,"");
+  if(phone.length>10 && phone.startsWith("0033")) phone="0"+phone.slice(4);
+  else if(phone.length===11 && phone.startsWith("33")) phone="0"+phone.slice(2);   // +33 → 0…
   const dtm=dt=>new Date(dt).toLocaleString("fr-FR",{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
   const itemsSum=its=>Array.isArray(its)?its.map(i=>`${i.qty||1}× ${i.name}`).join(", "):"";
   try{
