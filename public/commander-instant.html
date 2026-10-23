@@ -94,8 +94,14 @@
         <button type="button" id="pPlus" aria-label="Plus">+</button>
       </div>
       <div style="text-align:center;font-size:13px;color:var(--is);" id="pUnit">personne(s)</div>
-      <div class="totline"><span>Total</span><span id="pTotal">—</span></div>
     </div>
+    <div class="card" id="addonCard" style="display:none;">
+      <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin:0;">
+        <input type="checkbox" id="addonChk" style="width:20px;height:20px;margin-top:3px;flex-shrink:0;accent-color:var(--bd);" />
+        <span><b id="addonName" style="color:var(--bd);font-size:15px;"></b> <span id="addonPpp" style="color:var(--ru);font-size:13px;white-space:nowrap;"></span><br><span style="font-size:12.5px;color:var(--is);" id="addonDesc"></span></span>
+      </label>
+    </div>
+    <div class="totline" style="padding:2px 4px 0;"><span>Total</span><span id="pTotal">—</span></div>
     <button class="btn" id="go1">Continuer</button>
     <p style="text-align:center;margin-top:12px;"><a id="backLink" href="/" style="font-size:13px;color:var(--bd);">← Voir le détail</a></p>
   </div>
@@ -169,8 +175,12 @@ var UNIT=0, FORMULE="", TITLE="", UNITLABEL="personne", UNITLABELP="personne(s)"
 var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 var SLOTS=["9h00 – 10h30","10h30 – 12h00"];
-var state={ qty:2, addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24 };
+var state={ qty:2, addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24, addon:false };
 var currentUser=null, zone=null;
+var ADDONS={ s2:{ id:"s4" } };   // l'apéro peut ajouter le café gourmand (s4)
+var ADDON=null;                   // {id, name, fullName, price}
+function addonTotal(){ return (ADDON && state.addon) ? ADDON.price*state.qty : 0; }
+function grandTotal(){ return UNIT*state.qty + addonTotal(); }
 
 /* page de détail par produit (pour le lien « voir le détail ») */
 var DETAIL={ s1:"/brunch-clermont-ferrand", s2:"/plateau-aperitif-clermont-ferrand", s4:"/cafe-gourmand-clermont-ferrand", s5:"/planche-de-saison-clermont-ferrand" };
@@ -218,8 +228,21 @@ function loadProduct(){
     document.getElementById("pUnit").textContent=UNITLABELP;
     document.getElementById("backLink").href=BACKPAGE;
     document.title="Commander "+TITLE+" — à contre-temps";
+    loadAddon();
     return loadRule(p.cat);
   });
+}
+function loadAddon(){
+  var ad=ADDONS[PID]; if(!ad) return;
+  sb("products?id=eq."+encodeURIComponent(ad.id)+"&select=name,price&active=eq.true").then(function(r){return r.json();}).then(function(d){
+    var ap=(Array.isArray(d)&&d[0])||null; if(!ap) return;
+    ADDON={ id:ad.id, fullName:ap.name, name:ap.name.split("—")[0].trim(), price:Number(ap.price)||0 };
+    document.getElementById("addonCard").style.display="";
+    document.getElementById("addonName").textContent="➕ Ajouter "+ADDON.name;
+    document.getElementById("addonDesc").textContent="Mini-desserts maison, café, thé ou infusion — pour clôturer en douceur. "+eur(ADDON.price)+" / personne.";
+    document.getElementById("addonChk").onchange=function(){ state.addon=this.checked; paintQty(); };
+    paintQty();
+  }).catch(function(){});
 }
 function loadRule(cat){
   return sb("delivery_rules?category=eq."+encodeURIComponent(cat)+"&select=available_days,advance_hours,time_label&limit=1").then(function(r){return r.json();}).then(function(d){
@@ -241,7 +264,11 @@ function show(n){
   document.querySelectorAll(".steps .s").forEach(function(s){ s.classList.toggle("on", Number(s.getAttribute("data-s"))<=n); });
   window.scrollTo(0,0);
 }
-function paintQty(){ document.getElementById("pNb").textContent=state.qty; document.getElementById("pTotal").innerHTML=eur(UNIT*state.qty); }
+function paintQty(){
+  document.getElementById("pNb").textContent=state.qty;
+  document.getElementById("pTotal").innerHTML=eur(grandTotal());
+  if(ADDON){ document.getElementById("addonPpp").textContent="(+"+eur(ADDON.price*state.qty)+")"; }
+}
 document.getElementById("pMinus").onclick=function(){ if(state.qty>1){ state.qty--; paintQty(); } };
 document.getElementById("pPlus").onclick=function(){ if(state.qty<40){ state.qty++; paintQty(); } };
 document.getElementById("go1").onclick=function(){ show(2); };
@@ -300,11 +327,14 @@ document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); 
 
 /* ---- Coordonnées + connexion + paiement ---- */
 function paintRecap(){
+  var addonLine = (ADDON && state.addon) ? '➕ <b>'+state.qty+' × '+esc(ADDON.name)+'</b> · '+eur(ADDON.price*state.qty)+'<br>' : '';
   document.getElementById("recap").innerHTML=
     '🧺 <b>'+state.qty+' × '+esc(TITLE)+'</b> · '+eur(UNIT*state.qty)+'<br>'
+    +addonLine
     +'📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>'
-    +'🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot);
-  document.getElementById("go4").textContent="Payer "+eur(UNIT*state.qty);
+    +'🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot)
+    +'<br><span style="font-weight:600;color:var(--bd);">Total : '+eur(grandTotal())+'</span>';
+  document.getElementById("go4").textContent="Payer "+eur(grandTotal());
 }
 function renderLogin(){
   var slot=document.getElementById("loginSlot"), me=document.getElementById("meState");
@@ -366,20 +396,22 @@ document.getElementById("go4").onclick=function(){ var info=collect(); if(!info)
 
 function finishOrder(info, payMethod, status, paid){
   try{ localStorage.setItem("acontretemps_phone", String(info.phone||"").replace(/\D/g,"")); }catch(e){}
-  var total=UNIT*state.qty, adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":"");
+  var total=grandTotal(), adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":"");
+  var items=[{name:FORMULE, price:UNIT, qty:state.qty}];
+  if(ADDON && state.addon) items.push({name:ADDON.fullName, price:ADDON.price, qty:state.qty});
   var order={ name:info.name, email:info.mail, phone:info.phone,
-    items:[{name:FORMULE, price:UNIT, qty:state.qty}],
+    items:items,
     total:total, status:status, shipping:"Livraison — "+adr, pickup_date:state.date,
     payment_method:payMethod, paid:!!paid,
-    note:TITLE+" · "+state.qty+" "+UNITLABELP+" · "+state.dateLabel+" "+state.slot+" · "+adr+(paid?" — PAYÉ EN LIGNE":"") };
+    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+state.dateLabel+" "+state.slot+" · "+adr+(paid?" — PAYÉ EN LIGNE":"") };
   return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); showSuccess(info, paid); });
 }
 function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
 function startOnline(info){
-  var go=document.getElementById("go4"), err=document.getElementById("coErr"), total=UNIT*state.qty;
+  var go=document.getElementById("go4"), err=document.getElementById("coErr"), total=grandTotal();
   go.disabled=true; go.textContent="Préparation du paiement…";
-  fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:total, description:TITLE+" "+state.qty+" "+UNITLABELP})})
+  fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:total, description:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" "+state.qty+" "+UNITLABELP})})
     .then(function(r){return r.json();}).then(function(j){
       if(!j.ok || !j.checkout_id){ err.textContent="Paiement en ligne indisponible"+(j.error?" : "+j.error:"")+". Réessayez ou contactez-nous."; go.disabled=false; go.textContent="Payer "+eur(total); return; }
       var mount=document.getElementById("sumupMount"); go.style.display="none";
