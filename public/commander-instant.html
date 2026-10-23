@@ -228,6 +228,7 @@ function loadRule(cat){
       if(Array.isArray(rr.available_days)&&rr.available_days.length) state.days=rr.available_days;
       if(rr.advance_hours!=null) state.advance=Number(rr.advance_hours);
       if(rr.time_label && /soir/i.test(rr.time_label)) SLOTS=["18h00 – 19h30","19h30 – 21h00"];
+      else if(rr.time_label && /midi/i.test(rr.time_label)) SLOTS=["11h30 – 12h30","12h30 – 13h30"];
       else SLOTS=["9h00 – 10h30","10h30 – 12h00"];
       if(rr.time_label){ document.getElementById("p3sub").textContent="Livraison : "+rr.time_label+". Réservation au moins "+state.advance+" h à l'avance."; }
     }
