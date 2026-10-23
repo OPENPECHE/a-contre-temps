@@ -106,9 +106,20 @@
     <p style="text-align:center;margin-top:12px;"><a id="backLink" href="/" style="font-size:13px;color:var(--bd);">← Voir le détail</a></p>
   </div>
 
+  <!-- Étape : mode de récupération -->
+  <div class="panel" id="pMode">
+    <button class="lnk" id="bkMode">← Quantité</button>
+    <h2>Comment récupérer votre commande ?</h2>
+    <div class="sub">À faire livrer chez vous, ou à retirer sur l'un de nos marchés.</div>
+    <div class="picks">
+      <button type="button" class="pick" id="modeDom">🏠 Livraison à domicile<span class="d2">Chez vous, dans un rayon de 50 km autour de Clermont-Ferrand</span></button>
+      <button type="button" class="pick" id="modeMk">🥖 Retrait sur un marché<span class="d2">Sur notre stand, aux jours et lieux de marché</span></button>
+    </div>
+  </div>
+
   <!-- Étape 2 : adresse -->
   <div class="panel" id="p2">
-    <button class="lnk" id="bk2">← Quantité</button>
+    <button class="lnk" id="bk2">← Mode de récupération</button>
     <h2>Où livrer votre commande ?</h2>
     <div class="sub">Livraison gratuite dans un rayon de 50 km autour de Clermont-Ferrand. Vérifions que vous êtes dans la zone.</div>
     <div class="card">
@@ -140,6 +151,19 @@
     <button class="btn" id="go3" disabled>Continuer</button>
   </div>
 
+  <!-- Étape : retrait sur un marché -->
+  <div class="panel" id="pMarket">
+    <button class="lnk" id="bkMk">← Mode de récupération</button>
+    <h2>Retrait sur un marché</h2>
+    <div class="sub">Choisissez le marché, puis la date. Vous retirez votre commande sur notre stand.</div>
+    <p style="font-size:11px;letter-spacing:.1em;color:var(--is);text-transform:uppercase;margin-bottom:6px;">Marché</p>
+    <div class="picks" id="mkPicks"></div>
+    <p id="mkDateTitle" style="font-size:11px;letter-spacing:.1em;color:var(--is);text-transform:uppercase;margin:16px 0 6px;display:none;">Date de retrait</p>
+    <div class="picks" id="mkDatePicks"></div>
+    <div class="err" id="mErr"></div>
+    <button class="btn" id="goMk" disabled>Continuer</button>
+  </div>
+
   <!-- Étape 4 : coordonnées + paiement -->
   <div class="panel" id="p4">
     <button class="lnk" id="bk4">← Créneau</button>
@@ -151,7 +175,7 @@
     <label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />
     <label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />
     <label>Paiement</label>
-    <div class="note">💳 Paiement en ligne sécurisé par carte. Votre commande est confirmée dès le paiement — la livraison à domicile se règle en ligne.</div>
+    <div class="note">💳 Paiement en ligne sécurisé par carte. Votre commande est confirmée dès le paiement.</div>
     <div class="err" id="coErr"></div>
     <button class="btn" id="go4">Payer</button>
     <div id="sumupMount"></div>
@@ -175,8 +199,10 @@ var UNIT=0, FORMULE="", TITLE="", UNITLABEL="personne", UNITLABELP="personne(s)"
 var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 var SLOTS=["9h00 – 10h30","10h30 – 12h00"];
-var state={ qty:2, addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24, addon:false };
+var state={ qty:2, mode:"domicile", addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24, addon:false,
+            market:null, marketId:null, marketDays:[], marketDate:null, marketDateLabel:"" };
 var currentUser=null, zone=null;
+var markets=[], marketDays={};
 var ADDONS={ s2:{ id:"s4" } };   // l'apéro peut ajouter le café gourmand (s4)
 var ADDON=null;                   // {id, name, fullName, price}
 function addonTotal(){ return (ADDON && state.addon) ? ADDON.price*state.qty : 0; }
@@ -259,9 +285,9 @@ function loadRule(cat){
 }
 
 /* ---- Étapes ---- */
-function show(n){
-  ["p1","p2","p3","p4"].forEach(function(id,i){ document.getElementById(id).classList.toggle("on", i===(n-1)); });
-  document.querySelectorAll(".steps .s").forEach(function(s){ s.classList.toggle("on", Number(s.getAttribute("data-s"))<=n); });
+function showPanel(id, prog){
+  ["p1","pMode","p2","p3","pMarket","p4"].forEach(function(pid){ var el=document.getElementById(pid); if(el) el.classList.toggle("on", pid===id); });
+  document.querySelectorAll(".steps .s").forEach(function(s){ s.classList.toggle("on", Number(s.getAttribute("data-s"))<=prog); });
   window.scrollTo(0,0);
 }
 function paintQty(){
@@ -271,7 +297,12 @@ function paintQty(){
 }
 document.getElementById("pMinus").onclick=function(){ if(state.qty>1){ state.qty--; paintQty(); } };
 document.getElementById("pPlus").onclick=function(){ if(state.qty<40){ state.qty++; paintQty(); } };
-document.getElementById("go1").onclick=function(){ show(2); };
+document.getElementById("go1").onclick=function(){ showPanel("pMode",2); };
+
+/* ---- Mode de récupération ---- */
+document.getElementById("bkMode").onclick=function(){ showPanel("p1",1); };
+document.getElementById("modeDom").onclick=function(){ state.mode="domicile"; showPanel("p2",3); };
+document.getElementById("modeMk").onclick=function(){ state.mode="marche"; buildMarkets(); showPanel("pMarket",3); };
 
 /* ---- Adresse + zone ---- */
 function distKm(la1,lo1,la2,lo2){ var R=6371, p=Math.PI/180; var dLa=(la2-la1)*p, dLo=(lo2-lo1)*p;
@@ -296,8 +327,8 @@ document.getElementById("aCheck").onclick=function(){
   }).catch(function(){ btn.disabled=false; btn.textContent="Vérifier l'adresse"; err.textContent="Vérification impossible, réessayez."; });
 };
 ["aStreet","aCp","aCity"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ document.getElementById("go2").disabled=true; document.getElementById("aOk").textContent=""; }); });
-document.getElementById("bk2").onclick=function(){ show(1); };
-document.getElementById("go2").onclick=function(){ buildCreneau(); show(3); };
+document.getElementById("bk2").onclick=function(){ showPanel("pMode",2); };
+document.getElementById("go2").onclick=function(){ buildCreneau(); showPanel("p3",3); };
 
 /* ---- Créneau ---- */
 function upcomingDates(days, advanceH){
@@ -322,17 +353,59 @@ function buildCreneau(){
   sp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ sp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on"); state.slot=b.getAttribute("data-slot"); checkCreneau(); }; });
 }
 function checkCreneau(){ document.getElementById("go3").disabled=!(state.date && state.slot); }
-document.getElementById("bk3").onclick=function(){ show(2); };
-document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); prefill(); show(4); };
+document.getElementById("bk3").onclick=function(){ showPanel("p2",3); };
+document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); prefill(); showPanel("p4",4); };
+
+/* ---- Retrait marché ---- */
+function loadMarkets(){
+  return sb("pickup_points?type=eq.market&active=eq.true&select=id,name&order=position.asc,name.asc").then(function(r){return r.json();}).then(function(d){
+    markets=Array.isArray(d)?d:[];
+    return sb("market_schedules?select=pickup_point_id,day_of_week").then(function(r){return r.json();}).then(function(sc){
+      marketDays={}; (Array.isArray(sc)?sc:[]).forEach(function(x){ if(x.day_of_week==null) return; (marketDays[x.pickup_point_id]=marketDays[x.pickup_point_id]||[]).push(Number(x.day_of_week)); });
+    });
+  }).catch(function(){});
+}
+function buildMarkets(){
+  var mp=document.getElementById("mkPicks");
+  mp.innerHTML = markets.length ? markets.map(function(m){
+    var days=(marketDays[m.id]&&marketDays[m.id].length)?marketDays[m.id]:[0];
+    var jours=days.map(function(d){return JOURS[d];}).join(", ");
+    return '<button type="button" class="pick" data-id="'+m.id+'" data-name="'+esc(m.name)+'">📍 '+esc(m.name)+'<span class="d2">'+jours+'</span></button>';
+  }).join("") : '<div class="sub">Aucun marché programmé pour le moment.</div>';
+  mp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){
+    mp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on");
+    state.market=b.getAttribute("data-name"); state.marketId=b.getAttribute("data-id");
+    state.marketDays=(marketDays[state.marketId]&&marketDays[state.marketId].length)?marketDays[state.marketId]:[0];
+    state.marketDate=null; state.marketDateLabel=""; buildMarketDates(); checkMarket();
+  }; });
+}
+function buildMarketDates(){
+  document.getElementById("mkDateTitle").style.display="";
+  var dates=upcomingDates(state.marketDays, 24);
+  var dp=document.getElementById("mkDatePicks");
+  dp.innerHTML = dates.length ? dates.map(function(dt){
+    var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+    var label=JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()];
+    return '<button type="button" class="pick" data-iso="'+iso+'" data-label="'+esc(label)+'">🗓️ '+label+'</button>';
+  }).join("") : '<div class="sub">Aucune date de marché disponible.</div>';
+  dp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){
+    dp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on");
+    state.marketDate=b.getAttribute("data-iso"); state.marketDateLabel=b.getAttribute("data-label"); checkMarket();
+  }; });
+}
+function checkMarket(){ document.getElementById("goMk").disabled=!(state.market && state.marketDate); }
+document.getElementById("bkMk").onclick=function(){ showPanel("pMode",2); };
+document.getElementById("goMk").onclick=function(){ paintRecap(); renderLogin(); prefill(); showPanel("p4",4); };
 
 /* ---- Coordonnées + connexion + paiement ---- */
 function paintRecap(){
   var addonLine = (ADDON && state.addon) ? '➕ <b>'+state.qty+' × '+esc(ADDON.name)+'</b> · '+eur(ADDON.price*state.qty)+'<br>' : '';
+  var fulfil = (state.mode==="marche")
+    ? '🥖 Retrait marché : <b>'+esc(state.market)+'</b><br>🗓️ '+esc(state.marketDateLabel)
+    : '📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot);
   document.getElementById("recap").innerHTML=
     '🧺 <b>'+state.qty+' × '+esc(TITLE)+'</b> · '+eur(UNIT*state.qty)+'<br>'
-    +addonLine
-    +'📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>'
-    +'🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot)
+    +addonLine + fulfil
     +'<br><span style="font-weight:600;color:var(--bd);">Total : '+eur(grandTotal())+'</span>';
   document.getElementById("go4").textContent="Payer "+eur(grandTotal());
 }
@@ -380,13 +453,13 @@ function renderLogin(){
   };
   var back=slot.querySelector("#lgBack"); if(back) back.onclick=function(){ slot.dataset.stage="idle"; renderLogin(); };
 }
-document.getElementById("bk4").onclick=function(){ show(3); };
+document.getElementById("bk4").onclick=function(){ if(state.mode==="marche") showPanel("pMarket",3); else showPanel("p3",3); };
 
 function collect(){
   var err=document.getElementById("coErr"); err.textContent="";
   var name=document.getElementById("coName").value.trim(), phone=document.getElementById("coPhone").value.trim(), mail=document.getElementById("coMail").value.trim();
-  if(!state.addr){ err.textContent="Adresse manquante."; return null; }
-  if(!state.date||!state.slot){ err.textContent="Créneau manquant."; return null; }
+  if(state.mode==="marche"){ if(!state.market||!state.marketDate){ err.textContent="Choisissez le marché et la date."; return null; } }
+  else { if(!state.addr){ err.textContent="Adresse manquante."; return null; } if(!state.date||!state.slot){ err.textContent="Créneau manquant."; return null; } }
   if(!name){ err.textContent="Indiquez votre nom."; return null; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ err.textContent="E‑mail invalide."; return null; }
   if(!phone){ err.textContent="Indiquez un téléphone."; return null; }
@@ -396,14 +469,17 @@ document.getElementById("go4").onclick=function(){ var info=collect(); if(!info)
 
 function finishOrder(info, payMethod, status, paid){
   try{ localStorage.setItem("acontretemps_phone", String(info.phone||"").replace(/\D/g,"")); }catch(e){}
-  var total=grandTotal(), adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":"");
+  var total=grandTotal();
   var items=[{name:FORMULE, price:UNIT, qty:state.qty}];
   if(ADDON && state.addon) items.push({name:ADDON.fullName, price:ADDON.price, qty:state.qty});
+  var shipping, pdate, locNote;
+  if(state.mode==="marche"){ shipping="Retrait marché — "+state.market; pdate=state.marketDate; locNote="Retrait "+state.market+" le "+state.marketDateLabel; }
+  else { var adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":""); shipping="Livraison — "+adr; pdate=state.date; locNote=state.dateLabel+" "+state.slot+" · "+adr; }
   var order={ name:info.name, email:info.mail, phone:info.phone,
     items:items,
-    total:total, status:status, shipping:"Livraison — "+adr, pickup_date:state.date,
+    total:total, status:status, shipping:shipping, pickup_date:pdate,
     payment_method:payMethod, paid:!!paid,
-    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+state.dateLabel+" "+state.slot+" · "+adr+(paid?" — PAYÉ EN LIGNE":"") };
+    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+locNote+(paid?" — PAYÉ EN LIGNE":"") };
   return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); showSuccess(info, paid); });
 }
@@ -431,9 +507,13 @@ function startOnline(info){
     }).catch(function(){ err.textContent="Erreur réseau. Réessayez."; go.disabled=false; go.textContent="Payer "+eur(total); });
 }
 function showSuccess(info, paid){
+  var when = (state.mode==="marche")
+    ? 'à retirer sur le marché <strong>'+esc(state.market)+'</strong> le <strong>'+esc(state.marketDateLabel)+'</strong>'
+    : 'livrée le <strong>'+esc(state.dateLabel)+'</strong> ('+esc(state.slot)+')';
+  var loc = (state.mode==="marche") ? '🥖 Retrait sur notre stand' : '📍 '+esc(state.addr.label);
   document.getElementById("wrap").innerHTML='<div class="ok-screen"><div style="font-size:44px;">🧺</div><div class="big">'+(paid?"Paiement confirmé&nbsp;!":"Commande enregistrée&nbsp;!")+'</div>'
-    +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Votre commande (<strong>'+state.qty+' '+esc(UNITLABELP)+'</strong>) sera livrée le <strong>'+esc(state.dateLabel)+'</strong> ('+esc(state.slot)+').</p>'
-    +'<p style="color:var(--is);margin-top:8px;">📍 '+esc(state.addr.label)+'</p>'
+    +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Votre commande (<strong>'+state.qty+' '+esc(UNITLABELP)+'</strong>) sera '+when+'.</p>'
+    +'<p style="color:var(--is);margin-top:8px;">'+loc+'</p>'
     +'<p style="color:var(--is);margin-top:8px;">Votre commande est payée. Un e‑mail de confirmation vous a été envoyé.</p>'
     +'<a href="/" class="btn" style="max-width:260px;margin:18px auto 0;display:block;text-decoration:none;text-align:center;">Retour à l\'accueil</a></div>';
   window.scrollTo(0,0);
@@ -445,6 +525,7 @@ document.getElementById("loginSlot").dataset.stage="idle";
 renderLogin();
 loadUser();
 loadZone();
+loadMarkets();
 loadProduct().then(function(){ paintQty(); }).catch(function(){});
 </script>
 </body>
