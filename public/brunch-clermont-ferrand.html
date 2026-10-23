@@ -99,13 +99,13 @@
       <div class="center">
         <span class="eyebrow">La formule signature</span>
         <h2>L'Instant Brunch</h2>
-        <p style="margin-top:14px;">Une parenthèse gourmande, entre douceur et salé.</p>
+        <p id="brTag" style="margin-top:14px;">Une parenthèse gourmande, entre douceur et salé.</p>
         <div style="display:inline-flex;align-items:baseline;gap:8px;margin-top:20px;background:var(--bd);color:var(--cr);border-radius:999px;padding:12px 26px;">
-          <span style="font-family:var(--serif);font-size:30px;line-height:1;">29&nbsp;€</span>
+          <span id="brPrice" style="font-family:var(--serif);font-size:30px;line-height:1;">29&nbsp;€</span>
           <span style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.9;">par personne</span>
         </div>
       </div>
-      <div class="card" style="max-width:620px;margin:0 auto;">
+      <div class="card" id="brCompo" style="max-width:620px;margin:0 auto;">
         <p style="font-family:var(--serif);font-size:19px;color:var(--bd);text-align:center;margin-bottom:4px;">Votre brunch comprend, pour chaque personne :</p>
         <p style="text-align:center;color:var(--is);font-size:13.5px;margin-bottom:20px;">Tout est inclus — le salé, le sucré <em>et</em> les accompagnements.</p>
 
@@ -130,7 +130,7 @@
           <li style="padding:7px 0 7px 20px;position:relative;"><span style="position:absolute;left:0;color:var(--ru);">•</span>Une touche de gourmandise selon la saison</li>
         </ul>
       </div>
-      <div class="prose" style="margin-top:40px;text-align:center;">
+      <div class="prose" id="brNotes" style="margin-top:40px;text-align:center;">
         <p>Les compositions évoluent au fil des saisons, des produits disponibles et de l'inspiration du fournil.</p>
         <p>Une envie particulière&nbsp;? L'offre peut être complétée par des <strong>suppléments gourmands</strong> selon vos souhaits. Elle est également <strong>personnalisable</strong> pour vos anniversaires et événements, sur devis et avec supplément.</p>
       </div>
@@ -201,5 +201,54 @@
     à contre-temps — Fournil vivant · Gerzat (63360) · <a href="mailto:acontretemps@fournilvivant.fr">acontretemps@fournilvivant.fr</a><br>
     Artisan boulanger &amp; traiteur à Clermont-Ferrand
   <br><a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a></footer>
+<script>
+/* Hydrate la présentation de L'Instant Brunch depuis le back-office (produit s1).
+   Le HTML ci-dessus reste le repli (SEO + hors-ligne) ; ce script le met à jour. */
+(function(){
+  var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co";
+  var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+  function esc(s){ return String(s==null?"":s).replace(/[&<>]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;"})[c];}); }
+  function emojiFor(h){ h=(h||"").toLowerCase(); if(/sal[ée]/.test(h)) return "🥪 "; if(/sucr[ée]/.test(h)) return "🥐 "; if(/accompagn|table|autour/.test(h)) return "🧺 "; return ""; }
+  function parse(txt){
+    var raw=[], buf=[];
+    String(txt).split(/\r?\n/).forEach(function(l){ if(l.trim()===""){ if(buf.length){raw.push(buf);buf=[];} } else buf.push(l); });
+    if(buf.length) raw.push(buf);
+    var tag=null, secs=[], notes=[];
+    raw.forEach(function(blk){
+      var bullets=blk.filter(function(l){return /^\s*[•\-*]/.test(l);});
+      if(bullets.length){
+        var head=(blk.filter(function(l){return !/^\s*[•\-*]/.test(l);})[0]||"").trim();
+        var items=bullets.map(function(l){return l.replace(/^\s*[•\-*]\s*/,"").trim();});
+        secs.push({head:head, items:items});
+      } else {
+        var t=blk.join(" ").trim();
+        if(tag===null && secs.length===0) tag=t; else notes.push(t);
+      }
+    });
+    return {tag:tag, secs:secs, notes:notes};
+  }
+  function render(p){
+    if(!p || !p.description) return;
+    var d=parse(p.description);
+    if(d.tag){ var el=document.getElementById("brTag"); if(el) el.textContent=d.tag; }
+    if(p.price!=null){ var pr=document.getElementById("brPrice"); if(pr) pr.innerHTML=(Math.round(Number(p.price)*100)/100).toString().replace(".",",")+"&nbsp;€"; }
+    if(d.secs.length){
+      var html='<p style="font-family:var(--serif);font-size:19px;color:var(--bd);text-align:center;margin-bottom:4px;">Votre brunch comprend, pour chaque personne :</p>'
+             +'<p style="text-align:center;color:var(--is);font-size:13.5px;margin-bottom:20px;">Tout est inclus.</p>';
+      d.secs.forEach(function(s,i){
+        var mb=(i===d.secs.length-1)?"0":"18px";
+        html+='<div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ru);margin-bottom:6px;">'+emojiFor(s.head)+esc(s.head)+'</div>';
+        html+='<ul style="list-style:none;padding:0;margin:0 0 '+mb+';color:var(--ink);font-size:15px;">'
+             + s.items.map(function(it){return '<li style="padding:7px 0 7px 20px;position:relative;"><span style="position:absolute;left:0;color:var(--ru);">•</span>'+esc(it)+'</li>';}).join("")
+             +'</ul>';
+      });
+      var card=document.getElementById("brCompo"); if(card) card.innerHTML=html;
+    }
+    if(d.notes.length){ var nt=document.getElementById("brNotes"); if(nt) nt.innerHTML=d.notes.map(function(t){return '<p>'+esc(t)+'</p>';}).join(""); }
+  }
+  fetch(SB_URL+"/rest/v1/products?id=eq.s1&select=price,description",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}})
+    .then(function(r){return r.ok?r.json():null;}).then(function(d){ if(Array.isArray(d)&&d[0]) render(d[0]); }).catch(function(){});
+})();
+</script>
 </body>
 </html>
