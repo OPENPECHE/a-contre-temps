@@ -508,6 +508,17 @@ function showNotRegistered(ov){
 }
 function queueLoyalty(phone){ loyaltyQueue.push({phone:phone, ts:Date.now()}); LS.set("caisse_loyalty_queue", loyaltyQueue); }
 
+/* Carte de fidélité scannée à la douchette (le QR encode le n° de téléphone). */
+function scanLoyaltyCard(phone){
+  var ov=document.getElementById("loyOv"); if(ov) ov.remove();
+  ov=document.createElement("div"); ov.className="ov"; ov.id="loyOv";
+  ov.innerHTML='<div class="card"><h3 style="text-align:center;">🥖 Carte de fidélité</h3>'
+    +'<div class="sub" style="text-align:center;">Carte scannée · '+esc(fmtPhone(phone))+'</div>'
+    +'<div id="loyMsg" class="sub" style="min-height:20px;margin-top:8px;text-align:center;">…</div></div>';
+  document.body.appendChild(ov);
+  creditLoyalty(phone, ov);
+}
+
 /* Rattache la dernière vente au numéro (pour l'historique de consommation). */
 function attachPhoneToLastSale(phone){
   if (!lastSale) return;
@@ -1096,8 +1107,10 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.j
   function onScan(code){
     code=String(code).trim(); if(!code) return;
     var a=articles.find(function(x){ return x.barcode && String(x.barcode)===code; });
-    if(a){ addToTicket(a.id); toast("➕ "+a.name); }
-    else { toast("Code-barres inconnu : "+code); }
+    if(a){ addToTicket(a.id); toast("➕ "+a.name); return; }
+    var ph=normPhone(code);
+    if(/^0\d{9}$/.test(ph)){ scanLoyaltyCard(ph); return; }   // carte de fidélité (QR = n° de tél)
+    toast("Code inconnu : "+code);
   }
   document.addEventListener("keydown", function(e){
     var t=e.target, tag=(t&&t.tagName)||"";
