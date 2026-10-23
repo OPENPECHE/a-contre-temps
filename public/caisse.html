@@ -391,6 +391,10 @@ function syncQueue(){
 var loyaltyQueue = LS.get("caisse_loyalty_queue", []);
 function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g, "$1 ").trim(); }
+/* Douchette en clavier US sur un PC AZERTY : les chiffres sortent en symboles.
+   On retraduit la rangée du haut (sans Shift) : &é"'(-è_çà → 1234567890. */
+var AZMAP={ "&":"1","é":"2","\"":"3","'":"4","(":"5","-":"6","è":"7","_":"8","ç":"9","à":"0" };
+function unAzerty(s){ return String(s||"").replace(/[&é"'(\-è_çà]/g, function(c){ return AZMAP[c]||c; }); }
 
 function promptLoyalty(){
   if (borneCode){ askViaBorne(lastSale ? lastSale.total : 0); return; }
@@ -405,14 +409,21 @@ function promptLoyalty(){
     + '</div>';
   document.body.appendChild(ov);
   var inp=ov.querySelector("#loyPhone");
-  inp.addEventListener("input", function(){ var c=normPhone(inp.value).slice(0,10); inp.value=fmtPhone(c); });
+  var done=false;
+  function go(){
+    if(done) return;
+    var p=normPhone(unAzerty(inp.value));
+    if (p.length < 10){ ov.querySelector("#loyMsg").textContent="Numéro à 10 chiffres, s'il vous plaît."; return; }
+    done=true; creditLoyalty(p, ov);
+  }
+  inp.addEventListener("input", function(){
+    var c=normPhone(unAzerty(inp.value)).slice(0,10); inp.value=fmtPhone(c);
+    if(c.length===10){ clearTimeout(inp._auto); inp._auto=setTimeout(function(){ if(!done && normPhone(unAzerty(inp.value)).length===10) go(); }, 250); }  // scan douchette ou saisie complète → valide tout seul
+  });
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } });   // la douchette envoie Entrée
   setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
   ov.querySelector("#loySkip").onclick = function(){ ov.remove(); };
-  ov.querySelector("#loyGo").onclick = function(){
-    var p=normPhone(inp.value);
-    if (p.length < 10){ ov.querySelector("#loyMsg").textContent="Numéro à 10 chiffres, s'il vous plaît."; return; }
-    creditLoyalty(p, ov);
-  };
+  ov.querySelector("#loyGo").onclick = go;
 }
 
 /* Mode 2 tablettes : on demande le numéro sur la borne client, réponse en direct. */
@@ -1104,13 +1115,14 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.j
 /* ───────── Douchette code-barres (USB = clavier rapide + Entrée) ───────── */
 (function(){
   var buf="", last=0;
-  function onScan(code){
-    code=String(code).trim(); if(!code) return;
-    var a=articles.find(function(x){ return x.barcode && String(x.barcode)===code; });
+  function onScan(raw){
+    raw=String(raw).trim(); if(!raw) return;
+    var dig=unAzerty(raw);   // douchette US sur PC AZERTY → retraduit en chiffres
+    var a=articles.find(function(x){ return x.barcode && (String(x.barcode)===dig || String(x.barcode)===raw); });
     if(a){ addToTicket(a.id); toast("➕ "+a.name); return; }
-    var ph=normPhone(code);
+    var ph=normPhone(dig);
     if(/^0\d{9}$/.test(ph)){ scanLoyaltyCard(ph); return; }   // carte de fidélité (QR = n° de tél)
-    toast("Code inconnu : "+code);
+    toast("Code inconnu : "+dig);
   }
   document.addEventListener("keydown", function(e){
     var t=e.target, tag=(t&&t.tagName)||"";
