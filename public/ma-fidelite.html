@@ -34,8 +34,8 @@
   /* carte résultat */
   .result{text-align:center;}
   .result .big{font-family:var(--serif);font-size:24px;color:var(--bd);margin:2px 0 4px;}
-  .dots{margin:16px 0 8px;line-height:1;}
-  .dot{display:inline-block;width:26px;height:26px;border-radius:50%;margin:4px;border:2px solid var(--bd);vertical-align:middle;}
+  .dots{display:grid;grid-template-columns:repeat(5,26px);gap:12px;justify-content:center;margin:18px auto 8px;line-height:1;}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--bd);}
   .dot.on{background:var(--bd);}
   .count{font-size:15px;color:var(--is);}
   .free{margin-top:16px;background:var(--cr);border-radius:12px;padding:14px;color:var(--ru);font-weight:600;}
