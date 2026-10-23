@@ -11,6 +11,8 @@
     { "source": "/commander", "destination": "/commander.html" },
     { "source": "/commander-marche", "destination": "/commander-marche.html" },
     { "source": "/commander-brunch", "destination": "/commander-brunch.html" },
+    { "source": "/cafe-gourmand-clermont-ferrand", "destination": "/cafe-gourmand-clermont-ferrand.html" },
+    { "source": "/planche-de-saison-clermont-ferrand", "destination": "/planche-de-saison-clermont-ferrand.html" },
     { "source": "/ma-fidelite", "destination": "/ma-fidelite.html" },
     { "source": "/creer-compte", "destination": "/creer-compte.html" },
     { "source": "/mon-compte", "destination": "/mon-compte.html" },
