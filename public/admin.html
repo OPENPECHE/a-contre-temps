@@ -1090,7 +1090,7 @@ function productRow(p){
     </button>
     <div style="flex:1;min-width:0">
       <p style="font-size:13px">${esc(p.name)}${p.on_market?` <span style="font-size:10px;color:#4A7C59;border:1px solid #4A7C5955;border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap">🛒 Marché</span>`:""}</p>
-      ${p.description?`<p style="font-size:11px;color:var(--is);margin-top:2px">${esc(p.description)}</p>`:""}
+      ${p.description?`<p style="font-size:11px;color:var(--is);margin-top:2px;white-space:pre-line;line-height:1.5">${esc(p.description)}</p>`:""}
       ${meta.length?`<p style="font-size:11px;color:var(--ru);margin-top:2px">${meta.join(" · ")}</p>`:""}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">

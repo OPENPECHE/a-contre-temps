@@ -260,12 +260,21 @@ function mapProducts(d){
     return { id:p.id, name:p.name, price:Number(p.price)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0 };
   });
 }
+function instantLabel(name){ return String(name||"").split("—")[0].trim(); }
 function loadArticles(){
   if (!navigator.onLine){ renderArticles(); return; }
-  sbFetch("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,position&order=position.asc,name.asc")
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(Array.isArray(d)){ articles=mapProducts(d); LS.set("caisse_articles_cache", articles); renderArticles(); } })
-    .catch(function(){ renderArticles(); });
+  Promise.all([
+    sbFetch("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,position&order=position.asc,name.asc").then(function(r){ return r.json(); }),
+    sbFetch("products?id=in.(s1,s2,s4)&select=id,name,price&order=price.asc").then(function(r){ return r.json(); })
+  ]).then(function(res){
+    var market = mapProducts(res[0]);
+    // « Nos instants » (brunch, apéro, café gourmand) — regroupés en bas de la caisse
+    var instants = (Array.isArray(res[1])?res[1]:[]).map(function(p){
+      return { id:p.id, name:instantLabel(p.name), price:Number(p.price)||0, category:"Nos instants", color:"#3E5A70" };
+    });
+    articles = market.concat(instants);
+    LS.set("caisse_articles_cache", articles); renderArticles();
+  }).catch(function(){ renderArticles(); });
 }
 function renderArticles(){
   var box = document.getElementById("articles");
