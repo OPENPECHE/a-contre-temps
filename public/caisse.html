@@ -247,17 +247,29 @@ function setNet(){
 window.addEventListener("online", setNet);
 window.addEventListener("offline", setNet);
 
-/* ───────────────── Articles ───────────────── */
+/* ───────────────── Articles ─────────────────
+   Source unique : les produits « marché » gérés dans le back-office (table products,
+   on_market = true). Couleur de tuile déduite de la catégorie. */
+var ART_COLORS = ["#A6713F","#C2843E","#7C8B5E","#7C97AC","#3E5A70","#B0768C","#5E8B8B"];
+function colorFor(cat){
+  var s=String(cat||""); var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  return ART_COLORS[h % ART_COLORS.length];
+}
+function mapProducts(d){
+  return (Array.isArray(d)?d:[]).map(function(p){
+    return { id:p.id, name:p.name, price:Number(p.price)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0 };
+  });
+}
 function loadArticles(){
   if (!navigator.onLine){ renderArticles(); return; }
-  sbFetch("caisse_articles?active=eq.true&order=position.asc,name.asc")
+  sbFetch("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,position&order=position.asc,name.asc")
     .then(function(r){ return r.json(); })
-    .then(function(d){ if(Array.isArray(d)){ articles=d; LS.set("caisse_articles_cache", d); renderArticles(); } })
+    .then(function(d){ if(Array.isArray(d)){ articles=mapProducts(d); LS.set("caisse_articles_cache", articles); renderArticles(); } })
     .catch(function(){ renderArticles(); });
 }
 function renderArticles(){
   var box = document.getElementById("articles");
-  if (!articles.length){ box.innerHTML = '<div class="tk-empty">Aucun article. Touchez « Articles » pour en ajouter.</div>'; return; }
+  if (!articles.length){ box.innerHTML = '<div class="tk-empty">Aucun article marché. Ajoutez des produits dans le back-office et cochez « Afficher sur le marché ».</div>'; return; }
   var cats = {}; var order = [];
   articles.forEach(function(a){ var c=a.category||"Articles"; if(!cats[c]){cats[c]=[];order.push(c);} cats[c].push(a); });
   var html = "";
@@ -898,82 +910,20 @@ document.getElementById("btnDay").onclick = function(){
 /* ───────────────── Éditeur d'articles ───────────────── */
 document.getElementById("btnArticles").onclick = function(){
   var ov = document.createElement("div"); ov.className="ov";
-  var colors = ["#A6713F","#C2843E","#7C8B5E","#7C97AC","#3E5A70","#B0768C","#5E8B8B"];
-  ov.innerHTML = '<div class="card"><h3>Articles &amp; catégories</h3>'
-    + '<div class="sub">Classez vos articles par catégorie. Touchez la pastille pour la couleur. Tout est enregistré en ligne.</div>'
-    + '<div id="edBox"></div>'
-    + '<button class="big ghost" id="edNewCat" style="margin-top:14px;">+ Nouvelle catégorie</button>'
-    + '<button class="big ok" id="edClose" style="margin-top:10px;">Terminé</button></div>';
+  var n = articles.length;
+  ov.innerHTML = '<div class="card"><h3>Articles du marché</h3>'
+    + '<div class="sub">Les articles de la caisse sont les produits du <b>back-office</b> cochés « Afficher sur le marché ». Pour ajouter, renommer, changer les prix ou l\'ordre, passez par le back-office — la caisse se met à jour ensuite.</div>'
+    + '<div class="sub" style="margin-top:6px;">Actuellement : <b>'+n+'</b> article'+(n>1?'s':'')+' sur la caisse.</div>'
+    + '<button class="big ok" id="edRefresh" style="margin-top:16px;">🔄 Rafraîchir depuis le back-office</button>'
+    + '<button class="big ghost" id="edOpen" style="margin-top:10px;">Ouvrir le back-office ↗</button>'
+    + '<button class="big ghost" id="edClose" style="margin-top:10px;">Terminé</button></div>';
   document.body.appendChild(ov);
-  var box = ov.querySelector("#edBox");
-
-  function maxPos(){ return articles.reduce(function(m,a){ return Math.max(m, a.position||0); }, 0); }
-  function reload(){ return sbFetch("caisse_articles?order=position.asc,name.asc").then(function(r){return r.json();})
-      .then(function(d){ if(Array.isArray(d)){ articles=d; LS.set("caisse_articles_cache", d); renderArticles(); } draw(); }); }
-  function patch(a, body){ if(!navigator.onLine){ toast("Hors ligne — non enregistré"); return Promise.resolve(); }
-      return sbFetch("caisse_articles?id=eq."+a.id, { method:"PATCH", body:JSON.stringify(body) }); }
-  function createIn(cat){ if(!navigator.onLine){ toast("Hors ligne"); return; }
-      sbFetch("caisse_articles", { method:"POST", body:JSON.stringify({ name:"Nouvel article", price:0, color:colors[0], category:cat, position:maxPos()+1, active:true }) })
-        .then(function(){ reload(); }); }
-  function del(a){ if(!confirm("Supprimer « "+a.name+" » ?")) return;
-      (a.id? sbFetch("caisse_articles?id=eq."+a.id, { method:"DELETE" }) : Promise.resolve()).then(function(){ reload(); }); }
-  function renameCat(oldName, newName){ newName=(newName||"").trim();
-      if(!newName || newName===oldName) return;
-      if(!navigator.onLine){ toast("Hors ligne"); draw(); return; }
-      sbFetch("caisse_articles?category=eq."+encodeURIComponent(oldName), { method:"PATCH", body:JSON.stringify({category:newName}) }).then(function(){ reload(); }); }
-
-  function model(){ // structure ordonnée [{name, arts:[...]}] selon position
-    var g={}, order=[]; articles.forEach(function(a){ var c=a.category||"Sans catégorie"; if(!g[c]){ g[c]={name:c, arts:[]}; order.push(c); } g[c].arts.push(a); });
-    return order.map(function(c){ return g[c]; });
-  }
-  function swap(arr,i,j){ var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
-  function applyOrder(m){
-    var pos=1, changed=[];
-    m.forEach(function(cat){ cat.arts.forEach(function(a){ var np=pos++; if(a.position!==np){ a.position=np; changed.push(a); } }); });
-    articles = m.reduce(function(acc,cat){ return acc.concat(cat.arts); }, []);
-    LS.set("caisse_articles_cache", articles); renderArticles(); draw();
-    if (navigator.onLine){ changed.forEach(function(a){ sbFetch("caisse_articles?id=eq."+a.id, { method:"PATCH", body:JSON.stringify({ position:a.position }) }); }); }
-    else if (changed.length) toast("Hors ligne — ordre non enregistré");
-  }
-
-  function draw(){
-    var m = model(); box.innerHTML = "";
-    if (!m.length){ box.innerHTML = '<div class="sub" style="margin-top:14px;">Aucun article. Créez une catégorie pour commencer.</div>'; return; }
-    m.forEach(function(cat, ci){
-      var sec = document.createElement("div"); sec.style.marginTop = "18px";
-      var head = document.createElement("div"); head.style.cssText = "display:flex;align-items:center;gap:6px;";
-      head.innerHTML = '<button class="mv" data-cu'+(ci===0?' style="opacity:.25"':'')+'>▲</button><button class="mv" data-cd'+(ci===m.length-1?' style="opacity:.25"':'')+'>▼</button>'
-        + '<input class="catName" value="'+esc(cat.name)+'" style="flex:1;border:none;border-bottom:1px solid var(--bs);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ru);font-weight:600;padding:5px 2px;background:none;"/>';
-      head.querySelector(".catName").onchange = function(e){ renameCat(cat.name, e.target.value); };
-      head.querySelector("[data-cu]").onclick = function(){ if(ci>0){ swap(m,ci,ci-1); applyOrder(m); } };
-      head.querySelector("[data-cd]").onclick = function(){ if(ci<m.length-1){ swap(m,ci,ci+1); applyOrder(m); } };
-      sec.appendChild(head);
-      cat.arts.forEach(function(a, ai){
-        var row = document.createElement("div"); row.className="ed-row";
-        row.innerHTML = '<button class="mv" data-au'+(ai===0?' style="opacity:.25"':'')+'>▲</button><button class="mv" data-ad'+(ai===cat.arts.length-1?' style="opacity:.25"':'')+'>▼</button>'
-          + '<button class="sw" style="background:'+(a.color||"#7C97AC")+'"></button>'
-          + '<input class="en" value="'+esc(a.name)+'" placeholder="Nom"/>'
-          + '<input class="ep" value="'+(a.price!=null?(+a.price).toFixed(2):"")+'" inputmode="decimal"/>'
-          + '<button class="ed-del">×</button>';
-        row.querySelector(".en").onchange = function(e){ a.name=e.target.value; LS.set("caisse_articles_cache",articles); patch(a,{name:a.name}); };
-        row.querySelector(".ep").onchange = function(e){ a.price=parseFloat(String(e.target.value).replace(",","."))||0; e.target.value=a.price.toFixed(2); LS.set("caisse_articles_cache",articles); patch(a,{price:a.price}); };
-        row.querySelector(".sw").onclick = function(){ var k=colors.indexOf(a.color); a.color=colors[(k+1)%colors.length]; row.querySelector(".sw").style.background=a.color; LS.set("caisse_articles_cache",articles); patch(a,{color:a.color}); };
-        row.querySelector(".ed-del").onclick = function(){ del(a); };
-        row.querySelector("[data-au]").onclick = function(){ if(ai>0){ swap(cat.arts,ai,ai-1); applyOrder(m); } };
-        row.querySelector("[data-ad]").onclick = function(){ if(ai<cat.arts.length-1){ swap(cat.arts,ai,ai+1); applyOrder(m); } };
-        sec.appendChild(row);
-      });
-      var add = document.createElement("button"); add.className="big ghost";
-      add.textContent = "+ Ajouter dans « "+cat.name+" »"; add.style.cssText = "margin-top:6px;font-size:13px;padding:9px;";
-      add.onclick = function(){ createIn(cat.name); };
-      sec.appendChild(add);
-      box.appendChild(sec);
-    });
-  }
-
-  ov.querySelector("#edNewCat").onclick = function(){ var n = prompt("Nom de la nouvelle catégorie :", ""); if(n && n.trim()) createIn(n.trim()); };
-  ov.querySelector("#edClose").onclick = function(){ ov.remove(); loadArticles(); };
-  draw();
+  ov.querySelector("#edRefresh").onclick = function(){
+    if(!navigator.onLine){ toast("Hors ligne — impossible de rafraîchir"); return; }
+    loadArticles(); toast("Articles mis à jour"); ov.remove();
+  };
+  ov.querySelector("#edOpen").onclick = function(){ window.open("/admin", "_blank"); };
+  ov.querySelector("#edClose").onclick = function(){ ov.remove(); };
 };
 
 /* ───────────────── PIN ───────────────── */
