@@ -358,7 +358,7 @@
     <a href="/">Retour à l'accueil</a> · Artisan boulanger &amp; traiteur à Clermont-Ferrand
   <br><a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a></footer>
 
-  <div id="pwaPop" hidden style="position:fixed;left:16px;right:16px;bottom:16px;max-width:460px;margin:0 auto;background:var(--bd);color:var(--cr);border-radius:16px;padding:15px 16px;box-shadow:0 12px 34px rgba(43,41,37,.28);z-index:60;display:flex;align-items:center;gap:13px;font-family:var(--sans)">
+  <div id="pwaPop" style="position:fixed;left:16px;right:16px;bottom:16px;max-width:460px;margin:0 auto;background:var(--bd);color:var(--cr);border-radius:16px;padding:15px 16px;box-shadow:0 12px 34px rgba(43,41,37,.28);z-index:60;display:none;align-items:center;gap:13px;font-family:var(--sans)">
     <img src="/heart-cream.png" alt="" style="height:34px;width:auto;flex-shrink:0" />
     <div style="flex:1;min-width:0">
       <div style="font-family:var(--serif);font-size:16px;line-height:1.2">Installez notre application</div>
@@ -392,17 +392,18 @@
     var DISMISS_KEY = 'act_pwa_pop_dismissed';
     function popDismissed(){ try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch(_) { return false; } }
     function setPopDismissed(){ try { localStorage.setItem(DISMISS_KEY, '1'); } catch(_) {} }
-    function showPop(){ if (pop && !isStandalone && !popDismissed()) pop.hidden = false; }
+    function showPop(){ if (pop && !isStandalone && !popDismissed()) pop.style.display = 'flex'; }
+    function hidePop(){ if (pop) pop.style.display = 'none'; }
     function manualHint(){
       if (isIOS) return "Sur iPhone/iPad : appuyez sur Partager, puis « Sur l'écran d'accueil ».";
       if (/android/i.test(window.navigator.userAgent)) return "Ouvrez le menu ⋮ du navigateur, puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »).";
       return "Cliquez sur l'icône d'installation dans la barre d'adresse, ou menu ⋮ → « Installer à contre-temps ».";
     }
-    if (popClose) popClose.addEventListener('click', function(){ if (pop) pop.hidden = true; setPopDismissed(); });
+    if (popClose) popClose.addEventListener('click', function(){ hidePop(); setPopDismissed(); });
     if (popBtn) popBtn.addEventListener('click', async function(){
       if (deferred) {
         deferred.prompt(); try { await deferred.userChoice; } catch(_) {} deferred = null;
-        if (pop) pop.hidden = true; setPopDismissed();
+        hidePop(); setPopDismissed();
       } else {
         // Installation directe indisponible → on montre la marche à suivre
         if (popMsg) popMsg.textContent = manualHint();
@@ -433,7 +434,7 @@
     window.addEventListener('appinstalled', function(){
       if (installBtn) installBtn.hidden = true;
       if (installedHint) installedHint.hidden = false;
-      if (pop) pop.hidden = true;
+      hidePop();
     });
     // Infolettre "Prévenez-moi de l'ouverture"
     var form = document.getElementById('nlForm');
