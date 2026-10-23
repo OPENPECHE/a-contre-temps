@@ -52,6 +52,7 @@
   .picks{display:flex;flex-direction:column;gap:10px;margin:6px 0;}
   .pick{width:100%;text-align:left;padding:14px 15px;border:1px solid var(--bs);background:#fff;border-radius:12px;font-size:15.5px;font-weight:500;color:var(--bd);cursor:pointer;font-family:var(--sans);}
   .pick.on,.pick:hover{border-color:var(--bd);}
+  .pick .d2{display:block;font-size:12px;font-weight:400;color:var(--is);margin-top:3px;line-height:1.35;}
   .confirm{background:var(--cr);border-radius:12px;padding:13px 15px;font-size:14px;color:var(--ink);margin:4px 0 14px;line-height:1.7;}
   .note{font-size:12.5px;color:var(--is);background:var(--cr);border-radius:10px;padding:10px 12px;margin-top:12px;}
   .loginCard{background:#fff;border:1px solid var(--bs);border-radius:12px;padding:14px;margin:6px 0 14px;}
@@ -112,7 +113,7 @@
     <h2>Comment récupérer votre commande ?</h2>
     <div class="sub">À faire livrer chez vous, ou à retirer sur l'un de nos marchés.</div>
     <div class="picks">
-      <button type="button" class="pick" id="modeDom">🏠 Livraison à domicile<span class="d2">Chez vous, dans un rayon de 50 km autour de Clermont-Ferrand</span></button>
+      <button type="button" class="pick" id="modeDom">🏠 Livraison à domicile<span class="d2" id="domD2">Chez vous, autour de Clermont-Ferrand</span></button>
       <button type="button" class="pick" id="modeMk">🥖 Retrait sur un marché<span class="d2">Sur notre stand, aux jours et lieux de marché</span></button>
     </div>
   </div>
@@ -121,7 +122,7 @@
   <div class="panel" id="p2">
     <button class="lnk" id="bk2">← Mode de récupération</button>
     <h2>Où livrer votre commande ?</h2>
-    <div class="sub">Livraison gratuite dans un rayon de 50 km autour de Clermont-Ferrand. Vérifions que vous êtes dans la zone.</div>
+    <div class="sub" id="addrSub">Livraison autour de Clermont-Ferrand. Vérifions que vous êtes dans la zone.</div>
     <div class="card">
       <label>Adresse (n° et rue)</label>
       <input class="fi" id="aStreet" placeholder="12 rue des Vignes Rousses" autocomplete="street-address" />
@@ -520,7 +521,13 @@ function showSuccess(info, paid){
 }
 
 /* ---- Init ---- */
-function loadZone(){ return sb("delivery_zone?select=*&limit=1").then(function(r){return r.json();}).then(function(d){ zone=(Array.isArray(d)&&d[0])||null; }).catch(function(){}); }
+function loadZone(){ return sb("delivery_zone?select=*&limit=1").then(function(r){return r.json();}).then(function(d){ zone=(Array.isArray(d)&&d[0])||null;
+  if(zone && zone.radius_km!=null){
+    var km=Math.round(Number(zone.radius_km));
+    var dom=document.getElementById("domD2"); if(dom) dom.textContent="Chez vous, dans un rayon de "+km+" km autour de Clermont-Ferrand";
+    var as=document.getElementById("addrSub"); if(as) as.textContent="Livraison gratuite dans un rayon de "+km+" km autour de Clermont-Ferrand. Vérifions que vous êtes dans la zone.";
+  }
+}).catch(function(){}); }
 document.getElementById("loginSlot").dataset.stage="idle";
 renderLogin();
 loadUser();
