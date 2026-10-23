@@ -1070,6 +1070,10 @@ function productRow(p){
         <input type="checkbox" id="emarket-${p.id}" ${p.on_market?"checked":""} style="width:16px;height:16px" />
         🛒 Afficher sur la page de commande (marché)
       </label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--is);white-space:nowrap">🔖 Code‑barres</span>
+        <input class="einp" id="ebarcode-${p.id}" style="flex:1;min-width:120px" value="${esc(p.barcode||'')}" placeholder="Cliquez puis scannez avec la douchette, ou saisissez" />
+      </div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--is)">Prix</span>
         <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:70px;text-align:right" value="${p.price}" /><span style="font-size:11px;color:var(--is)">€</span>
@@ -1113,7 +1117,8 @@ async function saveProd(id){
   const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
   const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
   const on_market=!!document.getElementById("emarket-"+id)?.checked;
-  const patch={name,price,description,price_per_kg,weight_g,on_market};
+  const barcode=(document.getElementById("ebarcode-"+id)?.value||"").trim()||null;
+  const patch={name,price,description,price_per_kg,weight_g,on_market,barcode};
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)});
   allProducts=allProducts.map(p=>p.id===id?{...p,...patch}:p);
   editingProdId=null;renderProducts();

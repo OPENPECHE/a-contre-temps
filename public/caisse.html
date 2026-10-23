@@ -257,7 +257,7 @@ function colorFor(cat){
 }
 function mapProducts(d){
   return (Array.isArray(d)?d:[]).map(function(p){
-    return { id:p.id, name:p.name, price:Number(p.price)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0 };
+    return { id:p.id, name:p.name, price:Number(p.price)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0, barcode:(p.barcode||"").trim() };
   });
 }
 var INSTANTS_LABEL = "NOS INSTANTS";   // libellé du rayon « instants » dans la caisse
@@ -265,13 +265,13 @@ function instantLabel(name){ return String(name||"").split("—")[0].trim(); }
 function loadArticles(){
   if (!navigator.onLine){ renderArticles(); return; }
   Promise.all([
-    sbFetch("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,position&order=position.asc,name.asc").then(function(r){ return r.json(); }),
-    sbFetch("products?id=in.(s1,s2,s4,s5)&select=id,name,price&order=price.asc").then(function(r){ return r.json(); })
+    sbFetch("products?on_market=eq.true&active=eq.true&select=*&order=position.asc,name.asc").then(function(r){ return r.json(); }),
+    sbFetch("products?id=in.(s1,s2,s4,s5)&select=*&order=price.asc").then(function(r){ return r.json(); })
   ]).then(function(res){
     var market = mapProducts(res[0]);
     // « Nos instants » (brunch, apéro, café gourmand) — regroupés en bas de la caisse
     var instants = (Array.isArray(res[1])?res[1]:[]).map(function(p){
-      return { id:p.id, name:instantLabel(p.name), price:Number(p.price)||0, category:INSTANTS_LABEL, color:"#3E5A70" };
+      return { id:p.id, name:instantLabel(p.name), price:Number(p.price)||0, category:INSTANTS_LABEL, color:"#3E5A70", barcode:(p.barcode||"").trim() };
     });
     articles = market.concat(instants);
     LS.set("caisse_articles_cache", articles); renderArticles();
@@ -1089,6 +1089,28 @@ buildPad(); drawDots();
 if (!pinNeeded()) document.getElementById("pinScreen").classList.add("hidden");
 renderArticles(); renderTicket(); renderDay(); setNet(); loadArticles(); updateLieuLabel(); loadLieux();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.js", { scope:"/caisse" }).catch(function(){});
+
+/* ───────── Douchette code-barres (USB = clavier rapide + Entrée) ───────── */
+(function(){
+  var buf="", last=0;
+  function onScan(code){
+    code=String(code).trim(); if(!code) return;
+    var a=articles.find(function(x){ return x.barcode && String(x.barcode)===code; });
+    if(a){ addToTicket(a.id); toast("➕ "+a.name); }
+    else { toast("Code-barres inconnu : "+code); }
+  }
+  document.addEventListener("keydown", function(e){
+    var t=e.target, tag=(t&&t.tagName)||"";
+    if(tag==="INPUT"||tag==="TEXTAREA"||(t&&t.isContentEditable)) return;   // ne gêne pas la saisie manuelle
+    var ps=document.getElementById("pinScreen");
+    if(ps && !ps.classList.contains("hidden")) return;                      // caisse verrouillée
+    var now=Date.now();
+    if(now-last>120) buf="";   // frappe lente = clavier humain → on réinitialise
+    last=now;
+    if(e.key==="Enter"){ if(buf.length>=4){ onScan(buf); e.preventDefault(); } buf=""; return; }
+    if(e.key && e.key.length===1){ buf+=e.key; }
+  });
+})();
 
 /* Installation en application (PWA) */
 (function(){
