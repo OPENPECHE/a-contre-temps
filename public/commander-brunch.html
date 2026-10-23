@@ -149,10 +149,9 @@
     <label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />
     <label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />
     <label>Paiement</label>
-    <div class="pay2"><button type="button" id="payLiv">💶 À la livraison</button><button type="button" id="payOnline">💳 En ligne</button></div>
-    <div class="note" id="payNote"></div>
+    <div class="note">💳 Paiement en ligne sécurisé par carte. Votre commande est confirmée dès le paiement — la livraison à domicile se règle en ligne.</div>
     <div class="err" id="coErr"></div>
-    <button class="btn" id="go4">Valider ma commande</button>
+    <button class="btn" id="go4">Payer</button>
     <div id="sumupMount"></div>
   </div>
 </div>
@@ -283,6 +282,7 @@ function paintRecap(){
     '🥐 <b>'+state.persons+' × L\'Instant Brunch</b> · '+eur(UNIT*state.persons)+'<br>'
     +'📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>'
     +'🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot);
+  document.getElementById("go4").textContent="Payer "+eur(UNIT*state.persons);
 }
 function renderLogin(){
   var slot=document.getElementById("loginSlot"), me=document.getElementById("meState");
@@ -332,16 +332,6 @@ function renderLogin(){
 }
 document.getElementById("bk4").onclick=function(){ show(3); };
 
-var payMode="liv";
-function paintPay(){
-  document.getElementById("payLiv").classList.toggle("on", payMode==="liv");
-  document.getElementById("payOnline").classList.toggle("on", payMode==="online");
-  document.getElementById("payNote").textContent = payMode==="liv" ? "Vous réglez à la livraison (espèces ou carte)." : "Paiement carte sécurisé maintenant — commande confirmée et payée.";
-  document.getElementById("go4").textContent = payMode==="liv" ? "Valider ma commande" : ("Payer "+eur(UNIT*state.persons));
-}
-document.getElementById("payLiv").onclick=function(){ payMode="liv"; paintPay(); };
-document.getElementById("payOnline").onclick=function(){ payMode="online"; paintPay(); };
-
 function collect(){
   var err=document.getElementById("coErr"); err.textContent="";
   var name=document.getElementById("coName").value.trim();
@@ -356,7 +346,7 @@ function collect(){
 }
 document.getElementById("go4").onclick=function(){
   var info=collect(); if(!info) return;
-  if(payMode==="liv") placeOrder(info); else startOnline(info);
+  startOnline(info);   // paiement en ligne obligatoire (livraison à domicile)
 };
 
 function finishOrder(info, payMethod, status, paid){
@@ -370,10 +360,6 @@ function finishOrder(info, payMethod, status, paid){
     note:"Brunch "+state.persons+" pers · "+state.dateLabel+" "+state.slot+" · "+adr+(paid?" — PAYÉ EN LIGNE":"") };
   return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); showSuccess(info, paid); });
-}
-function placeOrder(info){
-  var go=document.getElementById("go4"); go.disabled=true; go.textContent="Envoi…";
-  finishOrder(info, "À la livraison (brunch)", "new", false).catch(function(){ document.getElementById("coErr").textContent="Oups, l'envoi a échoué. Réessayez."; go.disabled=false; go.textContent="Valider ma commande"; });
 }
 function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
 function startOnline(info){
@@ -416,7 +402,6 @@ function loadRule(){ return sb("delivery_rules?category=eq.Brunch%20week-end&sel
 
 document.getElementById("loginSlot").dataset.stage="idle";
 paintPersons();
-paintPay();
 renderLogin();
 loadUser();
 loadZone();
