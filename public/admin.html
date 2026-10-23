@@ -943,6 +943,10 @@ function clientFiche(c){
       <input type="checkbox" ${c.newsletter?"checked":""} style="width:16px;height:16px;accent-color:var(--bd)" onchange="toggleClientNews('${escJs(id)}',this.checked)">
       Inscrit à la newsletter
     </label>
+    <div style="border-top:1px solid var(--bs);padding-top:.85rem;margin-bottom:1rem">
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ru);margin-bottom:8px">Historique &amp; fidélité</div>
+      <div id="cf-hist-${id}" style="font-size:13px;color:var(--is)">Chargement…</div>
+    </div>
     ${c.hasAccount?`
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:.85rem">
         <button class="btn bp bsm" onclick="saveClient('${escJs(id)}')">Enregistrer les infos</button>
@@ -960,7 +964,49 @@ function clientFiche(c){
     `:`<p style="font-size:12px;color:var(--is)">Client invité (sans compte) : édition des infos et mot de passe indisponibles. Tu peux quand même l'inscrire à la newsletter ci-dessus.</p>`}
   </div>`;
 }
-function toggleClient(email){ expandedClient=expandedClient===email?null:email; renderClients(); }
+function toggleClient(email){ expandedClient=expandedClient===email?null:email; renderClients(); if(expandedClient) loadClientHistory(findClient(expandedClient)); }
+async function loadClientHistory(c){
+  if(!c) return;
+  const el=document.getElementById("cf-hist-"+c.email); if(!el) return;
+  const esc=s=>String(s==null?"":s).replace(/[&<>]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[x]));
+  const phone=(c.phone||"").replace(/\D/g,"");
+  const dtm=dt=>new Date(dt).toLocaleString("fr-FR",{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  const itemsSum=its=>Array.isArray(its)?its.map(i=>`${i.qty||1}× ${i.name}`).join(", "):"";
+  try{
+    let loy=null, ventes=[], orders=[]; const jobs=[];
+    if(phone){
+      jobs.push(sbFetch(`loyalty?phone=eq.${encodeURIComponent(phone)}&select=*`).then(r=>{ loy=(Array.isArray(r)&&r[0])||null; }).catch(()=>{}));
+      jobs.push(sbFetch(`caisse_ventes?phone=eq.${encodeURIComponent(phone)}&select=created_at,total,items,lieu&order=created_at.desc&limit=200`).then(r=>{ ventes=Array.isArray(r)?r:[]; }).catch(()=>{}));
+    }
+    if(c.email){ jobs.push(sbFetch(`orders?email=eq.${encodeURIComponent(c.email)}&select=created_at,total,items,shipping&order=created_at.desc&limit=200`).then(r=>{ orders=Array.isArray(r)?r:[]; }).catch(()=>{})); }
+    await Promise.all(jobs);
+    let html="";
+    if(loy){
+      html+=`<div style="background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+        🥖 <b style="color:var(--bd)">${loy.stamps}/10</b> tampons · ${loy.total_stamps||0} au total${loy.free_breads?` · 🎁 ${loy.free_breads} offert(s)`:""}
+        ${loy.last_order_at?`<br><span style="font-size:11px">Dernière carte scannée : ${dtm(loy.last_order_at)}</span>`:""}
+        ${loy.registered===false?`<br><span style="font-size:11px;color:var(--ru)">Carte non activée (pas de compte)</span>`:""}</div>`;
+    } else if(phone){ html+=`<p style="font-size:12px;margin-bottom:12px">Pas encore de carte de fidélité pour ce numéro.</p>`; }
+    const caV=ventes.reduce((s,v)=>s+(Number(v.total)||0),0);
+    html+=`<div style="font-size:12px;color:var(--bd);font-weight:600;margin:4px 0 6px">🛒 Passages (carte scannée) — ${ventes.length}${ventes.length?` · ${caV.toFixed(2)} €`:""}</div>`;
+    if(ventes.length){
+      html+=`<div style="max-height:240px;overflow:auto">`+ventes.slice(0,60).map(v=>`
+        <div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #EFE9E1;font-size:12.5px">
+          <span><b>${dtm(v.created_at)}</b>${v.lieu?` · ${esc(v.lieu)}`:""}<br><span style="color:var(--is)">${esc(itemsSum(v.items))}</span></span>
+          <b style="white-space:nowrap">${(Number(v.total)||0).toFixed(2)} €</b></div>`).join("")+`</div>`;
+      if(ventes.length>60) html+=`<p style="font-size:11px;color:var(--is);margin-top:4px">… et ${ventes.length-60} autres.</p>`;
+    } else if(phone){ html+=`<p style="font-size:12px;color:var(--is)">Aucun passage enregistré avec ce numéro.</p>`;
+    } else { html+=`<p style="font-size:12px;color:var(--is)">Pas de numéro de téléphone — impossible de relier les passages au marché.</p>`; }
+    if(orders.length){
+      html+=`<div style="font-size:12px;color:var(--bd);font-weight:600;margin:12px 0 6px">💻 Commandes en ligne — ${orders.length}</div>`;
+      html+=orders.slice(0,40).map(o=>`
+        <div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #EFE9E1;font-size:12.5px">
+          <span><b>${dtm(o.created_at)}</b>${o.shipping?` · ${esc(o.shipping)}`:""}<br><span style="color:var(--is)">${esc(itemsSum(o.items))}</span></span>
+          <b style="white-space:nowrap">${(Number(o.total)||0).toFixed(2)} €</b></div>`).join("");
+    }
+    el.innerHTML=html||`<p style="font-size:12px;color:var(--is)">Aucun historique.</p>`;
+  }catch(e){ el.innerHTML=`<span style="color:var(--rd);font-size:12px">Erreur de chargement de l'historique.</span>`; }
+}
 function findClient(email){ return allClients.find(c=>c.email===email); }
 async function saveClient(email){
   const c=findClient(email); if(!c) return;
