@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Commander — à contre-temps</title>
+<meta name="description" content="Commandez vos instants gourmands en livraison à Clermont-Ferrand et sa métropole : choisissez la quantité, votre adresse et votre créneau, et payez en ligne." />
+<meta name="robots" content="noindex, follow" />
+<link rel="icon" type="image/png" href="/icons/icon-192.png" />
+<meta name="theme-color" content="#7C97AC" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:inherit;}
+  .topnav{background:var(--bd);}
+  .topnav .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:1000px;margin:0 auto;}
+  .topnav .brand{display:inline-flex;align-items:center;gap:11px;font-family:var(--serif);font-size:26px;color:var(--cr);text-decoration:none;letter-spacing:-.01em;}
+  .topnav .brand img{height:38px;width:auto;display:block;}
+  .topnav .navr{display:flex;gap:16px;align-items:center;}
+  .topnav .navlink{color:var(--cr);text-decoration:none;font-size:13px;font-weight:500;opacity:.92;}
+  .topnav .cta{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bd);background:var(--cr);padding:10px 18px;border-radius:999px;text-decoration:none;white-space:nowrap;}
+  @media(max-width:560px){ .topnav .nav{padding:12px 14px;gap:8px;} .topnav .brand{font-size:18px;gap:7px;white-space:nowrap;} .topnav .brand img{height:28px;} .topnav .navr{gap:10px;} .topnav .navlink{font-size:12px;} .topnav .cta{font-size:10px;padding:8px 13px;} }
+  header{background:var(--b);color:var(--cr);text-align:center;padding:34px 20px;}
+  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(25px,5vw,36px);}
+  header p{font-size:14px;opacity:.92;max-width:540px;margin:8px auto 0;font-weight:300;}
+  .wrap{max-width:560px;margin:0 auto;padding:22px 16px 70px;}
+  .steps{display:flex;gap:6px;margin-bottom:18px;}
+  .steps .s{flex:1;height:4px;border-radius:2px;background:var(--bs);}
+  .steps .s.on{background:var(--bd);}
+  .panel{display:none;}
+  .panel.on{display:block;}
+  h2{font-family:var(--serif);font-weight:500;font-size:22px;color:var(--bd);margin-bottom:4px;}
+  .sub{color:var(--is);font-size:13.5px;margin-bottom:16px;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 6px 20px rgba(43,41,37,.04);}
+  label{display:block;font-size:12px;color:var(--is);margin:12px 0 4px;}
+  .fi{width:100%;padding:12px 13px;border:1px solid var(--bs);border-radius:10px;font-size:16px;font-family:var(--sans);background:#fff;color:var(--ink);}
+  .row2{display:grid;grid-template-columns:1fr 2fr;gap:10px;}
+  .btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:16px;background:var(--bd);color:var(--cr);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);margin-top:10px;}
+  .lnk{background:none;border:none;color:var(--bd);font-size:13px;cursor:pointer;padding:0;margin-bottom:12px;font-family:var(--sans);text-decoration:underline;}
+  .err{color:var(--rd);font-size:13px;min-height:18px;margin-top:8px;}
+  .ok{color:var(--gn);font-size:13.5px;margin-top:8px;}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0;}
+  .stepper button{width:48px;height:48px;border-radius:50%;border:1px solid var(--bs);background:#fff;font-size:24px;color:var(--bd);cursor:pointer;}
+  .stepper .n{font-family:var(--serif);font-size:34px;color:var(--bd);min-width:60px;text-align:center;}
+  .totline{display:flex;justify-content:space-between;font-size:17px;color:var(--bd);font-weight:600;border-top:1px solid #EFE9E1;padding-top:12px;margin-top:6px;}
+  .picks{display:flex;flex-direction:column;gap:10px;margin:6px 0;}
+  .pick{width:100%;text-align:left;padding:14px 15px;border:1px solid var(--bs);background:#fff;border-radius:12px;font-size:15.5px;font-weight:500;color:var(--bd);cursor:pointer;font-family:var(--sans);}
+  .pick.on,.pick:hover{border-color:var(--bd);}
+  .confirm{background:var(--cr);border-radius:12px;padding:13px 15px;font-size:14px;color:var(--ink);margin:4px 0 14px;line-height:1.7;}
+  .note{font-size:12.5px;color:var(--is);background:var(--cr);border-radius:10px;padding:10px 12px;margin-top:12px;}
+  .loginCard{background:#fff;border:1px solid var(--bs);border-radius:12px;padding:14px;margin:6px 0 14px;}
+  .loginCard .lcH{font-family:var(--serif);font-size:16px;color:var(--bd);}
+  .loginCard .lcS{font-size:12.5px;color:var(--is);margin:4px 0 10px;}
+  .btn2{width:100%;padding:12px;border-radius:10px;border:none;background:var(--bd);color:var(--cr);font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;font-family:var(--sans);}
+  .orGuest{font-size:11px;color:var(--is);text-transform:uppercase;letter-spacing:.09em;margin:14px 0 2px;text-align:center;}
+  .ok-screen{text-align:center;padding:26px 10px;}
+  .ok-screen .big{font-family:var(--serif);font-size:26px;color:var(--bd);margin:10px 0;}
+  footer{text-align:center;font-size:12px;color:var(--is);padding:26px 18px 10px;}
+  footer a{color:var(--bd);}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="nav">
+    <a href="/" class="brand"><img src="/heart-cream.png" alt="" /> à contre-temps</a>
+    <div class="navr">
+      <a href="/mon-compte" class="navlink">Mon compte</a>
+      <a href="/" class="cta">Accueil</a>
+    </div>
+  </div>
+</nav>
+<header>
+  <h1 id="hTitle">Commander</h1>
+  <p id="hSub">Livré chez vous, à Clermont-Ferrand et sa métropole.</p>
+</header>
+
+<div class="wrap" id="wrap">
+  <div class="steps"><div class="s on" data-s="1"></div><div class="s" data-s="2"></div><div class="s" data-s="3"></div><div class="s" data-s="4"></div></div>
+
+  <!-- Étape 1 : quantité -->
+  <div class="panel on" id="p1">
+    <h2 id="p1title">Pour combien ?</h2>
+    <div class="sub" id="p1sub"></div>
+    <div class="card">
+      <div class="stepper">
+        <button type="button" id="pMinus" aria-label="Moins">−</button>
+        <div class="n" id="pNb">2</div>
+        <button type="button" id="pPlus" aria-label="Plus">+</button>
+      </div>
+      <div style="text-align:center;font-size:13px;color:var(--is);" id="pUnit">personne(s)</div>
+      <div class="totline"><span>Total</span><span id="pTotal">—</span></div>
+    </div>
+    <button class="btn" id="go1">Continuer</button>
+    <p style="text-align:center;margin-top:12px;"><a id="backLink" href="/" style="font-size:13px;color:var(--bd);">← Voir le détail</a></p>
+  </div>
+
+  <!-- Étape 2 : adresse -->
+  <div class="panel" id="p2">
+    <button class="lnk" id="bk2">← Quantité</button>
+    <h2>Où livrer votre commande ?</h2>
+    <div class="sub">Livraison gratuite dans un rayon de 50 km autour de Clermont-Ferrand. Vérifions que vous êtes dans la zone.</div>
+    <div class="card">
+      <label>Adresse (n° et rue)</label>
+      <input class="fi" id="aStreet" placeholder="12 rue des Vignes Rousses" autocomplete="street-address" />
+      <div class="row2" style="margin-top:0;">
+        <div><label>Code postal</label><input class="fi" id="aCp" inputmode="numeric" maxlength="5" placeholder="63000" autocomplete="postal-code" /></div>
+        <div><label>Ville</label><input class="fi" id="aCity" placeholder="Clermont-Ferrand" autocomplete="address-level2" /></div>
+      </div>
+      <label>Complément (étage, digicode…) — facultatif</label>
+      <input class="fi" id="aExtra" placeholder="Bât. A, 2e étage, code 1234" />
+      <button class="btn ghost" id="aCheck" style="margin-top:14px;">Vérifier l'adresse</button>
+      <div class="err" id="aErr"></div>
+      <div class="ok" id="aOk"></div>
+    </div>
+    <button class="btn" id="go2" disabled>Continuer</button>
+  </div>
+
+  <!-- Étape 3 : créneau -->
+  <div class="panel" id="p3">
+    <button class="lnk" id="bk3">← Adresse</button>
+    <h2>Quel créneau ?</h2>
+    <div class="sub" id="p3sub">Choisissez votre jour et votre créneau de livraison.</div>
+    <p style="font-size:11px;letter-spacing:.1em;color:var(--is);text-transform:uppercase;margin-bottom:6px;">Jour</p>
+    <div class="picks" id="dayPicks"></div>
+    <p style="font-size:11px;letter-spacing:.1em;color:var(--is);text-transform:uppercase;margin:16px 0 6px;">Créneau de livraison</p>
+    <div class="picks" id="slotPicks"></div>
+    <div class="err" id="cErr"></div>
+    <button class="btn" id="go3" disabled>Continuer</button>
+  </div>
+
+  <!-- Étape 4 : coordonnées + paiement -->
+  <div class="panel" id="p4">
+    <button class="lnk" id="bk4">← Créneau</button>
+    <h2>Vos coordonnées</h2>
+    <div class="confirm" id="recap"></div>
+    <div id="loginSlot"></div>
+    <div id="meState"></div>
+    <label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" />
+    <label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />
+    <label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />
+    <label>Paiement</label>
+    <div class="note">💳 Paiement en ligne sécurisé par carte. Votre commande est confirmée dès le paiement — la livraison à domicile se règle en ligne.</div>
+    <div class="err" id="coErr"></div>
+    <button class="btn" id="go4">Payer</button>
+    <div id="sumupMount"></div>
+  </div>
+</div>
+
+<footer>
+  à contre-temps — Fournil vivant · Gerzat (63360) · <a href="tel:+33601482890">06 01 48 28 90</a><br>
+  <a href="/">Retour</a> · <a href="/mentions-legales">Mentions légales</a>
+</footer>
+
+<script>
+var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co";
+var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Object.assign({},opts,{headers:Object.assign({apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json",Prefer:opts.method==="POST"?"return=representation":""},opts.headers||{})})); }
+function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €"; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c];}); }
+
+var PID=(new URLSearchParams(location.search).get("p")||"s1");
+var UNIT=0, FORMULE="", TITLE="", UNITLABEL="personne", UNITLABELP="personne(s)", PLANCHE=false, BACKPAGE="/";
+var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+var SLOTS=["9h00 – 10h30","10h30 – 12h00"];
+var state={ qty:2, addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24 };
+var currentUser=null, zone=null;
+
+/* page de détail par produit (pour le lien « voir le détail ») */
+var DETAIL={ s1:"/brunch-clermont-ferrand", s2:"/plateau-aperitif-clermont-ferrand", s4:"/cafe-gourmand-clermont-ferrand", s5:"/planche-de-saison-clermont-ferrand" };
+
+/* ---- Session partagée ---- */
+function loadUser(){
+  var at,rt; try{ at=localStorage.getItem("act_token"); rt=localStorage.getItem("act_refresh"); }catch(e){}
+  if(!at && !rt) return;
+  fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+at}}).then(function(r){return r.ok?r.json():null;}).then(function(u){
+    if(u){ setUser(u); return; }
+    if(!rt) return;
+    fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:rt})}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(j&&j.access_token){ try{localStorage.setItem("act_token",j.access_token);localStorage.setItem("act_refresh",j.refresh_token);}catch(e){} fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+j.access_token}}).then(function(r){return r.ok?r.json():null;}).then(function(u2){ if(u2) setUser(u2); }); }
+    }).catch(function(){});
+  }).catch(function(){});
+}
+function setUser(u){
+  var m=u.user_metadata||{};
+  currentUser={ prenom:m.prenom||"", nom:m.nom||"", phone:(m.phone||"").replace(/\D/g,""), email:u.email||"",
+    name:[m.prenom,m.nom].filter(Boolean).join(" ").trim(), adresse:m.adresse||"", cp:m.cp||"", ville:m.ville||"" };
+  prefill();
+}
+function prefill(){
+  if(!currentUser) return;
+  function set(id,v){ var e=document.getElementById(id); if(e && !e.value && v) e.value=v; }
+  set("coName",currentUser.name); set("coPhone",currentUser.phone); set("coMail",currentUser.email);
+  set("aStreet",currentUser.adresse); set("aCp",currentUser.cp); set("aCity",currentUser.ville);
+}
+
+/* ---- Chargement du produit + règle ---- */
+function showFatal(msg){ document.getElementById("wrap").innerHTML='<div class="card" style="text-align:center;margin-top:20px;">'+esc(msg)+'<br><br><a href="/" class="btn" style="display:inline-block;text-decoration:none;max-width:200px;">Accueil</a></div>'; }
+function loadProduct(){
+  return sb("products?id=eq."+encodeURIComponent(PID)+"&select=name,price,cat").then(function(r){return r.json();}).then(function(d){
+    var p=(Array.isArray(d)&&d[0])||null;
+    if(!p){ showFatal("Cette formule n'est pas disponible."); return Promise.reject(); }
+    UNIT=Number(p.price)||0; FORMULE=p.name; TITLE=p.name.split("—")[0].trim();
+    PLANCHE=/planche/i.test(p.name);
+    UNITLABEL=PLANCHE?"planche":"personne"; UNITLABELP=PLANCHE?"planche(s)":"personne(s)";
+    state.qty=PLANCHE?1:2;
+    BACKPAGE=DETAIL[PID]||"/";
+    document.getElementById("hTitle").textContent=TITLE;
+    document.getElementById("hSub").textContent="Livré chez vous, à Clermont-Ferrand et sa métropole. "+eur(UNIT)+" "+(PLANCHE?"la planche":"par personne")+".";
+    document.getElementById("p1title").textContent=PLANCHE?"Combien de planches ?":"Pour combien de personnes ?";
+    document.getElementById("p1sub").textContent=TITLE+", "+eur(UNIT)+" "+(PLANCHE?"la planche (3 à 4 pers.).":"par personne.");
+    document.getElementById("pUnit").textContent=UNITLABELP;
+    document.getElementById("backLink").href=BACKPAGE;
+    document.title="Commander "+TITLE+" — à contre-temps";
+    return loadRule(p.cat);
+  });
+}
+function loadRule(cat){
+  return sb("delivery_rules?category=eq."+encodeURIComponent(cat)+"&select=available_days,advance_hours,time_label&limit=1").then(function(r){return r.json();}).then(function(d){
+    var rr=(Array.isArray(d)&&d[0])||null;
+    if(rr){
+      if(Array.isArray(rr.available_days)&&rr.available_days.length) state.days=rr.available_days;
+      if(rr.advance_hours!=null) state.advance=Number(rr.advance_hours);
+      if(rr.time_label && /soir/i.test(rr.time_label)) SLOTS=["18h00 – 19h30","19h30 – 21h00"];
+      else SLOTS=["9h00 – 10h30","10h30 – 12h00"];
+      if(rr.time_label){ document.getElementById("p3sub").textContent="Livraison : "+rr.time_label+". Réservation au moins "+state.advance+" h à l'avance."; }
+    }
+  }).catch(function(){});
+}
+
+/* ---- Étapes ---- */
+function show(n){
+  ["p1","p2","p3","p4"].forEach(function(id,i){ document.getElementById(id).classList.toggle("on", i===(n-1)); });
+  document.querySelectorAll(".steps .s").forEach(function(s){ s.classList.toggle("on", Number(s.getAttribute("data-s"))<=n); });
+  window.scrollTo(0,0);
+}
+function paintQty(){ document.getElementById("pNb").textContent=state.qty; document.getElementById("pTotal").innerHTML=eur(UNIT*state.qty); }
+document.getElementById("pMinus").onclick=function(){ if(state.qty>1){ state.qty--; paintQty(); } };
+document.getElementById("pPlus").onclick=function(){ if(state.qty<40){ state.qty++; paintQty(); } };
+document.getElementById("go1").onclick=function(){ show(2); };
+
+/* ---- Adresse + zone ---- */
+function distKm(la1,lo1,la2,lo2){ var R=6371, p=Math.PI/180; var dLa=(la2-la1)*p, dLo=(lo2-lo1)*p;
+  var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*p)*Math.cos(la2*p)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return 2*R*Math.asin(Math.sqrt(a)); }
+document.getElementById("aCheck").onclick=function(){
+  var err=document.getElementById("aErr"), ok=document.getElementById("aOk"); err.textContent=""; ok.textContent="";
+  var street=document.getElementById("aStreet").value.trim(), cp=document.getElementById("aCp").value.trim(), city=document.getElementById("aCity").value.trim();
+  if(!street||!cp||!city){ err.textContent="Complétez l'adresse, le code postal et la ville."; return; }
+  var btn=document.getElementById("aCheck"); btn.disabled=true; btn.textContent="Vérification…";
+  fetch("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(street+" "+cp+" "+city)).then(function(r){return r.json();}).then(function(j){
+    btn.disabled=false; btn.textContent="Vérifier l'adresse";
+    var f=j && j.features && j.features[0];
+    if(!f){ err.textContent="Adresse introuvable. Vérifiez l'orthographe."; document.getElementById("go2").disabled=true; return; }
+    var lat=f.geometry.coordinates[1], lng=f.geometry.coordinates[0];
+    var d = zone ? distKm(zone.center_lat, zone.center_lng, lat, lng) : 0;
+    if(zone && zone.enabled===false){ err.textContent=(zone.message||"Livraison indisponible pour le moment."); document.getElementById("go2").disabled=true; return; }
+    if(zone && d>Number(zone.radius_km)){ err.textContent=(zone.message||"Nous ne livrons pas encore dans votre zone.")+" (≈ "+Math.round(d)+" km)"; document.getElementById("go2").disabled=true; return; }
+    state.addr={ street:street, cp:cp, city:city, extra:document.getElementById("aExtra").value.trim(), label:f.properties.label, lat:lat, lng:lng };
+    ok.textContent="✓ Adresse dans la zone de livraison ("+f.properties.label+")";
+    document.getElementById("go2").disabled=false;
+  }).catch(function(){ btn.disabled=false; btn.textContent="Vérifier l'adresse"; err.textContent="Vérification impossible, réessayez."; });
+};
+["aStreet","aCp","aCity"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ document.getElementById("go2").disabled=true; document.getElementById("aOk").textContent=""; }); });
+document.getElementById("bk2").onclick=function(){ show(1); };
+document.getElementById("go2").onclick=function(){ buildCreneau(); show(3); };
+
+/* ---- Créneau ---- */
+function upcomingDates(days, advanceH){
+  var out=[], now=new Date(), min=new Date(now.getTime()+(advanceH||24)*3600*1000);
+  for(var i=0;i<30 && out.length<8;i++){
+    var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
+    if(days.indexOf(dt.getDay())>=0 && dt>= new Date(min.getFullYear(),min.getMonth(),min.getDate())) out.push(dt);
+  }
+  return out;
+}
+function buildCreneau(){
+  var dates=upcomingDates(state.days, state.advance);
+  var dp=document.getElementById("dayPicks");
+  dp.innerHTML = dates.length ? dates.map(function(dt){
+    var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+    var label=JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()];
+    return '<button type="button" class="pick" data-iso="'+iso+'" data-label="'+esc(label)+'">🗓️ '+label+'</button>';
+  }).join("") : '<div class="sub">Aucune date disponible pour le moment.</div>';
+  var sp=document.getElementById("slotPicks");
+  sp.innerHTML = SLOTS.map(function(s){ return '<button type="button" class="pick" data-slot="'+esc(s)+'">⏰ '+s+'</button>'; }).join("");
+  dp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ dp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on"); state.date=b.getAttribute("data-iso"); state.dateLabel=b.getAttribute("data-label"); checkCreneau(); }; });
+  sp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ sp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on"); state.slot=b.getAttribute("data-slot"); checkCreneau(); }; });
+}
+function checkCreneau(){ document.getElementById("go3").disabled=!(state.date && state.slot); }
+document.getElementById("bk3").onclick=function(){ show(2); };
+document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); prefill(); show(4); };
+
+/* ---- Coordonnées + connexion + paiement ---- */
+function paintRecap(){
+  document.getElementById("recap").innerHTML=
+    '🧺 <b>'+state.qty+' × '+esc(TITLE)+'</b> · '+eur(UNIT*state.qty)+'<br>'
+    +'📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>'
+    +'🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot);
+  document.getElementById("go4").textContent="Payer "+eur(UNIT*state.qty);
+}
+function renderLogin(){
+  var slot=document.getElementById("loginSlot"), me=document.getElementById("meState");
+  if(currentUser){ slot.innerHTML=""; me.innerHTML='<div class="sub" style="color:var(--gn);">✓ Connecté en tant que '+esc(currentUser.name||currentUser.email)+'</div>'; return; }
+  me.innerHTML=""; slot.dataset.stage=slot.dataset.stage||"idle";
+  var stage=slot.dataset.stage, mail=slot.dataset.mail||"", inner;
+  if(stage==="code"){
+    inner='<div class="lcS">Code envoyé à <b>'+esc(mail)+'</b>.</div>'
+      +'<input class="fi" id="lgCode" inputmode="numeric" maxlength="6" placeholder="Code à 6 chiffres" autocomplete="one-time-code" />'
+      +'<button class="btn2" id="lgVerify">Me connecter</button>'
+      +'<button class="lnk" id="lgBack" style="margin-top:10px;">← Changer d’e‑mail</button><div class="err" id="lgErr"></div>';
+  } else {
+    inner='<input class="fi" id="lgMail" type="email" placeholder="votre@email.fr" value="'+esc(mail)+'" />'
+      +'<button class="btn2" id="lgSend">Recevoir mon code par e‑mail</button><div class="err" id="lgErr"></div>';
+  }
+  slot.innerHTML='<div class="loginCard"><div class="lcH">🥖 Vous avez déjà un compte&nbsp;?</div>'
+    +'<div class="lcS">Connectez‑vous pour pré‑remplir vos infos et cumuler vos tampons de fidélité.</div>'
+    +inner+'</div><div class="orGuest">— ou commandez sans compte —</div>';
+  var send=slot.querySelector("#lgSend");
+  if(send) send.onclick=function(){
+    var m=(slot.querySelector("#lgMail").value||"").trim(), err=slot.querySelector("#lgErr"); err.textContent="";
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)){ err.textContent="E‑mail invalide."; return; }
+    send.disabled=true; send.textContent="Envoi…";
+    fetch(SB_URL+"/auth/v1/otp",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:m,create_user:false})})
+      .then(function(r){ return r.json().catch(function(){return{};}).then(function(j){return{ok:r.ok,j:j};}); })
+      .then(function(res){ if(res.ok){ slot.dataset.mail=m; slot.dataset.stage="code"; renderLogin(); return; }
+        err.textContent="Aucun compte avec cet e‑mail, ou envoi impossible. Commandez sans compte ci‑dessous."; send.disabled=false; send.textContent="Recevoir mon code par e‑mail"; })
+      .catch(function(){ err.textContent="Erreur réseau."; send.disabled=false; send.textContent="Recevoir mon code par e‑mail"; });
+  };
+  var ver=slot.querySelector("#lgVerify");
+  if(ver) ver.onclick=function(){
+    var code=(slot.querySelector("#lgCode").value||"").replace(/\D/g,""), err=slot.querySelector("#lgErr"); err.textContent="";
+    if(code.length<4){ err.textContent="Saisissez le code reçu."; return; }
+    ver.disabled=true; ver.textContent="Connexion…";
+    fetch(SB_URL+"/auth/v1/verify",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:slot.dataset.mail,token:code,type:"email"})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ if(!(j&&j.access_token)){ err.textContent="Code incorrect ou expiré."; ver.disabled=false; ver.textContent="Me connecter"; return; }
+        try{ localStorage.setItem("act_token",j.access_token); localStorage.setItem("act_refresh",j.refresh_token); }catch(e){}
+        slot.dataset.stage="idle";
+        if(j.user){ setUser(j.user); renderLogin(); return; }
+        fetch(SB_URL+"/auth/v1/user",{headers:{apikey:SB_KEY,Authorization:"Bearer "+j.access_token}}).then(function(r){return r.ok?r.json():null;}).then(function(u){ if(u) setUser(u); renderLogin(); });
+      }).catch(function(){ err.textContent="Erreur réseau."; ver.disabled=false; ver.textContent="Me connecter"; });
+  };
+  var back=slot.querySelector("#lgBack"); if(back) back.onclick=function(){ slot.dataset.stage="idle"; renderLogin(); };
+}
+document.getElementById("bk4").onclick=function(){ show(3); };
+
+function collect(){
+  var err=document.getElementById("coErr"); err.textContent="";
+  var name=document.getElementById("coName").value.trim(), phone=document.getElementById("coPhone").value.trim(), mail=document.getElementById("coMail").value.trim();
+  if(!state.addr){ err.textContent="Adresse manquante."; return null; }
+  if(!state.date||!state.slot){ err.textContent="Créneau manquant."; return null; }
+  if(!name){ err.textContent="Indiquez votre nom."; return null; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ err.textContent="E‑mail invalide."; return null; }
+  if(!phone){ err.textContent="Indiquez un téléphone."; return null; }
+  return { name:name, phone:phone, mail:mail };
+}
+document.getElementById("go4").onclick=function(){ var info=collect(); if(!info) return; startOnline(info); };
+
+function finishOrder(info, payMethod, status, paid){
+  try{ localStorage.setItem("acontretemps_phone", String(info.phone||"").replace(/\D/g,"")); }catch(e){}
+  var total=UNIT*state.qty, adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":"");
+  var order={ name:info.name, email:info.mail, phone:info.phone,
+    items:[{name:FORMULE, price:UNIT, qty:state.qty}],
+    total:total, status:status, shipping:"Livraison — "+adr, pickup_date:state.date,
+    payment_method:payMethod, paid:!!paid,
+    note:TITLE+" · "+state.qty+" "+UNITLABELP+" · "+state.dateLabel+" "+state.slot+" · "+adr+(paid?" — PAYÉ EN LIGNE":"") };
+  return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); showSuccess(info, paid); });
+}
+function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
+function startOnline(info){
+  var go=document.getElementById("go4"), err=document.getElementById("coErr"), total=UNIT*state.qty;
+  go.disabled=true; go.textContent="Préparation du paiement…";
+  fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:total, description:TITLE+" "+state.qty+" "+UNITLABELP})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(!j.ok || !j.checkout_id){ err.textContent="Paiement en ligne indisponible"+(j.error?" : "+j.error:"")+". Réessayez ou contactez-nous."; go.disabled=false; go.textContent="Payer "+eur(total); return; }
+      var mount=document.getElementById("sumupMount"); go.style.display="none";
+      mount.innerHTML='<h2 style="margin-top:18px;">Paiement par carte</h2><div class="sub">Montant : <strong>'+eur(total)+'</strong></div><div id="sumup-card" style="margin-top:12px;"></div><div class="err" id="wErr"></div><button class="btn ghost" id="wCancel">Annuler</button>';
+      mount.querySelector("#wCancel").onclick=function(){ mount.innerHTML=""; go.style.display=""; go.disabled=false; go.textContent="Payer "+eur(total); };
+      loadSumUpSDK(function(){
+        if(!window.SumUpCard){ mount.querySelector("#wErr").textContent="Module de paiement indisponible. Réessayez ou contactez-nous."; return; }
+        window.SumUpCard.mount({ id:"sumup-card", checkoutId:j.checkout_id, locale:"fr-FR", showSubmitButton:true,
+          onResponse:function(type, body){
+            if(type==="success" || (body && (body.status==="PAID" || body.status==="SUCCESSFUL"))){
+              try{ window.SumUpCard.unmount(); }catch(_){}
+              finishOrder(info, "Payé en ligne (SumUp)", "confirmed", true).catch(function(){ mount.querySelector("#wErr").textContent="Paiement OK mais erreur d'enregistrement — contactez-nous au 06 01 48 28 90."; });
+            } else if(type==="error"){ mount.querySelector("#wErr").textContent="Le paiement a échoué. Réessayez."; }
+          }
+        });
+      });
+    }).catch(function(){ err.textContent="Erreur réseau. Réessayez."; go.disabled=false; go.textContent="Payer "+eur(total); });
+}
+function showSuccess(info, paid){
+  document.getElementById("wrap").innerHTML='<div class="ok-screen"><div style="font-size:44px;">🧺</div><div class="big">'+(paid?"Paiement confirmé&nbsp;!":"Commande enregistrée&nbsp;!")+'</div>'
+    +'<p style="color:var(--is);">Merci '+esc(info.name.split(" ")[0])+'. Votre commande (<strong>'+state.qty+' '+esc(UNITLABELP)+'</strong>) sera livrée le <strong>'+esc(state.dateLabel)+'</strong> ('+esc(state.slot)+').</p>'
+    +'<p style="color:var(--is);margin-top:8px;">📍 '+esc(state.addr.label)+'</p>'
+    +'<p style="color:var(--is);margin-top:8px;">Votre commande est payée. Un e‑mail de confirmation vous a été envoyé.</p>'
+    +'<a href="/" class="btn" style="max-width:260px;margin:18px auto 0;display:block;text-decoration:none;text-align:center;">Retour à l\'accueil</a></div>';
+  window.scrollTo(0,0);
+}
+
+/* ---- Init ---- */
+function loadZone(){ return sb("delivery_zone?select=*&limit=1").then(function(r){return r.json();}).then(function(d){ zone=(Array.isArray(d)&&d[0])||null; }).catch(function(){}); }
+document.getElementById("loginSlot").dataset.stage="idle";
+renderLogin();
+loadUser();
+loadZone();
+loadProduct().then(function(){ paintQty(); }).catch(function(){});
+</script>
+</body>
+</html>
