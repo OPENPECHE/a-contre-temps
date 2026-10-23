@@ -266,7 +266,7 @@ function loadArticles(){
   if (!navigator.onLine){ renderArticles(); return; }
   Promise.all([
     sbFetch("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,position&order=position.asc,name.asc").then(function(r){ return r.json(); }),
-    sbFetch("products?id=in.(s1,s2,s4)&select=id,name,price&order=price.asc").then(function(r){ return r.json(); })
+    sbFetch("products?id=in.(s1,s2,s4,s5)&select=id,name,price&order=price.asc").then(function(r){ return r.json(); })
   ]).then(function(res){
     var market = mapProducts(res[0]);
     // « Nos instants » (brunch, apéro, café gourmand) — regroupés en bas de la caisse

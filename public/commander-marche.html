@@ -209,9 +209,9 @@ function loadCatalog(){
     d.forEach(function(a){ if(!(a.price>0)) return; var c=a.cat||"Autres"; if(!catGroups[c]){catGroups[c]=[];catOrder.push(c);} catGroups[c].push(a); });
     // Onglet « Les instants » (brunch, apéro, café gourmand, planche) — réservables au marché
     var inst=(Array.isArray(res[1])?res[1]:[]).filter(function(p){return p.price>0;}).map(function(p){
-      return { id:p.id, name:p.name, price:p.price, cat:"Les instants", description:(p.description||""), weight_g:null, price_per_kg:null };
+      return { id:p.id, name:p.name, price:p.price, cat:"LES INSTANTS", description:(p.description||""), weight_g:null, price_per_kg:null };
     });
-    if(inst.length){ catGroups["Les instants"]=inst; catOrder.push("Les instants"); }
+    if(inst.length){ catGroups["LES INSTANTS"]=inst; catOrder.push("LES INSTANTS"); }
     if(!catOrder.length){ document.getElementById("catalog").innerHTML='<p style="color:var(--is);padding:30px 0;text-align:center;">Catalogue bientôt disponible.</p>'; return; }
     document.getElementById("catbar").innerHTML = catOrder.map(function(c){ return '<button class="chip" data-cat="'+esc(c)+'">'+esc(c)+'</button>'; }).join("");
     document.querySelectorAll("#catbar .chip").forEach(function(ch){ ch.onclick=function(){ showCat(ch.getAttribute("data-cat")); var cb=document.getElementById("catbar"); var y=cb.getBoundingClientRect().top+window.pageYOffset-4; if(window.pageYOffset>y) window.scrollTo({top:y,behavior:"smooth"}); }; });
@@ -222,7 +222,7 @@ function showCat(cat){
   activeCat=cat;
   document.querySelectorAll("#catbar .chip").forEach(function(ch){ ch.classList.toggle("on", ch.getAttribute("data-cat")===cat); });
   var items=catGroups[cat]||[], html='<div class="cat">'+esc(cat)+'</div>';
-  if(cat==="Les instants"){ html+='<p style="color:var(--is);font-size:13px;margin:-4px 0 12px;">Réservez votre instant à retirer sur le marché. Le prix est par personne (ou par planche). Indiquez le nombre souhaité.</p>'; }
+  if(cat==="LES INSTANTS"){ html+='<p style="color:var(--is);font-size:13px;margin:-4px 0 12px;">Réservez votre instant à retirer sur le marché. Le prix est par personne (ou par planche). Indiquez le nombre souhaité.</p>'; }
   items.forEach(function(a){
     var key="a_"+a.id;
     var sub=[]; if(a.weight_g) sub.push(fmtWeight(a.weight_g)); if(a.price_per_kg) sub.push(eurKg(a.price_per_kg));
