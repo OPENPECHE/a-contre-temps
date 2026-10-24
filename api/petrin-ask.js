@@ -45,10 +45,11 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 500,
-        // Réponse factuelle courte : pas besoin de réflexion étendue (plus rapide,
-        // et tout le budget de tokens va à la réponse).
-        thinking: { type: "disabled" },
+        max_tokens: 1500,
+        // Raisonnement interne (effort faible = rapide) pour que l'arithmétique
+        // multi-étapes reste juste, tout en gardant une réponse courte (consigne).
+        thinking: { type: "adaptive" },
+        output_config: { effort: "low" },
         system: SYSTEM,
         messages: [
           {
