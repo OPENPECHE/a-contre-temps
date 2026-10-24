@@ -361,29 +361,35 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
     else if(/levure/.test(t)){ g=sumLines(L,/^levure/i); label="levure"; }
     else if(/pate|poids|pes/.test(t)){ g=item.dough; label="pâte totale"; }
     if(g==null) return {sp:"Pour "+pretty+", je peux donner la farine, l'eau, le sel, le levain ou le poids de pâte.", h:"« "+escA(tr)+" » — ingrédient non reconnu."};
-    return {sp:fmtA(g)+" de "+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
+    var de=/^[aeiouyéèê]/i.test(label)?"d'":"de ";
+    return {sp:fmtA(g)+" "+de+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
   }
   // Mot-clé pour déclencher sans toucher l'écran : « Pétrin, … »
   var WAKE=/\b(dis |dit |ok |hey )?p[eé]?trin\b/;
   var IDLE="🎤 <b>Mains-libres actif</b> — dites par ex. « <b>Pétrin</b>, combien de farine pour le tradition ? ». Touchez à nouveau le micro pour arrêter.";
-  var hf=false, rec=null, speaking=false, restartT=null, lastAt=0;
+  var hf=false, rec=null, speaking=false, restartT=null, armed=false, armT=null, speakSafety=null;
+  function disarm(){ armed=false; clearTimeout(armT); }
+  function arm(){ armed=true; clearTimeout(armT); armT=setTimeout(function(){ armed=false; if(hf) showBar(IDLE); }, 12000); }
   function handle(tr){
-    var t=norm(tr);
-    var m=t.match(WAKE); if(!m) return;               // ignore tout ce qui ne contient pas le mot-clé
-    if(Date.now()-lastAt<1500) return; lastAt=Date.now();
-    var q=t.slice(t.indexOf(m[0])+m[0].length).trim();
-    if(q.length<3){ showBar("🎤 Oui ? Posez votre question (ex. « combien d'eau pour le classique ? »)."); speakGuarded("Oui ?"); return; }
+    var t=norm(tr), m=t.match(WAKE), q=null;
+    if(m){ q=t.slice(t.indexOf(m[0])+m[0].length).trim(); }  // « Pétrin … » : question après le mot-clé
+    else if(armed){ q=t.trim(); }                            // suite après « Oui ? » (mot-clé pas rpété)
+    else return;                                             // ni mot-clé ni armé : on ignore
+    if(q.length<3){ arm(); showBar("🎤 Oui ? Posez votre question (ex. « combien d'eau pour le classique ? »)."); speakGuarded("Oui ?"); return; }
+    disarm();
     var a=answer(q); showBar(a.h); speakGuarded(a.sp);
   }
   function speakGuarded(txt){
-    speaking=true;
+    speaking=true; clearTimeout(speakSafety);
+    var done=function(){ speaking=false; };
     try{
       window.speechSynthesis.cancel();
       var u=new SpeechSynthesisUtterance(txt); u.lang="fr-FR";
-      u.onend=function(){ setTimeout(function(){ speaking=false; }, 300); };
+      u.onend=function(){ setTimeout(done,150); };
+      u.onerror=function(){ setTimeout(done,150); };
       window.speechSynthesis.speak(u);
-    }catch(e){ speaking=false; }
-    setTimeout(function(){ speaking=false; }, 6000); // filet de sécurité
+      speakSafety=setTimeout(done, Math.min(5000, 800+txt.length*80)); // filet si onend absent
+    }catch(e){ done(); }
   }
   function startHF(){
     if(!SR){ showBar("Reconnaissance vocale indisponible sur ce navigateur — essayez Chrome (Android) ou Safari (iOS récent)."); return; }
@@ -401,6 +407,7 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
   }
   function stopHF(){ hf=false; btn.classList.remove("on"); clearTimeout(restartT); if(rec){ rec.onend=null; try{ rec.stop(); }catch(e){} rec=null; } bar.style.display="none"; }
   if(btn) btn.onclick=function(){ hf?stopHF():startHF(); };
+  window.petrinAsk=function(tr){ handle(tr); }; // test/debug : simuler une phrase entendue
 })();
 
 /* ---------- Prix matières (source unique : table matieres, repli sur PRIX interne) ---------- */
