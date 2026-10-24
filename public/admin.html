@@ -1125,6 +1125,8 @@ function productRow(p){
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--is)">Prix</span>
         <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:70px;text-align:right" value="${p.price}" /><span style="font-size:11px;color:var(--is)">€</span>
+        <span style="font-size:11px;color:var(--is);margin-left:6px" title="Coût de revient unitaire (matières chargées)">Coût</span>
+        <input class="einp" id="ecost-${p.id}" type="number" step="0.01" style="width:66px;text-align:right" value="${p.cost==null?'':p.cost}" placeholder="—" /><span style="font-size:11px;color:var(--is)">€</span>
         <span style="font-size:11px;color:var(--is);margin-left:6px">Prix/kg</span>
         <input class="einp" id="epkg-${p.id}" type="number" step="0.1" style="width:70px;text-align:right" value="${p.price_per_kg==null?'':p.price_per_kg}" placeholder="—" /><span style="font-size:11px;color:var(--is)">€/kg</span>
         <span style="font-size:11px;color:var(--is);margin-left:6px">Poids</span>
@@ -1166,7 +1168,9 @@ async function saveProd(id){
   const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
   const on_market=!!document.getElementById("emarket-"+id)?.checked;
   const barcode=(document.getElementById("ebarcode-"+id)?.value||"").trim()||null;
-  const patch={name,price,description,price_per_kg,weight_g,on_market,barcode};
+  const costRaw=document.getElementById("ecost-"+id)?.value;
+  const cost=(costRaw==null||costRaw==="")?null:(parseFloat(costRaw)||null);
+  const patch={name,price,description,price_per_kg,weight_g,on_market,barcode,cost};
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)});
   allProducts=allProducts.map(p=>p.id===id?{...p,...patch}:p);
   editingProdId=null;renderProducts();

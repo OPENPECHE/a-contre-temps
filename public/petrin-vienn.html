@@ -127,7 +127,7 @@ function loadDone(){ try{ return JSON.parse(localStorage.getItem("petrinv_done_"
 function saveDone(){ try{ localStorage.setItem("petrinv_done_"+DAYS[cur], JSON.stringify(done)); }catch(e){} }
 done=loadDone();
 
-function fmtG(g){ g=Math.round(g); return g>=1000 ? (Math.round(g/10)/100).toLocaleString("fr-FR")+" kg" : g+" g"; }
+function fmtG(g){ return Math.round(g).toLocaleString("fr-FR")+" g"; }
 function eur(n){ return (Math.round(n*100)/100).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
 function escA(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
 
