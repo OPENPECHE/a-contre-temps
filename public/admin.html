@@ -252,7 +252,17 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       <h1>Coûts &amp; marges</h1>
       <p class="sub">Coût de revient (prix d'achat chargé) par produit — <b>la référence unique</b> lue par la caisse et tous les calculs de marge. Modifiez une case, c'est enregistré automatiquement.</p>
       <div id="couts-summary" class="stats" style="margin-bottom:1rem"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:1.4rem 0 .5rem">
+        <p class="fd" style="font-size:17px;margin:0">Matières premières <span class="sub" style="font-weight:400">· prix d'achat au kg</span></p>
+        <button class="btn bg bsm" onclick="recalcCosts()" title="Recalcule le coût de revient des pains et viennoiseries à partir de ces prix">↻ Recalculer les coûts produits</button>
+      </div>
+      <p class="sub" style="margin:-.2rem 0 .6rem">La <b>source unique</b> des prix d'achat. Modifiez une case (enregistré automatiquement), ajoutez une matière, puis « Recalculer » pour mettre à jour les coûts des pains &amp; viennoiseries.</p>
+      <div class="card card0" id="matieres-box"></div>
+
+      <p class="fd" style="font-size:17px;margin:1.5rem 0 .5rem">Coût de revient par produit <span class="sub" style="font-weight:400">· modifiable à la main</span></p>
       <div class="card card0" id="couts-table"></div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;margin:1.6rem 0 .6rem">
         <p class="fd" style="font-size:17px;margin:0">Casse (invendus / périmés)</p>
         <button class="btn bg bsm" onclick="openCasseAdmin()">+ Enregistrer une casse</button>
@@ -756,7 +766,117 @@ function money(v){ return `${(Math.round((Number(v)||0)*100)/100).toFixed(2).rep
 function escC(s){ return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 async function loadCouts(){
   if(!allProducts || !allProducts.length){ allProducts=await sbFetch("products?order=position.asc"); }
-  renderCouts(); loadCasseList();
+  renderCouts(); loadCasseList(); loadMatieres();
+}
+
+// ── Matières premières (prix d'achat au kg) — source unique des coûts ──────────
+const MAT_DEFAULTS={"Farine blé T65":1.24,"Farine blé T80":1.31,"Farine meule T80":1.31,"Farine blé complète T110":1.24,"Farine blé intégrale T150":1.24,"Farine seigle T130":1.24,"Farine engrain":3.11,"Farine blé T55":2.10,"Sel":1.75,"Sel fin":0.41,"Sucre":0.90,"Levure":2.51,"Poudre de lait":7.23,"Œuf":5.60,"Œuf (jaune)":5.60,"Œuf (blanc)":5.60,"Beurre doux":7.86,"Beurre de tourage":9.84,"Lait":1.00,"Crème pâtissière":4.80,"Mélange fruits":10.00,"Mélange graines torréfiées":5.58,"Son":0.51,"Graines de lin":5.00,"B1":1.25,"Levain blé":0.622,"Levain petit épeautre":1.096,"Eau":0.003};
+let allMatieres=null, matTableOk=true;
+async function loadMatieres(){
+  const box=document.getElementById("matieres-box"); if(!box) return;
+  box.innerHTML=`<div style="padding:1rem;font-size:13px;color:var(--is)">Chargement…</div>`;
+  try{
+    const rows=await sbFetch("matieres?order=nom.asc");
+    if(!Array.isArray(rows)) throw new Error("no table");
+    allMatieres=rows; matTableOk=true;
+    if(!rows.length){ allMatieres=Object.keys(MAT_DEFAULTS).map(n=>({nom:n,prix_kg:MAT_DEFAULTS[n]})); }
+  }catch(e){ matTableOk=false; allMatieres=Object.keys(MAT_DEFAULTS).map(n=>({nom:n,prix_kg:MAT_DEFAULTS[n]})); }
+  renderMatieres();
+}
+function matMap(){ const m={}; (allMatieres||[]).forEach(r=>{ m[r.nom]=Number(r.prix_kg)||0; }); return m; }
+function renderMatieres(){
+  const box=document.getElementById("matieres-box");
+  let html="";
+  if(!matTableOk) html+=`<div class="alert aw" style="display:flex;margin-bottom:.6rem;font-size:12.5px">Table absente — exécutez <b>&nbsp;supabase/matieres.sql&nbsp;</b> pour activer l'enregistrement. (Valeurs affichées : par défaut.)</div>`;
+  html+=`<table style="width:100%;border-collapse:collapse;font-size:13.5px"><tbody>`;
+  (allMatieres||[]).forEach(r=>{
+    html+=`<tr style="border-bottom:1px solid #EFE9E1">
+      <td style="padding:7px 6px">${escC(r.nom)}</td>
+      <td style="padding:7px 6px;text-align:right"><input class="minp" data-nom="${escC(r.nom)}" type="number" step="0.001" min="0" value="${Number(r.prix_kg)||0}" style="width:92px;text-align:right;padding:6px;border:1px solid var(--bs,#D6DFE5);border-radius:7px"${matTableOk?"":" disabled"}> €/kg</td>
+      <td style="padding:7px 6px;text-align:right;width:40px">${matTableOk?`<button class="mdel" data-nom="${escC(r.nom)}" title="Supprimer" style="border:none;background:none;color:#B0402F;cursor:pointer;font-size:16px">×</button>`:""}</td></tr>`;
+  });
+  html+=`</tbody></table>`;
+  if(matTableOk) html+=`<div style="display:flex;gap:8px;margin-top:.8rem;flex-wrap:wrap">
+    <input id="matNewNom" placeholder="Nouvelle matière (ex. Chocolat)" style="flex:1;min-width:160px;padding:8px;border:1px solid var(--bs,#D6DFE5);border-radius:8px">
+    <input id="matNewPrix" type="number" step="0.001" min="0" placeholder="€/kg" style="width:90px;padding:8px;border:1px solid var(--bs,#D6DFE5);border-radius:8px">
+    <button class="btn bg bsm" onclick="addMatiere()">+ Ajouter</button></div>`;
+  box.innerHTML=html;
+  if(matTableOk){
+    box.querySelectorAll(".minp").forEach(inp=>inp.onchange=()=>saveMatiere(inp.getAttribute("data-nom"),inp.value,inp));
+    box.querySelectorAll(".mdel").forEach(b=>b.onclick=()=>delMatiere(b.getAttribute("data-nom")));
+  }
+}
+async function saveMatiere(nom,val,inp){
+  const prix=parseFloat(val)||0; if(inp) inp.disabled=true;
+  try{ await sbFetch(`matieres?nom=eq.${encodeURIComponent(nom)}`,{method:"PATCH",body:JSON.stringify({prix_kg:prix,updated_at:new Date().toISOString()})});
+    allMatieres=allMatieres.map(r=>r.nom===nom?{...r,prix_kg:prix}:r);
+  }catch(e){ alert("Enregistrement impossible."); }
+  finally{ if(inp) inp.disabled=false; }
+}
+async function addMatiere(){
+  const nom=(document.getElementById("matNewNom").value||"").trim();
+  const prix=parseFloat(document.getElementById("matNewPrix").value)||0;
+  if(!nom){ alert("Nom de la matière ?"); return; }
+  try{ await sbFetch("matieres",{method:"POST",body:JSON.stringify({nom,prix_kg:prix})}); await loadMatieres(); }
+  catch(e){ alert("Ajout impossible (nom déjà présent ?)."); }
+}
+async function delMatiere(nom){
+  if(!confirm(`Supprimer « ${nom} » ?`)) return;
+  try{ await sbFetch(`matieres?nom=eq.${encodeURIComponent(nom)}`,{method:"DELETE"}); await loadMatieres(); }
+  catch(e){ alert("Suppression impossible."); }
+}
+
+// ── Moteur de recalcul des coûts produits (recettes Pétrin) ────────────────────
+const COST_CH=4.5, COST_LOSS=0.82;
+const RECIPES_P=[
+  {nom:"LE TRADITION",total:2020,lev:{g:250,n:"Levain blé"},pate:[["Farine blé T65",1000],["Eau",750],["Sel",20]]},
+  {nom:"LE CLASSIQUE LEVAIN",total:2040,lev:{g:250,n:"Levain blé"},pate:[["Farine blé T65",700],["Farine seigle T130",100],["Farine blé T80",200],["Eau",770],["Sel",20]]},
+  {nom:"LE FRUITE",total:3434,lev:{g:250,n:"Levain blé"},pate:[["Farine blé T65",1000],["Eau",750],["Eau",202],["Sel",20],["Mélange fruits",1212]]},
+  {nom:"LE GRAINES TOASTEES",total:2340,lev:{g:250,n:"Levain blé"},pate:[["Farine blé T65",700],["Farine seigle T130",100],["Farine blé T80",200],["Eau",770],["Sel",20],["Mélange graines torréfiées",150],["Eau",150]]},
+  {nom:"L'INTEGRAL",total:6084,lev:{g:30,n:"Levain blé"},pate:[["Farine blé intégrale T150",3000],["Eau",3000],["Levure",6],["Sel",48]]},
+  {nom:"LIN'VERSE",total:4442,lev:{g:5,n:"Levain blé"},pate:[["Farine blé T65",2000],["Eau",2020],["Levure",1],["Graines de lin",180],["B1",200],["Sel",36]]},
+  {nom:"L'ENGRAIN",total:2420,lev:{g:500,n:"Levain petit épeautre"},pate:[["Farine engrain",1000],["Eau",900],["Sel",20]]},
+  {nom:"L'ORIGINE",total:1720,lev:{g:4,n:"Levain blé"},pate:[["Farine blé T65",300],["Farine meule T80",700],["Eau",700],["Sel",16]]}
+];
+const DOUGHS_V={
+  PLF:{total:2520,lev:{g:200,n:"Levain blé"},pate:[["Farine blé T65",1000],["Sel fin",20],["Sucre",120],["Levure",45],["Poudre de lait",50],["Eau",405],["Œuf",50],["Beurre doux",60],["Beurre de tourage",570]]},
+  PF:{total:2113,lev:null,pate:[["Farine blé T65",1000],["Sel fin",20],["Eau",493],["Beurre doux",100],["Beurre de tourage",500]]},
+  BRIOCHE:{total:1000,lev:null,pate:[["Farine blé T65",400],["Sel fin",10],["Sucre",60],["Levure",20],["Œuf (jaune)",80],["Œuf (blanc)",180],["Beurre doux",250]]}
+};
+const PROD_MAP=[
+  ["L'ENGRAIN - moulé 1kg","pain","L'ENGRAIN",1000],["L'ENGRAIN - moulé 500g","pain","L'ENGRAIN",500],
+  ["L'INTEGRAL - moulé 1kg","pain","L'INTEGRAL",1000],["L'INTEGRAL - moulé 500g","pain","L'INTEGRAL",500],
+  ["L'ORIGINE - format bâtard","pain","L'ORIGINE",400],
+  ["LE CLASSIQUE LEVAIN - format baguette","pain","LE CLASSIQUE LEVAIN",250],["LE CLASSIQUE LEVAIN - format boule","pain","LE CLASSIQUE LEVAIN",500],["LE CLASSIQUE LEVAIN - format miche","pain","LE CLASSIQUE LEVAIN",1000],
+  ["LE FRUITE - format pavé","pain","LE FRUITE",300],
+  ["LE GRAINES TOASTEES - format baguette","pain","LE GRAINES TOASTEES",250],["LE GRAINES TOASTEES - format bâtard","pain","LE GRAINES TOASTEES",400],
+  ["LE TRADITION - format baguette","pain","LE TRADITION",250],["LE TRADITION - format boule","pain","LE TRADITION",500],["LE TRADITION - format miche","pain","LE TRADITION",1000],
+  ["LIN'VERSE - moulé 1kg","pain","LIN'VERSE",1000],["LIN'VERSE - moulé 500g","pain","LIN'VERSE",500],
+  ["L'ORANAIS","vienn","PLF",60],["LE CROISSANT - pur beurre","vienn","PLF",70],["LE PAIN AU CHOCOLAT - 3 fois plus gourmand","vienn","PLF",68],["LE PAIN AUX RAISINS","vienn","PLF",65],["LE NID GOURMAND (cruffin)","vienn","PLF",50],["LA JALOUSIE - gourmandise à cœur ouvert","vienn","PLF",60],["LE SUISSE","vienn","PLF",60],
+  ["LE PALMIER","vienn","PF",70],["LE CHAUSSON CITRON (bichon)","vienn","PF",50],["LE CHAUSSON AUX POMMES","vienn","PF",50],
+  ["LA BRIOCHE NATURE - format à partager","vienn","BRIOCHE",350],["LA BRIOCHETTE NATURE - format individuel","vienn","BRIOCHE",60],["LA BRIOCHE AUX PRALINES - format à partager","vienn","BRIOCHE",250],["LA BRIOCHETTE AUX PRALINES - format individuel","vienn","BRIOCHE",50],["LA BRIOCHE AUX PEPITES DE CHOCOLAT - format à partager","vienn","BRIOCHE",250],["LA BRIOCHETTE PEPITES DE CHOCOLAT - format individuel","vienn","BRIOCHE",50],["LA BABKA - format à partager","vienn","BRIOCHE",180],["LA PETITE BABKA - format individuel","vienn","BRIOCHE",50],["LE CHINOIS","vienn","BRIOCHE",180]
+];
+function prixOf(nom,pr){ if(pr[nom]!=null) return pr[nom]; if(/^eau/i.test(nom)) return 0.003; return 0; }
+function baseMat(pate,lev,pr){ let c=0; pate.forEach(([n,g])=>c+=g/1000*prixOf(n,pr)); if(lev) c+=lev.g/1000*prixOf(lev.n,pr); return c; }
+function costOf(entry,pr){
+  const [,type,key,W]=entry;
+  if(type==="pain"){ const r=RECIPES_P.find(x=>x.nom===key); const coeff=(W/COST_LOSS)/r.total; return coeff*baseMat(r.pate,r.lev,pr)*COST_CH; }
+  const d=DOUGHS_V[key]; return (W/d.total)*baseMat(d.pate,d.lev,pr)*COST_CH;
+}
+async function recalcCosts(){
+  if(!confirm("Recalculer le coût de revient des pains & viennoiseries à partir des prix matières actuels ? Les coûts saisis à la main pour ces produits seront remplacés.")) return;
+  const pr=matMap();
+  let ok=0, fail=0, neg=[];
+  for(const e of PROD_MAP){
+    const name=e[0], cost=Math.round(costOf(e,pr)*100)/100;
+    try{
+      const r=await sbFetch(`products?name=eq.${encodeURIComponent(name)}`,{method:"PATCH",body:JSON.stringify({cost})});
+      ok++; allProducts=allProducts.map(p=>p.name===name?{...p,cost}:p);
+      const p=allProducts.find(x=>x.name===name); if(p && Number(p.price)>0 && cost>Number(p.price)) neg.push(name);
+    }catch(err){ fail++; }
+  }
+  renderCouts();
+  alert(`Coûts recalculés : ${ok} produit(s) mis à jour${fail?`, ${fail} échec(s)`:""}.`+(neg.length?`\n\n⚠️ Coût > prix de vente (à vérifier) : ${neg.join(", ")}.`:""));
 }
 function renderCouts(){
   const prods=(allProducts||[]).filter(p=>p&&p.name);
