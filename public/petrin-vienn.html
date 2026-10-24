@@ -112,7 +112,7 @@ var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co", SB_KEY="sb_publishable_Md
 function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Object.assign({},opts,{headers:Object.assign({apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json",Prefer:opts.method==="POST"?"resolution=merge-duplicates,return=representation":"return=representation"},opts.headers||{})})); }
 
 /* ---------- Recettes viennoiseries (extraites de « Fiches recette - VIENNOISERIES ») ---------- */
-var CHARGES=4.5;
+var CHARGES_VAR=0.10, CHARGES=1+CHARGES_VAR;  // coût de revient variable = matières × (1 + taux charges variables)
 var DOUGHS=[
   { fam:"PLF", label:"Pâte levée feuilletée", total:2520, levain:{g:200,type:"ble"},
     pate:[ {n:"Farine blé T65",g:1000},{n:"Sel fin",g:20},{n:"Sucre",g:120},{n:"Levure",g:45},{n:"Poudre de lait",g:50},{n:"Eau",g:405},{n:"Œuf",g:50},{n:"Beurre doux",g:60},{n:"Beurre de tourage",g:570} ],
@@ -195,6 +195,15 @@ function compute(){
         inner+=g.lines.map(function(l){ var dk=p.fam+"|"+(g.label||"")+"|"+l.n; dks.push(dk); return '<div class="ingr'+(done[dk]?" done":"")+'" data-dk="'+escA(dk)+'"><span class="lbl"><span class="chk"></span>'+l.n+'</span><span class="q">'+fmtG(l.g)+'</span></div>'; }).join(""); });
       var allDone=dks.length>0&&dks.every(function(k){return done[k];});
       inner+='<button class="allbtn">'+(allDone?"↩︎ Tout décocher":"✓ Tout fait")+'</button>';
+      var ordV=orders[cur]||{};
+      var ecoV=p.rec.produits.filter(function(x){ return (ordV[x.n]||0)>0 && (x.pv||0)>0; }).map(function(x){
+        var cp=x.poids/p.rec.total, mat=0;
+        p.rec.pate.forEach(function(i){ mat+=i.g*cp/1000*prixKg(i.n); });
+        if(p.rec.levain){ mat+=p.rec.levain.g*cp/1000*prixKg(p.rec.levain.type==="epeautre"?"Levain petit épeautre":"Levain blé"); }
+        var rev=mat*CHARGES, mg=(x.pv||0)-rev;
+        return '<div class="ingr" style="cursor:default;font-size:13px"><span class="lbl">'+x.n+' <span class="sub">(×'+(ordV[x.n]||0)+')</span></span><span style="text-align:right">PV '+eur(x.pv)+' · revient <b>'+eur(rev)+'</b> · marge <b style="color:var(--gn)">'+eur(mg)+'</b></span></div>';
+      }).join("");
+      if(ecoV) inner+='<div class="batch-label">Coût de revient / pièce <span class="sub" style="font-weight:400;text-transform:none;letter-spacing:0">(matières + '+Math.round((CHARGES-1)*100)+' %, hors main-d\'œuvre)</span></div>'+ecoV;
       inner+='<div class="sub" style="text-align:right;margin-top:8px">coefficient ×'+(Math.round(p.coeff*100)/100).toLocaleString("fr-FR")+' · pâte '+fmtG(p.dough)+'</div>';
       return '<div class="pain'+op+(allDone?" alldone":"")+'" data-fam="'+escA(p.fam)+'"><div class="ph"><span class="nm">'+(allDone?'<span class="donebadge">✓</span> ':'')+p.label+'</span><span class="meta">pâte '+fmtG(p.dough)+' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3E5A70" stroke-width="3" style="vertical-align:middle"><polyline points="9 6 15 12 9 18"/></svg></span></div><div class="pb">'+inner+'</div></div>';
     }).join("");
@@ -209,11 +218,11 @@ function compute(){
     tm.innerHTML=keys.map(function(k){return '<div class="tot-line"><span>'+k+'</span><b>'+fmtG(D.mat[k])+'</b></div>';}).join("")+'<div class="grandtot"><span>Poids total de pâte</span><b>'+fmtG(D.pate)+'</b></div>'; }
   var mb=document.getElementById("margeBlock");
   if(D.ca<=0){ mb.innerHTML='<div class="empty">—</div>'; }
-  else { var cc=D.coutMat*CHARGES, mg=D.ca-cc, pct=D.ca>0?mg/D.ca*100:0;
+  else { var cc=D.coutMat*CHARGES, mg=D.ca-cc, pct=D.ca>0?mg/D.ca*100:0, tauxPct=Math.round((CHARGES-1)*100);
     mb.innerHTML='<div class="mrow"><span>Chiffre d\'affaires (vente)</span><b class="big" style="color:var(--bd)">'+eur(D.ca)+'</b></div>'
       +'<div class="mrow"><span class="sub">Coût matières</span><span>'+eur(D.coutMat)+'</span></div>'
-      +'<div class="mrow"><span class="sub">Coût chargé (× '+CHARGES.toLocaleString("fr-FR")+')</span><span>'+eur(cc)+'</span></div>'
-      +'<div class="mrow" style="border-top:2px solid var(--bd);margin-top:4px;padding-top:8px;"><span>Marge estimée</span><b class="big" style="color:'+(mg>=0?'var(--gn)':'var(--rd)')+'">'+eur(mg)+' · '+Math.round(pct)+'%</b></div>'; }
+      +'<div class="mrow"><span class="sub">Coût de revient variable (matières + '+tauxPct+' %)</span><span>'+eur(cc)+'</span></div>'
+      +'<div class="mrow" style="border-top:2px solid var(--bd);margin-top:4px;padding-top:8px;"><span>Marge sur coût variable<br><span class="sub" style="font-weight:400">hors main-d\'œuvre</span></span><b class="big" style="color:'+(mg>=0?'var(--gn)':'var(--rd)')+'">'+eur(mg)+' · '+Math.round(pct)+'%</b></div>'; }
   var lb=document.getElementById("levBlock");
   document.getElementById("levWhen").textContent = cur==="tomorrow" ? "(à rafraîchir ce soir pour demain)" : "(pour aujourd'hui)";
   if(D.levBle<=0){ lb.innerHTML='<div class="empty" style="color:var(--is)">—</div>'; }
@@ -290,6 +299,11 @@ function loadMatieresPrix(){
     if(Array.isArray(d)) d.forEach(function(m){ if(m && m.nom && m.prix_kg!=null) PRIX[m.nom]=Number(m.prix_kg); });
   }).catch(function(){});
 }
+function loadConfig(){
+  return sb("app_config?key=eq.charges_var_vienn&select=value").then(function(r){ return r.ok?r.json():null; }).then(function(d){
+    if(Array.isArray(d)&&d[0]&&d[0].value!=null){ CHARGES_VAR=Number(d[0].value); CHARGES=1+CHARGES_VAR; }
+  }).catch(function(){});
+}
 /* ---------- Commande vocale : données + réponse (moteur dans /petrin-voice.js) ---------- */
 (function(){
   function norm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
@@ -354,7 +368,7 @@ function loadMatieresPrix(){
     var D=computeData(cur);
     return {
       famille:"viennoiseries",
-      note:"Poids en grammes, pas de perte (poids piece = poids pate). Tout est DÉJÀ calculé PAR PIÈCE dans produits. Pour N pièces, multiplie les valeurs par N. cout_charge = cout_matieres x coef_charges. marge = prix_vente - cout_charge.",
+      note:"Poids en grammes, pas de perte (poids piece = poids pate). Tout est DÉJÀ calculé PAR PIÈCE dans produits. Pour N pièces, multiplie les valeurs par N. cout_charge_eur = coût de revient variable = cout_matieres x coef_charges (coef_charges = 1 + taux charges variables), HORS main-d'œuvre. marge = prix_vente - cout_charge (marge sur coût variable, hors main-d'œuvre).",
       coef_charges:CHARGES,
       pates:DOUGHS.map(function(d){ return { fam:d.fam, label:d.label, pate_base_total_g:d.total, produits:perProduits(d) }; }),
       jour: cur==="today"?"aujourd'hui":"demain",
@@ -373,7 +387,7 @@ function loadMatieresPrix(){
 })();
 
 setNet("Chargement…");
-Promise.all([loadDay("today"),loadDay("tomorrow"),loadMatieresPrix()]).then(function(){ buildOrder(); compute(); setNet("Prêt"); });
+Promise.all([loadDay("today"),loadDay("tomorrow"),loadMatieresPrix(),loadConfig()]).then(function(){ buildOrder(); compute(); setNet("Prêt"); });
 setInterval(poll,5000);
 </script>
 <script src="/petrin-voice.js"></script>

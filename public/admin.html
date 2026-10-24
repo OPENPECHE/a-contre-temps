@@ -250,8 +250,18 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
     <!-- COUTS & MARGES -->
     <div id="page-couts" class="page">
       <h1>Coûts &amp; marges</h1>
-      <p class="sub">Coût de revient (prix d'achat chargé) par produit — <b>la référence unique</b> lue par la caisse et tous les calculs de marge. Modifiez une case, c'est enregistré automatiquement.</p>
+      <p class="sub"><b>Coût de revient = coût matière + charges variables</b> (hors main-d'œuvre). C'est la référence unique lue par la caisse et tous les calculs de marge.</p>
       <div id="couts-summary" class="stats" style="margin-bottom:1rem"></div>
+
+      <div class="card card0" id="charges-box" style="margin:0 0 1.2rem;padding:1rem 1.2rem">
+        <p class="fd" style="font-size:15px;margin:0 0 .5rem">Charges variables <span class="sub" style="font-weight:400">· % du coût matière</span></p>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">🥖 Pains <input id="ch-pain" type="number" step="0.5" min="0" style="width:72px;padding:7px;border:1px solid var(--bs);border-radius:7px;text-align:right"> %</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">🥐 Viennoiseries <input id="ch-vienn" type="number" step="0.5" min="0" style="width:72px;padding:7px;border:1px solid var(--bs);border-radius:7px;text-align:right"> %</label>
+          <button class="btn bg bsm" onclick="saveCharges()">Enregistrer</button>
+        </div>
+        <p class="sub" style="margin:.5rem 0 0;font-size:11.5px">Coût de revient = coût matière + ce pourcentage (hors main-d'œuvre). Après modification, cliquez « ↻ Recalculer les coûts produits ».</p>
+      </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:1.4rem 0 .5rem">
         <p class="fd" style="font-size:17px;margin:0">Matières premières <span class="sub" style="font-weight:400">· prix d'achat au kg</span></p>
@@ -754,10 +764,10 @@ async function renderMargeCard(){
       <div class="stats" style="margin-bottom:.4rem">
         <div class="stat"><div class="sl">CA DU MOIS</div><div class="sv">${eur(caTot)}</div></div>
         <div class="stat"><div class="sl">COÛT MATIÈRES</div><div class="sv" style="color:#A6713F">${eur(coutTot)}</div></div>
-        <div class="stat acc"><div class="sl">MARGE NETTE</div><div class="sv" style="color:#4A7C59">${eur(margeNette)}</div><div class="ss">${pct} % du CA costé</div></div>
+        <div class="stat acc"><div class="sl">MARGE (hors MO)</div><div class="sv" style="color:#4A7C59">${eur(margeNette)}</div><div class="ss">${pct} % · sur coût variable</div></div>
         <div class="stat"><div class="sl">CASSE (COÛT)</div><div class="sv" style="color:#B0402F">${eur(casseCout)}</div><div class="ss">valeur vente ${eur(cassePv)}</div></div>
       </div>
-      <div style="font-size:11.5px;color:var(--is)">Marge brute ${eur(margeBrute)} − casse ${eur(casseCout)} = marge nette ${eur(margeNette)}. Caisse ${eur(c.ca)} · en ligne ${eur(o.ca)}.${couv<99?` <b>Marge calculée sur ${eur(caCoste)} de CA (${couv} %)</b> — produits dont le coût est renseigné ; les ventes anciennes (autres libellés) ne sont pas comptées.`:""}</div>`;
+      <div style="font-size:11.5px;color:var(--is)">Marge sur coût variable ${eur(margeBrute)} − casse ${eur(casseCout)} = ${eur(margeNette)} <b>(hors main-d'œuvre et charges fixes)</b>. Caisse ${eur(c.ca)} · en ligne ${eur(o.ca)}.${couv<99?` Marge calculée sur ${eur(caCoste)} de CA (${couv} %) — produits dont le coût est renseigné.`:""}</div>`;
   }catch(e){ el.innerHTML=`<div style="font-size:12.5px;color:var(--is)">Marge indisponible (vérifiez la table casse et la colonne cost).</div>`; }
 }
 
@@ -766,7 +776,25 @@ function money(v){ return `${(Math.round((Number(v)||0)*100)/100).toFixed(2).rep
 function escC(s){ return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 async function loadCouts(){
   if(!allProducts || !allProducts.length){ allProducts=await sbFetch("products?order=position.asc"); }
-  renderCouts(); loadCasseList(); loadMatieres();
+  renderCouts(); loadCasseList(); loadMatieres(); loadChargesBox();
+}
+async function loadChargesBox(){
+  await loadChargesRates();
+  const p=document.getElementById("ch-pain"), v=document.getElementById("ch-vienn");
+  if(p) p.value=Math.round(chargesRates.pain*1000)/10;
+  if(v) v.value=Math.round(chargesRates.vienn*1000)/10;
+}
+async function saveCharges(){
+  const pain=(parseFloat(document.getElementById("ch-pain").value)||0)/100;
+  const vienn=(parseFloat(document.getElementById("ch-vienn").value)||0)/100;
+  try{
+    await sbFetch("app_config",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify([
+      {key:"charges_var_pain",value:pain,updated_at:new Date().toISOString()},
+      {key:"charges_var_vienn",value:vienn,updated_at:new Date().toISOString()}
+    ])});
+    chargesRates.pain=pain; chargesRates.vienn=vienn;
+    alert("Taux enregistrés. Cliquez « ↻ Recalculer les coûts produits » pour les appliquer.");
+  }catch(e){ alert("Enregistrement impossible — exécutez supabase/config.sql dans Supabase."); }
 }
 
 // ── Matières premières (prix d'achat au kg) — source unique des coûts ──────────
@@ -827,7 +855,15 @@ async function delMatiere(nom){
 }
 
 // ── Moteur de recalcul des coûts produits (recettes Pétrin) ────────────────────
-const COST_CH=4.5, COST_LOSS=0.82;
+const COST_LOSS=0.82;
+let chargesRates={pain:0.10, vienn:0.10};   // taux de charges variables (fraction), modifiables au back-office
+async function loadChargesRates(){
+  try{
+    const d=await sbFetch("app_config?key=in.(charges_var_pain,charges_var_vienn)&select=key,value");
+    (Array.isArray(d)?d:[]).forEach(r=>{ if(r.key==="charges_var_pain") chargesRates.pain=Number(r.value); if(r.key==="charges_var_vienn") chargesRates.vienn=Number(r.value); });
+  }catch(e){}
+  return chargesRates;
+}
 const RECIPES_P=[
   {nom:"LE TRADITION",total:2020,lev:{g:250,n:"Levain blé"},pate:[["Farine blé T65",1000],["Eau",750],["Sel",20]]},
   {nom:"LE CLASSIQUE LEVAIN",total:2040,lev:{g:250,n:"Levain blé"},pate:[["Farine blé T65",700],["Farine seigle T130",100],["Farine blé T80",200],["Eau",770],["Sel",20]]},
@@ -860,11 +896,13 @@ function prixOf(nom,pr){ if(pr[nom]!=null) return pr[nom]; if(/^eau/i.test(nom))
 function baseMat(pate,lev,pr){ let c=0; pate.forEach(([n,g])=>c+=g/1000*prixOf(n,pr)); if(lev) c+=lev.g/1000*prixOf(lev.n,pr); return c; }
 function costOf(entry,pr){
   const [,type,key,W]=entry;
-  if(type==="pain"){ const r=RECIPES_P.find(x=>x.nom===key); const coeff=(W/COST_LOSS)/r.total; return coeff*baseMat(r.pate,r.lev,pr)*COST_CH; }
-  const d=DOUGHS_V[key]; return (W/d.total)*baseMat(d.pate,d.lev,pr)*COST_CH;
+  const mult=1+(type==="pain"?chargesRates.pain:chargesRates.vienn);   // matières + charges variables
+  if(type==="pain"){ const r=RECIPES_P.find(x=>x.nom===key); const coeff=(W/COST_LOSS)/r.total; return coeff*baseMat(r.pate,r.lev,pr)*mult; }
+  const d=DOUGHS_V[key]; return (W/d.total)*baseMat(d.pate,d.lev,pr)*mult;
 }
 async function recalcCosts(){
-  if(!confirm("Recalculer le coût de revient des pains & viennoiseries à partir des prix matières actuels ? Les coûts saisis à la main pour ces produits seront remplacés.")) return;
+  if(!confirm("Recalculer le coût de revient des pains & viennoiseries (matières + charges variables) à partir des prix actuels ? Les coûts saisis à la main pour ces produits seront remplacés.")) return;
+  await loadChargesRates();
   const pr=matMap();
   let ok=0, fail=0, neg=[];
   for(const e of PROD_MAP){
@@ -1449,7 +1487,7 @@ function productRow(p){
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--is)">Prix</span>
         <input class="einp" id="eprice-${p.id}" type="number" step="0.5" style="width:70px;text-align:right" value="${p.price}" /><span style="font-size:11px;color:var(--is)">€</span>
-        <span style="font-size:11px;color:var(--is);margin-left:6px" title="Coût de revient unitaire (matières chargées)">Coût</span>
+        <span style="font-size:11px;color:var(--is);margin-left:6px" title="Coût de revient unitaire (matières + charges variables, hors main-d'œuvre)">Coût</span>
         <input class="einp" id="ecost-${p.id}" type="number" step="0.01" style="width:66px;text-align:right" value="${p.cost==null?'':p.cost}" placeholder="—" /><span style="font-size:11px;color:var(--is)">€</span>
         <span style="font-size:11px;color:var(--is);margin-left:6px">Prix/kg</span>
         <input class="einp" id="epkg-${p.id}" type="number" step="0.1" style="width:70px;text-align:right" value="${p.price_per_kg==null?'':p.price_per_kg}" placeholder="—" /><span style="font-size:11px;color:var(--is)">€/kg</span>

@@ -145,7 +145,7 @@ var SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
 function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Object.assign({},opts,{headers:Object.assign({apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json",Prefer:opts.method==="POST"?"resolution=merge-duplicates,return=representation":"return=representation"},opts.headers||{})})); }
 
 /* ---------- Recettes (extraites de « Fiches recette - PAINS ») ---------- */
-var LOSS=0.82, CHARGES=4.5;
+var LOSS=0.82, CHARGES_VAR=0.10, CHARGES=1+CHARGES_VAR;  // coût de revient variable = matières × (1 + taux charges variables)
 var FORMATS=[ {key:"baguette",poids:250}, {key:"pave400",poids:400}, {key:"boule",poids:500}, {key:"pave1kg",poids:1000} ];
 var RECIPES=[
   { nom:"LE TRADITION", total:2020, pvKg:5.80, levain:{g:250,type:"ble"},
@@ -282,6 +282,15 @@ function compute(){
       });
       var allDone = dks.length>0 && dks.every(function(k){ return done[k]; });
       inner+='<button class="allbtn" data-nom="'+escA(p.nom)+'">'+(allDone?"↩︎ Tout décocher":"✓ Tout fait")+'</button>';
+      var ordF=orders[cur][p.nom]||{};
+      var eco=FORMATS.filter(function(f){ return (ordF[f.key]||0)>0; }).map(function(f){
+        var coeff2=(f.poids/LOSS)/p.rec.total, mat=0;
+        p.rec.pate.forEach(function(i){ mat+=i.g*coeff2/1000*prixKg(i.n); });
+        mat+=p.rec.levain.g*coeff2/1000*prixKg(p.rec.levain.type==="epeautre"?"Levain petit épeautre":"Levain blé");
+        var rev=mat*CHARGES, pv=p.rec.pvKg*f.poids/1000, mg=pv-rev;
+        return '<div class="ingr" style="cursor:default;font-size:13px"><span class="lbl">'+f.poids+' g <span class="sub">(×'+(ordF[f.key]||0)+')</span></span><span style="text-align:right">PV '+eur(pv)+' · revient <b>'+eur(rev)+'</b> · marge <b style="color:var(--gn)">'+eur(mg)+'</b></span></div>';
+      }).join("");
+      if(eco) inner+='<div class="batch-label">Coût de revient / pièce <span class="sub" style="font-weight:400;text-transform:none;letter-spacing:0">(matières + '+Math.round((CHARGES-1)*100)+' %, hors main-d\'œuvre)</span></div>'+eco;
       inner+='<div class="sub" style="text-align:right;margin-top:8px">coefficient recette ×'+(Math.round(p.coeff*100)/100).toLocaleString("fr-FR")+'</div>';
       return '<div class="pain'+op+(allDone?" alldone":"")+'" data-nom="'+escA(p.nom)+'"><div class="ph">'
         +'<span class="nm">'+(allDone?'<span class="donebadge">✓</span> ':'')+p.nom+'</span>'
@@ -303,12 +312,12 @@ function compute(){
   // 4 · coût & marge
   var mb=document.getElementById("margeBlock");
   if(D.ca<=0){ mb.innerHTML='<div class="empty">—</div>'; }
-  else { var coutCh=D.coutMat*CHARGES, marge=D.ca-coutCh, pct=D.ca>0?(marge/D.ca*100):0;
+  else { var coutCh=D.coutMat*CHARGES, marge=D.ca-coutCh, pct=D.ca>0?(marge/D.ca*100):0, tauxPct=Math.round((CHARGES-1)*100);
     mb.innerHTML=''
       +'<div class="mrow"><span>Chiffre d\'affaires (vente)</span><b class="big" style="color:var(--bd)">'+eur(D.ca)+'</b></div>'
       +'<div class="mrow"><span class="sub">Coût matières</span><span>'+eur(D.coutMat)+'</span></div>'
-      +'<div class="mrow"><span class="sub">Coût chargé (matières × '+CHARGES.toLocaleString("fr-FR")+')</span><span>'+eur(coutCh)+'</span></div>'
-      +'<div class="mrow" style="border-top:2px solid var(--bd);margin-top:4px;padding-top:8px;"><span>Marge estimée</span><b class="big" style="color:'+(marge>=0?'var(--gn)':'var(--rd)')+'">'+eur(marge)+' · '+Math.round(pct)+'%</b></div>'; }
+      +'<div class="mrow"><span class="sub">Coût de revient variable (matières + '+tauxPct+' %)</span><span>'+eur(coutCh)+'</span></div>'
+      +'<div class="mrow" style="border-top:2px solid var(--bd);margin-top:4px;padding-top:8px;"><span>Marge sur coût variable<br><span class="sub" style="font-weight:400">hors main-d\'œuvre</span></span><b class="big" style="color:'+(marge>=0?'var(--gn)':'var(--rd)')+'">'+eur(marge)+' · '+Math.round(pct)+'%</b></div>'; }
   // 5 · rafraîchi levain
   var lb=document.getElementById("levBlock");
   document.getElementById("levWhen").textContent = cur==="tomorrow" ? "(à rafraîchir ce soir pour demain)" : "(pour aujourd'hui)";
@@ -470,7 +479,7 @@ function delDay(dbKey, plain, after){
     var D=computeData(cur);
     return {
       famille:"pains",
-      note:"Poids en grammes. Tout est DÉJÀ calculé PAR PIÈCE dans par_piece (par format). Pour N pièces, multiplie simplement les valeurs par_piece par N — ne recalcule pas avec la recette de base. cout_charge = cout_matieres x coef_charges. marge = prix_vente - cout_charge.",
+      note:"Poids en grammes. Tout est DÉJÀ calculé PAR PIÈCE dans par_piece (par format). Pour N pièces, multiplie simplement les valeurs par_piece par N — ne recalcule pas avec la recette de base. cout_charge_eur = coût de revient variable = cout_matieres x coef_charges (coef_charges = 1 + taux charges variables), HORS main-d'œuvre. marge = prix_vente - cout_charge (marge sur coût variable, hors main-d'œuvre).",
       coef_charges:CHARGES, formats:FORMATS,
       recettes:RECIPES.map(function(r){ return { nom:r.nom, prix_vente_eur_par_kg:r.pvKg, par_piece:perPiece(r) }; }),
       jour: cur==="today"?"aujourd'hui":"demain",
@@ -495,10 +504,16 @@ function loadMatieresPrix(){
     if(Array.isArray(d)) d.forEach(function(m){ if(m && m.nom && m.prix_kg!=null) PRIX[m.nom]=Number(m.prix_kg); });
   }).catch(function(){});
 }
+/* ---------- Taux de charges variables (back-office, défaut 10 %) ---------- */
+function loadConfig(){
+  return sb("app_config?key=eq.charges_var_pain&select=value").then(function(r){ return r.ok?r.json():null; }).then(function(d){
+    if(Array.isArray(d)&&d[0]&&d[0].value!=null){ CHARGES_VAR=Number(d[0].value); CHARGES=1+CHARGES_VAR; }
+  }).catch(function(){});
+}
 
 /* ---------- Init ---------- */
 setNet("Chargement…");
-Promise.all([loadDay("today"), loadDay("tomorrow"), loadMatieresPrix()]).then(function(){ buildOrderTable(); compute(); setNet("Prêt"); });
+Promise.all([loadDay("today"), loadDay("tomorrow"), loadMatieresPrix(), loadConfig()]).then(function(){ buildOrderTable(); compute(); setNet("Prêt"); });
 setInterval(poll, 5000);
 </script>
 <script src="/petrin-voice.js"></script>
