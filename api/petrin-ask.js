@@ -44,7 +44,10 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 350,
+        max_tokens: 500,
+        // Réponse factuelle courte : pas besoin de réflexion étendue (plus rapide,
+        // et tout le budget de tokens va à la réponse).
+        thinking: { type: "disabled" },
         system: SYSTEM,
         messages: [
           {
