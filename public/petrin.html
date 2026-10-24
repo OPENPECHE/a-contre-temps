@@ -30,6 +30,14 @@
   .tab{flex:1;padding:10px;border:none;border-radius:10px;background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
   .tab.on{background:var(--cr);color:var(--bd);}
   .tab small{display:block;font-weight:400;opacity:.8;font-size:10.5px;}
+  .dctl{display:flex;gap:8px;align-items:center;background:var(--bd);padding:0 12px 10px;flex-wrap:wrap;}
+  .dctl label{display:flex;align-items:center;gap:6px;color:var(--cr);font-size:12.5px;}
+  .dctl input[type=date]{border:none;border-radius:8px;padding:7px 9px;font-size:13px;font-family:var(--sans);background:var(--cr);color:var(--ink);}
+  .dctl .dbtn{margin-left:auto;background:rgba(243,231,218,.14);color:var(--cr);border:none;border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;font-family:var(--sans);}
+  .arch-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--bs);border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff;}
+  .arch-row:hover{background:var(--pp);}
+  .arch-row .d{font-family:var(--serif);font-size:15px;color:var(--bd);}
+  .arch-row .s{font-size:12px;color:var(--is);}
   .wrap{max-width:900px;margin:0 auto;padding:16px 14px;}
   h2{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--bd);margin:20px 0 9px;}
   .card{background:#fff;border:1px solid var(--bs);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 6px 20px rgba(43,41,37,.04);}
@@ -95,6 +103,11 @@
 <div class="tabs">
   <button class="tab on" id="tabToday" data-day="today"></button>
   <button class="tab" id="tabTomorrow" data-day="tomorrow"></button>
+  <button class="tab" id="tabPick" data-day="pick" style="display:none"></button>
+</div>
+<div class="dctl">
+  <label>📅 Autre date <input type="date" id="datePick"></label>
+  <button class="dbtn" id="btnArchives">🗄️ Archives</button>
 </div>
 <div class="wrap">
 
@@ -170,8 +183,9 @@ var DAYS={ today:iso(now), tomorrow:iso(new Date(now.getFullYear(),now.getMonth(
 document.getElementById("tabToday").innerHTML="Aujourd'hui<small>"+labelDate(now)+"</small>";
 document.getElementById("tabTomorrow").innerHTML="Demain<small>"+labelDate(new Date(now.getFullYear(),now.getMonth(),now.getDate()+1))+"</small>";
 var cur="today";
-var orders={ today:{}, tomorrow:{} };     // données par jour
-var updatedAt={ today:null, tomorrow:null };
+var orders={ today:{}, tomorrow:{}, pick:{} };     // données par jour (pick = date choisie)
+var updatedAt={ today:null, tomorrow:null, pick:null };
+DAYS.pick=null;
 var lastEdit=0, expanded={}, splits={}, done={};
 function loadDone(){ try{ return JSON.parse(localStorage.getItem("petrin_done_"+DAYS[cur])||"{}")||{}; }catch(e){ return {}; } }
 function saveDone(){ try{ localStorage.setItem("petrin_done_"+DAYS[cur], JSON.stringify(done)); }catch(e){} }
@@ -316,16 +330,55 @@ function compute(){
   else { bn.style.display="none"; }
 }
 
-/* ---------- Onglets ---------- */
+/* ---------- Onglets / dates ---------- */
+function curLabel(){ return cur==="today"?"aujourd'hui":cur==="tomorrow"?"demain":(DAYS.pick?new Date(DAYS.pick+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long"}):"cette date"); }
 function switchDay(which){
   cur=which; done=loadDone();
-  document.getElementById("tabToday").classList.toggle("on", which==="today");
-  document.getElementById("tabTomorrow").classList.toggle("on", which==="tomorrow");
+  var map={today:"tabToday",tomorrow:"tabTomorrow",pick:"tabPick"};
+  Object.keys(map).forEach(function(k){ var b=document.getElementById(map[k]); if(b) b.classList.toggle("on", k===which); });
   buildOrderTable(); compute();
+}
+function pickDate(isoStr){
+  if(!isoStr) return;
+  var dp=document.getElementById("datePick"); if(dp) dp.value=isoStr;
+  if(isoStr===DAYS.today){ switchDay("today"); return; }
+  if(isoStr===DAYS.tomorrow){ switchDay("tomorrow"); return; }
+  DAYS.pick=isoStr;
+  var d=new Date(isoStr+"T00:00:00"), tp=document.getElementById("tabPick");
+  tp.innerHTML=(d<new Date(DAYS.today+"T00:00:00")?"Archive":"Date")+"<small>"+labelDate(d)+"</small>";
+  tp.style.display="";
+  setNet("Chargement…");
+  loadDay("pick").then(function(){ switchDay("pick"); setNet("Prêt"); });
 }
 document.getElementById("tabToday").onclick=function(){ switchDay("today"); };
 document.getElementById("tabTomorrow").onclick=function(){ switchDay("tomorrow"); };
-document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à zéro la commande de "+(cur==="today"?"aujourd'hui":"demain")+" ?")) return; orders[cur]={}; buildOrderTable(); compute(); saveDay(cur); };
+document.getElementById("tabPick").onclick=function(){ if(DAYS.pick) switchDay("pick"); };
+document.getElementById("datePick").onchange=function(){ pickDate(this.value); };
+document.getElementById("btnArchives").onclick=openArchives;
+document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à zéro la commande de "+curLabel()+" ?")) return; orders[cur]={}; buildOrderTable(); compute(); saveDay(cur); };
+
+/* ---------- Archives ---------- */
+function openArchives(){
+  var ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(43,41,37,.5);display:flex;align-items:flex-start;justify-content:center;z-index:200;padding:24px 14px;overflow:auto;";
+  var card=document.createElement("div"); card.className="card"; card.style.cssText="max-width:560px;width:100%;margin:0;";
+  card.innerHTML='<h2 style="margin:0 0 8px">🗄️ Archives des pétrissées</h2><div class="sub" style="margin-bottom:12px">Toutes les dates enregistrées — touchez-en une pour la consulter ou la modifier.</div><div id="archList"><div class="empty">Chargement…</div></div><button class="btn ghost" id="archClose" style="margin-top:12px">Fermer</button>';
+  ov.appendChild(card); document.body.appendChild(ov);
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  card.querySelector("#archClose").onclick=function(){ ov.remove(); };
+  sb("petrin_days?select=day,data,updated_at&order=day.desc").then(function(r){return r.ok?r.json():[];}).then(function(rows){
+    rows=(Array.isArray(rows)?rows:[]).filter(function(x){ return x.day && x.day.indexOf("#v")<0; });
+    var box=card.querySelector("#archList");
+    if(!rows.length){ box.innerHTML='<div class="empty">Aucune pétrissée enregistrée.</div>'; return; }
+    box.innerHTML=rows.map(function(x){
+      var d=new Date(x.day+"T00:00:00"), data=x.data||{}, nb=0, pieces=0;
+      Object.keys(data).forEach(function(k){ var o=data[k]||{}, has=false; Object.keys(o).forEach(function(f){ var q=(+o[f])||0; pieces+=q; if(q>0) has=true; }); if(has) nb++; });
+      var tag=x.day===DAYS.today?' <b style="color:var(--gn)">(aujourd\'hui)</b>':x.day===DAYS.tomorrow?' <span class="sub">(demain)</span>':'';
+      return '<div class="arch-row" data-day="'+x.day+'"><span><span class="d">'+d.toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})+'</span>'+tag+'<br><span class="s">'+nb+' pain(s) · '+pieces+' pièce(s)</span></span><span class="sub" style="font-size:20px">›</span></div>';
+    }).join("");
+    box.querySelectorAll(".arch-row").forEach(function(row){ row.onclick=function(){ ov.remove(); pickDate(row.getAttribute("data-day")); }; });
+  }).catch(function(){ card.querySelector("#archList").innerHTML='<div class="empty">Erreur de chargement.</div>'; });
+}
 
 /* ---------- Commande vocale ---------- */
 (function(){
