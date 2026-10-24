@@ -872,23 +872,24 @@ function statsRange(period){
 }
 function aggregate(ventes, costMap){
   costMap = costMap || {};
-  var prod={}, caTotal=0, nb=0, esp=0, cb=0, coutTotal=0;
+  var prod={}, caTotal=0, nb=0, esp=0, cb=0, coutTotal=0, caCoste=0;
   ventes.forEach(function(v){
     caTotal += Number(v.total)||0; nb++;
     if(v.payment_method==="especes") esp+=Number(v.total)||0; else cb+=Number(v.total)||0;
     (v.items||[]).forEach(function(l){
       if(!l || Number(l.price)<0 || /^remise/i.test(l.name||"")) return;
-      var k=l.name||"?"; if(!prod[k]) prod[k]={ name:k, qty:0, ca:0, cout:0 };
-      var q=Number(l.qty)||0;
+      var k=l.name||"?"; if(!prod[k]) prod[k]={ name:k, qty:0, ca:0, cout:0, coste:false };
+      var q=Number(l.qty)||0, ca=(Number(l.price)||0)*q;
       // coût unitaire : snapshot de la vente, sinon coût actuel du produit (par nom)
+      var known = (l.cost!=null && l.cost!=="") || costMap[k]!=null;
       var cu = (l.cost!=null && l.cost!=="") ? Number(l.cost)||0 : (costMap[k]||0);
-      prod[k].qty += q; prod[k].ca += (Number(l.price)||0)*q; prod[k].cout += cu*q;
-      coutTotal += cu*q;
+      prod[k].qty += q; prod[k].ca += ca;
+      if(known){ prod[k].cout += cu*q; prod[k].coste=true; coutTotal += cu*q; caCoste += ca; }
     });
   });
   var arr=Object.keys(prod).map(function(k){ var p=prod[k]; p.marge=p.ca-p.cout; return p; });
   arr.sort(function(a,b){ return b.qty-a.qty || b.ca-a.ca; });
-  return { prod:arr, caTotal:caTotal, nb:nb, esp:esp, cb:cb, coutTotal:coutTotal, margeTotal:caTotal-coutTotal };
+  return { prod:arr, caTotal:caTotal, nb:nb, esp:esp, cb:cb, coutTotal:coutTotal, caCoste:caCoste, margeTotal:caCoste-coutTotal };
 }
 function aggLieux(ventes){
   var m={};
@@ -940,20 +941,22 @@ document.getElementById("btnStats").onclick = function(){
   }
   function topHtml(s, label){
     var hasCout = s.coutTotal>0;
-    var mpct = s.caTotal>0 ? Math.round(s.margeTotal/s.caTotal*100) : 0;
+    var mpct = s.caCoste>0 ? Math.round(s.margeTotal/s.caCoste*100) : 0;
+    var couv = s.caTotal>0 ? Math.round(s.caCoste/s.caTotal*100) : 0;
     return '<div style="display:flex;gap:10px;margin-bottom:'+(hasCout?'10px':'12px')+';">'
       +'<div style="flex:1;background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--bd);">'+eur(s.caTotal)+'</div><div class="sub" style="font-size:11px;">CA ('+s.nb+' ventes)</div></div>'
       +'<div style="flex:1;background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--bd);">'+eur(s.nb? s.caTotal/s.nb:0)+'</div><div class="sub" style="font-size:11px;">Panier moyen</div></div></div>'
-      +(hasCout ? '<div style="display:flex;gap:10px;margin-bottom:12px;">'
+      +(hasCout ? '<div style="display:flex;gap:10px;margin-bottom:6px;">'
           +'<div style="flex:1;background:#EAF3EC;border:1px solid #CFE3D5;border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--gn,#4A7C59);">'+eur(s.margeTotal)+'</div><div class="sub" style="font-size:11px;">Marge ('+mpct+' %)</div></div>'
-          +'<div style="flex:1;background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--ru);">'+eur(s.coutTotal)+'</div><div class="sub" style="font-size:11px;">Coût matières</div></div></div>' : '')
+          +'<div style="flex:1;background:var(--pp);border:1px solid var(--bs);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:var(--serif);font-size:20px;color:var(--ru);">'+eur(s.coutTotal)+'</div><div class="sub" style="font-size:11px;">Coût matières</div></div></div>'
+          +(couv<99?'<div class="sub" style="font-size:11px;margin-bottom:10px;">Marge calculée sur '+eur(s.caCoste)+' de CA ('+couv+' %) — produits dont le coût est renseigné.</div>':'<div style="margin-bottom:4px;"></div>') : '')
       +'<div class="sub" style="font-size:11.5px;margin-bottom:10px;">'+esc(label)+' · Espèces '+eur(s.esp)+' · Carte '+eur(s.cb)+'</div>';
   }
   function prodHtml(s){
     var maxQty = s.prod.length ? s.prod[0].qty : 1;
     var h='<div style="max-height:34vh;overflow-y:auto;padding-right:4px;">';
     s.prod.forEach(function(p){ var w=Math.max(4, Math.round(p.qty/maxQty*100));
-      var mg = p.cout>0 ? ' · <span style="color:var(--gn,#4A7C59)">marge '+eur(p.marge)+'</span>' : '';
+      var mg = p.coste ? ' · <span style="color:var(--gn,#4A7C59)">marge '+eur(p.marge)+'</span>' : '';
       h+='<div style="padding:8px 0;border-bottom:1px solid #F0ECE5;"><div style="display:flex;justify-content:space-between;font-size:14px;"><span><b>'+p.qty+'</b> &times; '+esc(p.name)+'</span><b>'+eur(p.ca)+'</b></div>'
         +(mg?'<div class="sub" style="font-size:11px;">CA '+eur(p.ca)+mg+'</div>':'')
         +'<div style="height:7px;background:var(--bs);border-radius:4px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:'+w+'%;background:var(--b);"></div></div></div>'; });

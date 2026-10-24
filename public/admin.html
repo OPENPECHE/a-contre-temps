@@ -161,6 +161,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       <p class="sub" id="today-date"></p>
       <div class="stats" id="stats-grid"></div>
       <div id="alert-pending" class="alert aw" style="display:none"></div>
+      <div id="marge-card" class="card card0" style="margin:0 0 1.1rem;padding:1rem 1.2rem"></div>
       <p class="fd" style="font-size:17px;margin-bottom:.65rem">Dernières commandes</p>
       <div class="card card0" id="dash-orders"></div>
     </div>
@@ -674,6 +675,62 @@ async function loadDashboard(){
         </div>
         <p style="font-size:11px;color:var(--is)">${new Date(o.created_at).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${Number(o.total).toFixed(2)} €</p>
       </div></div></div>`).join("")||`<p style="padding:1rem;font-size:13px;color:var(--is)">Aucune commande.</p>`;
+  renderMargeCard();
+}
+
+// ── Marge & casse du mois ──────────────────────────────────────────────────────
+function monthStartISO(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),1).toISOString(); }
+function caMarge(ventes, costMap){
+  let ca=0, cout=0, caCoste=0;
+  (ventes||[]).forEach(v=>{
+    ca += Number(v.total)||0;
+    (Array.isArray(v.items)?v.items:[]).forEach(l=>{
+      if(!l || Number(l.price)<0 || /^remise/i.test(l.name||"")) return;
+      const q=Number(l.qty)||0, lca=(Number(l.price)||0)*q;
+      const known=(l.cost!=null&&l.cost!=="")||costMap[l.name]!=null;
+      const cu=(l.cost!=null&&l.cost!=="")?(Number(l.cost)||0):(costMap[l.name]||0);
+      if(known){ cout += cu*q; caCoste += lca; }
+    });
+  });
+  return { ca, cout, caCoste };
+}
+async function renderMargeCard(){
+  const el=document.getElementById("marge-card"); if(!el) return;
+  el.innerHTML=`<div style="font-size:13px;color:var(--is)">Calcul de la marge…</div>`;
+  const from=monthStartISO();
+  try{
+    const [vts,ords,casse,prods]=await Promise.all([
+      sbFetch(`caisse_ventes?select=total,items,created_at&created_at=gte.${from}`),
+      sbFetch(`orders?select=total,items,created_at,status&created_at=gte.${from}`),
+      sbFetch(`casse?select=total_cost,total_pv,created_at&created_at=gte.${from}`),
+      sbFetch(`products?select=name,cost&cost=not.is.null`)
+    ]);
+    const costMap={};
+    (Array.isArray(prods)?prods:[]).forEach(p=>{ const c=Number(p.cost)||0; if(c) costMap[p.name]=c; });
+    const okOrders=(Array.isArray(ords)?ords:[]).filter(o=>o.status!=="cancelled"&&o.status!=="canceled");
+    const c=caMarge(vts, costMap), o=caMarge(okOrders, costMap);
+    const caTot=c.ca+o.ca, coutTot=c.cout+o.cout, caCoste=c.caCoste+o.caCoste, margeBrute=caCoste-coutTot;
+    const casseCout=(Array.isArray(casse)?casse:[]).reduce((s,x)=>s+(Number(x.total_cost)||0),0);
+    const cassePv=(Array.isArray(casse)?casse:[]).reduce((s,x)=>s+(Number(x.total_pv)||0),0);
+    const margeNette=margeBrute-casseCout;
+    const pct=caCoste>0?Math.round(margeNette/caCoste*100):0;
+    const couv=caTot>0?Math.round(caCoste/caTot*100):0;
+    const eur=v=>`${(Math.round((Number(v)||0)*100)/100).toFixed(2).replace(".",",")} €`;
+    const hasCost=coutTot>0;
+    el.innerHTML=`
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:.6rem">
+        <span class="fd" style="font-size:17px">Marge &amp; casse — ce mois</span>
+        <span style="font-size:11px;color:var(--is)">Caisse (marché) + commandes en ligne · d'après les coûts de revient des produits</span>
+      </div>
+      ${hasCost?"":`<div class="alert aw" style="display:flex;margin-bottom:.7rem;font-size:12.5px">Renseignez le « Coût » des produits (onglet Produits) pour voir la marge réelle.</div>`}
+      <div class="stats" style="margin-bottom:.4rem">
+        <div class="stat"><div class="sl">CA DU MOIS</div><div class="sv">${eur(caTot)}</div></div>
+        <div class="stat"><div class="sl">COÛT MATIÈRES</div><div class="sv" style="color:#A6713F">${eur(coutTot)}</div></div>
+        <div class="stat acc"><div class="sl">MARGE NETTE</div><div class="sv" style="color:#4A7C59">${eur(margeNette)}</div><div class="ss">${pct} % du CA costé</div></div>
+        <div class="stat"><div class="sl">CASSE (COÛT)</div><div class="sv" style="color:#B0402F">${eur(casseCout)}</div><div class="ss">valeur vente ${eur(cassePv)}</div></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--is)">Marge brute ${eur(margeBrute)} − casse ${eur(casseCout)} = marge nette ${eur(margeNette)}. Caisse ${eur(c.ca)} · en ligne ${eur(o.ca)}.${couv<99?` <b>Marge calculée sur ${eur(caCoste)} de CA (${couv} %)</b> — produits dont le coût est renseigné ; les ventes anciennes (autres libellés) ne sont pas comptées.`:""}</div>`;
+  }catch(e){ el.innerHTML=`<div style="font-size:12.5px;color:var(--is)">Marge indisponible (vérifiez la table casse et la colonne cost).</div>`; }
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
