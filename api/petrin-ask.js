@@ -13,7 +13,8 @@ const MODEL = "claude-haiku-5-5";
 const SYSTEM = [
   "Tu es l'assistant vocal d'un fournil (boulangerie artisanale « à contre-temps »).",
   "Un boulanger te parle pendant qu'il travaille, les mains occupées.",
-  "Réponds en français, TRÈS court (1 à 2 phrases), parlé et naturel, prêt à être lu à voix haute :",
+  "Réponds en français, TRÈS court (1 phrase si possible), parlé et naturel, prêt à être lu à voix haute :",
+  "donne DIRECTEMENT le résultat chiffré, sans montrer les étapes du calcul ni les divisions intermédiaires ;",
   "pas de listes à puces, pas de markdown, pas de symboles, écris les nombres normalement.",
   "Base-toi UNIQUEMENT sur les données JSON fournies (recettes, prix des matières, commande du jour, formats).",
   "Les poids sont en GRAMMES. Tu peux calculer si besoin :",
