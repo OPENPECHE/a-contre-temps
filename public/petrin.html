@@ -403,9 +403,16 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
   if(btn) btn.onclick=function(){ hf?stopHF():startHF(); };
 })();
 
+/* ---------- Prix matières (source unique : table matieres, repli sur PRIX interne) ---------- */
+function loadMatieresPrix(){
+  return sb("matieres?select=nom,prix_kg").then(function(r){ return r.ok?r.json():null; }).then(function(d){
+    if(Array.isArray(d)) d.forEach(function(m){ if(m && m.nom && m.prix_kg!=null) PRIX[m.nom]=Number(m.prix_kg); });
+  }).catch(function(){});
+}
+
 /* ---------- Init ---------- */
 setNet("Chargement…");
-Promise.all([loadDay("today"), loadDay("tomorrow")]).then(function(){ buildOrderTable(); compute(); setNet("Prêt"); });
+Promise.all([loadDay("today"), loadDay("tomorrow"), loadMatieresPrix()]).then(function(){ buildOrderTable(); compute(); setNet("Prêt"); });
 setInterval(poll, 5000);
 </script>
 </body>

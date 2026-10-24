@@ -213,8 +213,13 @@ document.getElementById("tabToday").onclick=function(){ switchDay("today"); };
 document.getElementById("tabTomorrow").onclick=function(){ switchDay("tomorrow"); };
 document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à zéro ?")) return; orders[cur]={}; buildOrder(); compute(); saveDay(cur); };
 
+function loadMatieresPrix(){
+  return sb("matieres?select=nom,prix_kg").then(function(r){ return r.ok?r.json():null; }).then(function(d){
+    if(Array.isArray(d)) d.forEach(function(m){ if(m && m.nom && m.prix_kg!=null) PRIX[m.nom]=Number(m.prix_kg); });
+  }).catch(function(){});
+}
 setNet("Chargement…");
-Promise.all([loadDay("today"),loadDay("tomorrow")]).then(function(){ buildOrder(); compute(); setNet("Prêt"); });
+Promise.all([loadDay("today"),loadDay("tomorrow"),loadMatieresPrix()]).then(function(){ buildOrder(); compute(); setNet("Prêt"); });
 setInterval(poll,5000);
 </script>
 </body>
