@@ -41,9 +41,20 @@
   .pain .pb{display:none;padding:4px 14px 14px;background:var(--pp);border-top:1px solid var(--bs);}
   .pain.open .pb{display:block;}
   .pain.open .ph{background:var(--cr);}
-  .ingr{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;padding:6px 0;border-bottom:1px solid #EFE9E1;}
+  .ingr{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px;padding:9px 8px;border-bottom:1px solid #EFE9E1;cursor:pointer;border-radius:8px;}
   .ingr:last-child{border:none;}
+  .ingr .lbl{display:flex;align-items:center;gap:9px;}
+  .ingr .chk{width:20px;height:20px;border-radius:50%;border:2px solid var(--bs);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   .ingr .q{font-weight:700;color:var(--bd);white-space:nowrap;font-size:17px;}
+  .ingr.done{background:#EAF3EC;}
+  .ingr.done .lbl{color:var(--gn);}
+  .ingr.done .q{color:var(--gn);text-decoration:line-through;}
+  .ingr.done .chk{background:var(--gn);border-color:var(--gn);}
+  .ingr.done .chk::after{content:"✓";color:#fff;font-size:12px;font-weight:700;}
+  .splitctl{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--is);margin:4px 0 10px;flex-wrap:wrap;}
+  .splitctl button{border:1px solid var(--bs);background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--bd);font-family:var(--sans);}
+  .splitctl button.on{background:var(--bd);color:var(--cr);border-color:var(--bd);}
+  .batch-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ru);font-weight:700;margin:14px 0 2px;}
   .chev{width:12px;height:12px;flex-shrink:0;transition:transform .15s;}
   .pain.open .chev{transform:rotate(90deg);}
   .tot-line{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px;font-size:14px;border-bottom:1px solid #EFE9E1;}
@@ -119,7 +130,11 @@ var RECIPES=[
   { nom:"LE GRAINES TOASTEES", total:2340, pvKg:7.50, levain:{g:250,type:"ble"},
     pate:[ {n:"Farine blé T65",g:700},{n:"Farine seigle T130",g:100},{n:"Farine blé T80",g:200},{n:"Eau (TB 70°C)",g:770},{n:"Sel",g:20},{n:"Mélange graines torréfiées",g:150},{n:"Eau trempage graines",g:150} ] },
   { nom:"L'INTEGRAL", total:6084, pvKg:6.20, levain:{g:30,type:"ble"},
-    pate:[ {n:"Farine blé intégrale T150",g:3000},{n:"Eau (30°C)",g:3000},{n:"Levure",g:6},{n:"Sel",g:48} ] },
+    pate:[ {n:"Farine blé intégrale T150",g:3000},{n:"Eau (30°C)",g:3000},{n:"Levure",g:6},{n:"Sel",g:48} ],
+    batches:[
+      { label:"Pétrissée 1 · BASE 1", items:[ {n:"Farine blé intégrale T150",g:2000},{n:"Eau (30°C)",g:2000},{n:"Levure",g:6} ] },
+      { label:"Pétrissée 2 · BASE 2", items:[ {n:"Farine blé intégrale T150",g:1000},{n:"Eau (30°C)",g:1000},{n:"Sel",g:48},{n:"Levain blé",g:30} ] }
+    ] },
   { nom:"LIN'VERSE", total:4442, pvKg:7.80, levain:{g:5,type:"ble"},
     pate:[ {n:"Farine blé T65",g:2000},{n:"Eau (30°C)",g:2020},{n:"Levure",g:1},{n:"Graines de lin",g:180},{n:"B1",g:200},{n:"Sel",g:36} ] },
   { nom:"L'ENGRAIN", total:2420, pvKg:12.70, levain:{g:500,type:"epeautre"},
@@ -143,10 +158,22 @@ document.getElementById("tabTomorrow").innerHTML="Demain<small>"+labelDate(new D
 var cur="today";
 var orders={ today:{}, tomorrow:{} };     // données par jour
 var updatedAt={ today:null, tomorrow:null };
-var lastEdit=0, expanded={};
+var lastEdit=0, expanded={}, splits={}, done={};
+function loadDone(){ try{ return JSON.parse(localStorage.getItem("petrin_done_"+DAYS[cur])||"{}")||{}; }catch(e){ return {}; } }
+function saveDone(){ try{ localStorage.setItem("petrin_done_"+DAYS[cur], JSON.stringify(done)); }catch(e){} }
+done=loadDone();
 
 function fmtG(g){ g=Math.round(g); return g>=1000 ? (Math.round(g/10)/100).toLocaleString("fr-FR")+" kg" : g+" g"; }
 function eur(n){ return (Math.round(n*100)/100).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
+function escA(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function groupsFor(p){
+  var r=p.rec;
+  if(r.batches){ return r.batches.map(function(b){ return { label:b.label, lines:b.items.map(function(i){ return {n:i.n,g:i.g*p.coeff}; }) }; }); }
+  var n=splits[p.nom]||1;
+  if(n<=1) return [{ label:null, lines:p.lines }];
+  var gs=[]; for(var k=0;k<n;k++){ gs.push({ label:"Pétrin "+(k+1)+" / "+n, lines:p.lines.map(function(l){ return {n:l.n,g:l.g/n}; }) }); }
+  return gs;
+}
 
 /* ---------- Cloud (Supabase) ---------- */
 function loadDay(which){
@@ -204,7 +231,7 @@ function computeData(which){
     if(r.levain.type==="epeautre") levEp+=levG; else levBle+=levG;
     pate+=dough;
     lines.forEach(function(l){ mat[l.n]=(mat[l.n]||0)+l.g; coutMat += l.g/1000*prixKg(l.n); });
-    per.push({nom:r.nom,qty:qty,dough:dough,coeff:coeff,lines:lines});
+    per.push({nom:r.nom,qty:qty,dough:dough,coeff:coeff,lines:lines,rec:r});
   });
   return {per:per,mat:mat,levBle:levBle,levEp:levEp,pate:pate,coutMat:coutMat,ca:ca};
 }
@@ -216,14 +243,25 @@ function compute(){
   else {
     pp.innerHTML=D.per.map(function(p){
       var op=expanded[p.nom]?" open":"";
-      return '<div class="pain'+op+'" data-nom="'+p.nom.replace(/"/g,"")+'"><div class="ph">'
+      var groups=groupsFor(p), inner="";
+      if(!p.rec.batches){
+        var n=splits[p.nom]||1;
+        inner+='<div class="splitctl">Pétrir en&nbsp;: '+[1,2,3].map(function(k){ return '<button data-split="'+k+'" data-nom="'+escA(p.nom)+'" class="'+(n===k?'on':'')+'">'+k+'×</button>'; }).join("")+'</div>';
+      }
+      groups.forEach(function(g){
+        if(g.label) inner+='<div class="batch-label">'+g.label+'</div>';
+        inner+=g.lines.map(function(l){ var dk=p.nom+"|"+(g.label||"")+"|"+l.n; var dn=done[dk]?" done":""; return '<div class="ingr'+dn+'" data-dk="'+escA(dk)+'"><span class="lbl"><span class="chk"></span>'+l.n+'</span><span class="q">'+fmtG(l.g)+'</span></div>'; }).join("");
+      });
+      inner+='<div class="sub" style="text-align:right;margin-top:8px">coefficient recette ×'+(Math.round(p.coeff*100)/100).toLocaleString("fr-FR")+'</div>';
+      return '<div class="pain'+op+'" data-nom="'+escA(p.nom)+'"><div class="ph">'
         +'<span class="nm">'+p.nom+'</span>'
         +'<span style="display:flex;align-items:center;gap:10px"><span class="meta"><b style="color:var(--bd)">'+p.qty+' pc</b> · pâte '+fmtG(p.dough)+'</span>'
         +'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#3E5A70" stroke-width="3"><polyline points="9 6 15 12 9 18"/></svg></span></div>'
-        +'<div class="pb">'+p.lines.map(function(l){return '<div class="ingr"><span>'+l.n+'</span><span class="q">'+fmtG(l.g)+'</span></div>';}).join("")
-        +'<div class="sub" style="text-align:right;margin-top:6px">coefficient recette ×'+(Math.round(p.coeff*100)/100).toLocaleString("fr-FR")+'</div></div></div>';
+        +'<div class="pb">'+inner+'</div></div>';
     }).join("");
     pp.querySelectorAll(".pain").forEach(function(el){ el.querySelector(".ph").onclick=function(){ var nom=el.getAttribute("data-nom"); expanded[nom]=!el.classList.contains("open"); el.classList.toggle("open"); }; });
+    pp.querySelectorAll(".splitctl button").forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); splits[b.getAttribute("data-nom")]=parseInt(b.getAttribute("data-split"),10); compute(); }; });
+    pp.querySelectorAll(".ingr").forEach(function(li){ li.onclick=function(e){ e.stopPropagation(); var dk=li.getAttribute("data-dk"); if(done[dk]){ delete done[dk]; } else { done[dk]=true; } li.classList.toggle("done"); saveDone(); }; });
   }
   // 3 · total matières
   var tm=document.getElementById("totMat"), keys=Object.keys(D.mat);
@@ -263,7 +301,7 @@ function compute(){
 
 /* ---------- Onglets ---------- */
 function switchDay(which){
-  cur=which;
+  cur=which; done=loadDone();
   document.getElementById("tabToday").classList.toggle("on", which==="today");
   document.getElementById("tabTomorrow").classList.toggle("on", which==="tomorrow");
   buildOrderTable(); compute();
