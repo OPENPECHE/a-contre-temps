@@ -55,6 +55,10 @@
   .splitctl button{border:1px solid var(--bs);background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--bd);font-family:var(--sans);}
   .splitctl button.on{background:var(--bd);color:var(--cr);border-color:var(--bd);}
   .batch-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ru);font-weight:700;margin:14px 0 2px;}
+  .allbtn{width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1px solid var(--gn);background:#fff;color:var(--gn);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+  .pain.alldone .allbtn{background:var(--gn);color:#fff;}
+  .pain.alldone .ph{background:#EAF3EC;}
+  .donebadge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--gn);color:#fff;font-size:12px;font-weight:700;}
   .chev{width:12px;height:12px;flex-shrink:0;transition:transform .15s;}
   .pain.open .chev{transform:rotate(90deg);}
   .tot-line{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px;font-size:14px;border-bottom:1px solid #EFE9E1;}
@@ -243,25 +247,28 @@ function compute(){
   else {
     pp.innerHTML=D.per.map(function(p){
       var op=expanded[p.nom]?" open":"";
-      var groups=groupsFor(p), inner="";
+      var groups=groupsFor(p), inner="", dks=[];
       if(!p.rec.batches){
         var n=splits[p.nom]||1;
         inner+='<div class="splitctl">Pétrir en&nbsp;: '+[1,2,3].map(function(k){ return '<button data-split="'+k+'" data-nom="'+escA(p.nom)+'" class="'+(n===k?'on':'')+'">'+k+'×</button>'; }).join("")+'</div>';
       }
       groups.forEach(function(g){
         if(g.label) inner+='<div class="batch-label">'+g.label+'</div>';
-        inner+=g.lines.map(function(l){ var dk=p.nom+"|"+(g.label||"")+"|"+l.n; var dn=done[dk]?" done":""; return '<div class="ingr'+dn+'" data-dk="'+escA(dk)+'"><span class="lbl"><span class="chk"></span>'+l.n+'</span><span class="q">'+fmtG(l.g)+'</span></div>'; }).join("");
+        inner+=g.lines.map(function(l){ var dk=p.nom+"|"+(g.label||"")+"|"+l.n; dks.push(dk); var dn=done[dk]?" done":""; return '<div class="ingr'+dn+'" data-dk="'+escA(dk)+'"><span class="lbl"><span class="chk"></span>'+l.n+'</span><span class="q">'+fmtG(l.g)+'</span></div>'; }).join("");
       });
+      var allDone = dks.length>0 && dks.every(function(k){ return done[k]; });
+      inner+='<button class="allbtn" data-nom="'+escA(p.nom)+'">'+(allDone?"↩︎ Tout décocher":"✓ Tout fait")+'</button>';
       inner+='<div class="sub" style="text-align:right;margin-top:8px">coefficient recette ×'+(Math.round(p.coeff*100)/100).toLocaleString("fr-FR")+'</div>';
-      return '<div class="pain'+op+'" data-nom="'+escA(p.nom)+'"><div class="ph">'
-        +'<span class="nm">'+p.nom+'</span>'
+      return '<div class="pain'+op+(allDone?" alldone":"")+'" data-nom="'+escA(p.nom)+'"><div class="ph">'
+        +'<span class="nm">'+(allDone?'<span class="donebadge">✓</span> ':'')+p.nom+'</span>'
         +'<span style="display:flex;align-items:center;gap:10px"><span class="meta"><b style="color:var(--bd)">'+p.qty+' pc</b> · pâte '+fmtG(p.dough)+'</span>'
         +'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#3E5A70" stroke-width="3"><polyline points="9 6 15 12 9 18"/></svg></span></div>'
         +'<div class="pb">'+inner+'</div></div>';
     }).join("");
     pp.querySelectorAll(".pain").forEach(function(el){ el.querySelector(".ph").onclick=function(){ var nom=el.getAttribute("data-nom"); expanded[nom]=!el.classList.contains("open"); el.classList.toggle("open"); }; });
     pp.querySelectorAll(".splitctl button").forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); splits[b.getAttribute("data-nom")]=parseInt(b.getAttribute("data-split"),10); compute(); }; });
-    pp.querySelectorAll(".ingr").forEach(function(li){ li.onclick=function(e){ e.stopPropagation(); var dk=li.getAttribute("data-dk"); if(done[dk]){ delete done[dk]; } else { done[dk]=true; } li.classList.toggle("done"); saveDone(); }; });
+    pp.querySelectorAll(".ingr").forEach(function(li){ li.onclick=function(e){ e.stopPropagation(); var dk=li.getAttribute("data-dk"); if(done[dk]){ delete done[dk]; } else { done[dk]=true; } saveDone(); compute(); }; });
+    pp.querySelectorAll(".allbtn").forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); var pain=b.closest(".pain"); var lines=pain.querySelectorAll(".ingr"); var all=true; lines.forEach(function(li){ if(!li.classList.contains("done")) all=false; }); lines.forEach(function(li){ var dk=li.getAttribute("data-dk"); if(all){ delete done[dk]; } else { done[dk]=true; } }); saveDone(); compute(); }; });
   }
   // 3 · total matières
   var tm=document.getElementById("totMat"), keys=Object.keys(D.mat);
