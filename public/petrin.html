@@ -87,7 +87,7 @@
 <body>
 <div class="top">
   <span class="t">🥖 Pétrin</span>
-  <button id="btnMic" title="Poser une question à voix haute" aria-label="Commande vocale">🎤</button>
+  <button id="btnMic" title="Mode mains-libres — dites « Pétrin, … »" aria-label="Commande vocale mains-libres">🎤</button>
   <span class="net" id="net">…</span>
 </div>
 <div id="voiceBar" style="display:none;background:#2F4A5E;color:#F3E7DA;padding:10px 14px;font-size:14px;"></div>
@@ -363,16 +363,44 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
     if(g==null) return {sp:"Pour "+pretty+", je peux donner la farine, l'eau, le sel, le levain ou le poids de pâte.", h:"« "+escA(tr)+" » — ingrédient non reconnu."};
     return {sp:fmtA(g)+" de "+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
   }
-  function run(){
-    if(!SR){ showBar("Reconnaissance vocale indisponible sur ce navigateur — essayez Chrome (Android) ou Safari (iOS récent)."); return; }
-    var rec=new SR(); rec.lang="fr-FR"; rec.interimResults=false; rec.maxAlternatives=1;
-    btn.classList.add("on"); showBar("🎤 J'écoute… posez votre question.");
-    rec.onresult=function(e){ var tr=e.results[0][0].transcript; var a=answer(tr); showBar(a.h); speak(a.sp); };
-    rec.onerror=function(e){ showBar("Micro : "+(e.error==="not-allowed"?"autorisation refusée (activez le micro).":"erreur ("+e.error+").")); };
-    rec.onend=function(){ btn.classList.remove("on"); };
-    try{ rec.start(); }catch(e){ btn.classList.remove("on"); }
+  // Mot-clé pour déclencher sans toucher l'écran : « Pétrin, … »
+  var WAKE=/\b(dis |dit |ok |hey )?p[eé]?trin\b/;
+  var IDLE="🎤 <b>Mains-libres actif</b> — dites par ex. « <b>Pétrin</b>, combien de farine pour le tradition ? ». Touchez à nouveau le micro pour arrêter.";
+  var hf=false, rec=null, speaking=false, restartT=null, lastAt=0;
+  function handle(tr){
+    var t=norm(tr);
+    var m=t.match(WAKE); if(!m) return;               // ignore tout ce qui ne contient pas le mot-clé
+    if(Date.now()-lastAt<1500) return; lastAt=Date.now();
+    var q=t.slice(t.indexOf(m[0])+m[0].length).trim();
+    if(q.length<3){ showBar("🎤 Oui ? Posez votre question (ex. « combien d'eau pour le classique ? »)."); speakGuarded("Oui ?"); return; }
+    var a=answer(q); showBar(a.h); speakGuarded(a.sp);
   }
-  if(btn) btn.onclick=run;
+  function speakGuarded(txt){
+    speaking=true;
+    try{
+      window.speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(txt); u.lang="fr-FR";
+      u.onend=function(){ setTimeout(function(){ speaking=false; }, 300); };
+      window.speechSynthesis.speak(u);
+    }catch(e){ speaking=false; }
+    setTimeout(function(){ speaking=false; }, 6000); // filet de sécurité
+  }
+  function startHF(){
+    if(!SR){ showBar("Reconnaissance vocale indisponible sur ce navigateur — essayez Chrome (Android) ou Safari (iOS récent)."); return; }
+    hf=true; btn.classList.add("on"); showBar(IDLE);
+    rec=new SR(); rec.lang="fr-FR"; rec.continuous=true; rec.interimResults=false; rec.maxAlternatives=1;
+    rec.onresult=function(e){
+      if(speaking) return;                            // n'écoute pas sa propre réponse
+      for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) handle(e.results[i][0].transcript); }
+    };
+    rec.onerror=function(e){
+      if(e.error==="not-allowed"||e.error==="service-not-allowed"){ stopHF(); showBar("Micro refusé — autorisez le microphone pour le mode mains-libres."); }
+    };
+    rec.onend=function(){ if(hf){ clearTimeout(restartT); restartT=setTimeout(function(){ try{ rec.start(); }catch(e){ try{ startHF(); }catch(_){} } }, 400); } };
+    try{ rec.start(); }catch(e){}
+  }
+  function stopHF(){ hf=false; btn.classList.remove("on"); clearTimeout(restartT); if(rec){ rec.onend=null; try{ rec.stop(); }catch(e){} rec=null; } bar.style.display="none"; }
+  if(btn) btn.onclick=function(){ hf?stopHF():startHF(); };
 })();
 
 /* ---------- Init ---------- */
