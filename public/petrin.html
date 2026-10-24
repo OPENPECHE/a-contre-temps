@@ -369,15 +369,33 @@ function openArchives(){
   sb("petrin_days?select=day,data,updated_at&order=day.desc").then(function(r){return r.ok?r.json():[];}).then(function(rows){
     rows=(Array.isArray(rows)?rows:[]).filter(function(x){ return x.day && x.day.indexOf("#v")<0; });
     var box=card.querySelector("#archList");
-    if(!rows.length){ box.innerHTML='<div class="empty">Aucune pétrissée enregistrée.</div>'; return; }
-    box.innerHTML=rows.map(function(x){
-      var d=new Date(x.day+"T00:00:00"), data=x.data||{}, nb=0, pieces=0;
-      Object.keys(data).forEach(function(k){ var o=data[k]||{}, has=false; Object.keys(o).forEach(function(f){ var q=(+o[f])||0; pieces+=q; if(q>0) has=true; }); if(has) nb++; });
-      var tag=x.day===DAYS.today?' <b style="color:var(--gn)">(aujourd\'hui)</b>':x.day===DAYS.tomorrow?' <span class="sub">(demain)</span>':'';
-      return '<div class="arch-row" data-day="'+x.day+'"><span><span class="d">'+d.toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})+'</span>'+tag+'<br><span class="s">'+nb+' pain(s) · '+pieces+' pièce(s)</span></span><span class="sub" style="font-size:20px">›</span></div>';
-    }).join("");
-    box.querySelectorAll(".arch-row").forEach(function(row){ row.onclick=function(){ ov.remove(); pickDate(row.getAttribute("data-day")); }; });
+    function render(list){
+      if(!list.length){ box.innerHTML='<div class="empty">Aucune pétrissée enregistrée.</div>'; return; }
+      box.innerHTML=list.map(function(x){
+        var d=new Date(x.day+"T00:00:00"), data=x.data||{}, nb=0, pieces=0;
+        Object.keys(data).forEach(function(k){ var o=data[k]||{}, has=false; Object.keys(o).forEach(function(f){ var q=(+o[f])||0; pieces+=q; if(q>0) has=true; }); if(has) nb++; });
+        var tag=x.day===DAYS.today?' <b style="color:var(--gn)">(aujourd\'hui)</b>':x.day===DAYS.tomorrow?' <span class="sub">(demain)</span>':'';
+        return '<div class="arch-row"><span class="arch-open" data-day="'+x.day+'" style="flex:1;cursor:pointer"><span class="d">'+d.toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})+'</span>'+tag+'<br><span class="s">'+nb+' pain(s) · '+pieces+' pièce(s)</span></span><button class="arch-del" data-key="'+x.day+'" data-plain="'+x.day+'" title="Supprimer cette date" style="background:none;border:none;color:#B0402F;font-size:18px;cursor:pointer;padding:6px 8px;flex-shrink:0;">🗑️</button></div>';
+      }).join("");
+      box.querySelectorAll(".arch-open").forEach(function(s){ s.onclick=function(){ ov.remove(); pickDate(s.getAttribute("data-day")); }; });
+      box.querySelectorAll(".arch-del").forEach(function(b){ b.onclick=function(){ delDay(b.getAttribute("data-key"), b.getAttribute("data-plain"), function(){ render(list=list.filter(function(y){ return y.day!==b.getAttribute("data-key"); })); }); }; });
+    }
+    // n'affiche que les jours qui ont vraiment du contenu
+    rows=rows.filter(function(x){ var data=x.data||{}; return Object.keys(data).some(function(k){ var o=data[k]||{}; return Object.keys(o).some(function(f){ return (+o[f])>0; }); }); });
+    render(rows);
   }).catch(function(){ card.querySelector("#archList").innerHTML='<div class="empty">Erreur de chargement.</div>'; });
+}
+/* Supprime (ou vide, si la suppression est bloquée par RLS) une date. */
+function delDay(dbKey, plain, after){
+  var dStr=new Date(plain+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long"});
+  if(!confirm("Supprimer la pétrissée du "+dStr+" ? Cette date disparaîtra des archives.")) return;
+  sb("petrin_days?day=eq."+encodeURIComponent(dbKey),{method:"DELETE"})
+    .catch(function(){})
+    .then(function(){ return sb("petrin_days?day=eq."+encodeURIComponent(dbKey),{method:"PATCH",body:JSON.stringify({data:{},updated_at:new Date().toISOString()})}).catch(function(){}); })
+    .then(function(){
+      if(DAYS.pick===dbKey){ DAYS.pick=null; orders.pick={}; var tp=document.getElementById("tabPick"); if(tp) tp.style.display="none"; var dp=document.getElementById("datePick"); if(dp) dp.value=""; if(cur==="pick") switchDay("today"); }
+      setNet("Date supprimée"); if(typeof after==="function") after();
+    });
 }
 
 /* ---------- Commande vocale ---------- */

@@ -17,3 +17,6 @@ drop policy if exists petrin_upd   on public.petrin_days;
 create policy petrin_read  on public.petrin_days for select using (true);
 create policy petrin_write on public.petrin_days for insert with check (true);
 create policy petrin_upd   on public.petrin_days for update using (true) with check (true);
+-- Suppression d'une date depuis les Archives (sinon la date est seulement vidée).
+drop policy if exists petrin_del on public.petrin_days;
+create policy petrin_del on public.petrin_days for delete using (true);
