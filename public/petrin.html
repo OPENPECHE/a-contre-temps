@@ -347,13 +347,27 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
   function findBread(t){ for(var i=0;i<BREADS.length;i++) for(var j=0;j<BREADS[i].k.length;j++) if(t.indexOf(BREADS[i].k[j])>=0) return BREADS[i].nom; return null; }
   function sumLines(lines,re){ var g=0; lines.forEach(function(l){ if(re.test(l.n)) g+=l.g; }); return g; }
   function fmtA(g){ return Math.round(g).toLocaleString("fr-FR")+" grammes"; }
-  function answer(tr){
+  function answerRules(tr){
     var t=norm(tr), nom=findBread(t);
     if(!nom) return {sp:"Je n'ai pas reconnu le pain. Dites par exemple : combien de farine pour le tradition ?", h:"« "+escA(tr)+" » — pain non reconnu."};
     var D=computeData(cur), item=(D.per||[]).find(function(p){ return p.nom===nom; });
     var pretty=nom.replace(/^LE |^L'|^LA /,""), jour=(cur==="today"?"aujourd'hui":"demain");
     if(!item) return {sp:"Aucune pétrissée saisie pour "+pretty+" "+jour+".", h:"« "+escA(tr)+" » — rien de saisi pour "+escA(nom)+" "+jour+"."};
     var L=item.lines, g=null, label="";
+    // Détail : « quel type de farine », « quelles farines » -> liste chaque farine avec sa quantité
+    if(/farine/.test(t) && /\btype|\bquel|lesquel|detail|compos|differ/.test(t)){
+      var fl=L.filter(function(l){ return /^farine/i.test(l.n); });
+      if(!fl.length) return {sp:"Pas de farine listée pour "+pretty+".", h:"« "+escA(tr)+" » — pas de farine pour "+escA(pretty)+"."};
+      var spF=fl.map(function(l){ return l.n+", "+fmtA(l.g); }).join(" ; ");
+      var hF=fl.map(function(l){ return "• "+escA(l.n)+" : <b>"+fmtA(l.g)+"</b>"; }).join("<br>");
+      return {sp:"Pour "+pretty+" : "+spF+".", h:"<b>« "+escA(tr)+" »</b><br>Farines "+escA(pretty)+" ("+jour+") :<br>"+hF};
+    }
+    // Détail complet : « quels ingrédients », « la recette », « la composition »
+    if(/ingredient|recette|compos|tout|detail/.test(t) && !/farine|eau|\bsel|levain|levure|pate|poids/.test(t)){
+      var spI=L.map(function(l){ return l.n+", "+fmtA(l.g); }).join(" ; ");
+      var hI=L.map(function(l){ return "• "+escA(l.n)+" : <b>"+fmtA(l.g)+"</b>"; }).join("<br>");
+      return {sp:"Pour "+pretty+", "+Math.round(item.dough).toLocaleString("fr-FR")+" grammes de pâte : "+spI+".", h:"<b>« "+escA(tr)+" »</b><br>"+escA(pretty)+" ("+jour+") — pâte "+fmtA(item.dough)+" :<br>"+hI};
+    }
     if(/farine/.test(t)){ g=sumLines(L,/^farine/i); label="farine"; }
     else if(/eau|hydrat/.test(t)){ g=sumLines(L,/^eau/i); label="eau"; }
     else if(/\bsel/.test(t)){ g=sumLines(L,/^sel/i); label="sel"; }
@@ -364,50 +378,29 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
     var de=/^[aeiouyéèê]/i.test(label)?"d'":"de ";
     return {sp:fmtA(g)+" "+de+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
   }
-  // Mot-clé pour déclencher sans toucher l'écran : « Pétrin, … »
-  var WAKE=/\b(dis |dit |ok |hey )?p[eé]?trin\b/;
-  var IDLE="🎤 <b>Mains-libres actif</b> — dites par ex. « <b>Pétrin</b>, combien de farine pour le tradition ? ». Touchez à nouveau le micro pour arrêter.";
-  var hf=false, rec=null, speaking=false, restartT=null, armed=false, armT=null, speakSafety=null;
-  function disarm(){ armed=false; clearTimeout(armT); }
-  function arm(){ armed=true; clearTimeout(armT); armT=setTimeout(function(){ armed=false; if(hf) showBar(IDLE); }, 12000); }
-  function handle(tr){
-    var t=norm(tr), m=t.match(WAKE), q=null;
-    if(m){ q=t.slice(t.indexOf(m[0])+m[0].length).trim(); }  // « Pétrin … » : question après le mot-clé
-    else if(armed){ q=t.trim(); }                            // suite après « Oui ? » (mot-clé pas rpété)
-    else return;                                             // ni mot-clé ni armé : on ignore
-    if(q.length<3){ arm(); showBar("🎤 Oui ? Posez votre question (ex. « combien d'eau pour le classique ? »)."); speakGuarded("Oui ?"); return; }
-    disarm();
-    var a=answer(q); showBar(a.h); speakGuarded(a.sp);
-  }
-  function speakGuarded(txt){
-    speaking=true; clearTimeout(speakSafety);
-    var done=function(){ speaking=false; };
-    try{
-      window.speechSynthesis.cancel();
-      var u=new SpeechSynthesisUtterance(txt); u.lang="fr-FR";
-      u.onend=function(){ setTimeout(done,150); };
-      u.onerror=function(){ setTimeout(done,150); };
-      window.speechSynthesis.speak(u);
-      speakSafety=setTimeout(done, Math.min(5000, 800+txt.length*80)); // filet si onend absent
-    }catch(e){ done(); }
-  }
-  function startHF(){
-    if(!SR){ showBar("Reconnaissance vocale indisponible sur ce navigateur — essayez Chrome (Android) ou Safari (iOS récent)."); return; }
-    hf=true; btn.classList.add("on"); showBar(IDLE);
-    rec=new SR(); rec.lang="fr-FR"; rec.continuous=true; rec.interimResults=false; rec.maxAlternatives=1;
-    rec.onresult=function(e){
-      if(speaking) return;                            // n'écoute pas sa propre réponse
-      for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) handle(e.results[i][0].transcript); }
+  // ---- Instantané des données pour l'assistant Claude (moteur vocal dans /petrin-voice.js) ----
+  function buildSnapshot(){
+    var D=computeData(cur);
+    return {
+      famille:"pains",
+      note:"Poids en grammes. poids cru = poids cuit / pertes. cout_charge = cout_matieres x coef_charges. marge = prix_vente - cout_charge.",
+      pertes:LOSS, coef_charges:CHARGES, formats:FORMATS,
+      prix_matieres_eur_par_kg:PRIX,
+      recettes:RECIPES.map(function(r){ return { nom:r.nom, pate_base_total_g:r.total, prix_vente_eur_par_kg:r.pvKg, levain:{g:r.levain.g,type:r.levain.type}, ingredients_base_g:r.pate }; }),
+      jour: cur==="today"?"aujourd'hui":"demain",
+      commande_du_jour:(D.per||[]).map(function(p){ return { nom:p.nom, pieces:p.qty, poids_pate_g:Math.round(p.dough), ingredients_g:p.lines.map(function(l){ return {n:l.n,g:Math.round(l.g)}; }) }; }),
+      totaux_du_jour:{ pate_g:Math.round(D.pate), ca_eur:Math.round(D.ca*100)/100, cout_matieres_eur:Math.round(D.coutMat*100)/100, cout_charge_eur:Math.round(D.coutMat*CHARGES*100)/100, marge_eur:Math.round((D.ca-D.coutMat*CHARGES)*100)/100 }
     };
-    rec.onerror=function(e){
-      if(e.error==="not-allowed"||e.error==="service-not-allowed"){ stopHF(); showBar("Micro refusé — autorisez le microphone pour le mode mains-libres."); }
-    };
-    rec.onend=function(){ if(hf){ clearTimeout(restartT); restartT=setTimeout(function(){ try{ rec.start(); }catch(e){ try{ startHF(); }catch(_){} } }, 400); } };
-    try{ rec.start(); }catch(e){}
   }
-  function stopHF(){ hf=false; btn.classList.remove("on"); clearTimeout(restartT); if(rec){ rec.onend=null; try{ rec.stop(); }catch(e){} rec=null; } bar.style.display="none"; }
-  if(btn) btn.onclick=function(){ hf?stopHF():startHF(); };
-  window.petrinAsk=function(tr){ handle(tr); }; // test/debug : simuler une phrase entendue
+  function askClaude(q){
+    if(!navigator.onLine) return Promise.resolve(null);
+    return fetch("/api/petrin-ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q,data:buildSnapshot()})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ return (j && j.answer) ? {sp:j.answer, h:"<b>« "+escA(q)+" »</b><br>"+escA(j.answer)} : null; })
+      .catch(function(){ return null; });
+  }
+  // Claude d'abord (toutes questions), repli sur les règles hors-ligne / sans clé
+  window.PETRIN_ANSWER=function(q){ return askClaude(q).then(function(a){ return a || answerRules(q); }); };
 })();
 
 /* ---------- Prix matières (source unique : table matieres, repli sur PRIX interne) ---------- */
@@ -422,5 +415,6 @@ setNet("Chargement…");
 Promise.all([loadDay("today"), loadDay("tomorrow"), loadMatieresPrix()]).then(function(){ buildOrderTable(); compute(); setNet("Prêt"); });
 setInterval(poll, 5000);
 </script>
+<script src="/petrin-voice.js"></script>
 </body>
 </html>

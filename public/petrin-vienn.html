@@ -19,6 +19,9 @@
   .top{background:var(--bd);color:var(--cr);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:10px;}
   .top .t{font-family:var(--serif);font-size:19px;font-style:italic;}
   .top .net{font-size:11px;opacity:.85;}
+  #btnMic{margin-left:auto;background:rgba(243,231,218,.14);color:var(--cr);border:none;border-radius:999px;width:38px;height:38px;font-size:19px;cursor:pointer;line-height:1;}
+  #btnMic.on{background:#B0402F;animation:micpulse 1s ease-in-out infinite;}
+  @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(176,64,47,.6);}50%{box-shadow:0 0 0 8px rgba(176,64,47,0);}}
   .fam{display:flex;gap:8px;background:var(--bd);padding:0 12px 8px;}
   .fam a{flex:1;text-align:center;padding:9px;border-radius:9px;background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;font-weight:600;text-decoration:none;}
   .fam a.on{background:var(--cr);color:var(--bd);}
@@ -70,7 +73,8 @@
 </style>
 </head>
 <body>
-<div class="top"><span class="t">🥐 Pétrin</span><span class="net" id="net">…</span></div>
+<div class="top"><span class="t">🥐 Pétrin</span><button id="btnMic" title="Mode mains-libres — dites « Pétrin, … »" aria-label="Commande vocale mains-libres">🎤</button><span class="net" id="net">…</span></div>
+<div id="voiceBar" style="display:none;background:#2F4A5E;color:#F3E7DA;padding:10px 14px;font-size:14px;"></div>
 <div class="fam"><a href="/petrin">🥖 Pains</a><a href="/petrin-vienn" class="on">🥐 Viennoiseries</a></div>
 <div class="tabs">
   <button class="tab on" id="tabToday" data-day="today"></button>
@@ -218,9 +222,80 @@ function loadMatieresPrix(){
     if(Array.isArray(d)) d.forEach(function(m){ if(m && m.nom && m.prix_kg!=null) PRIX[m.nom]=Number(m.prix_kg); });
   }).catch(function(){});
 }
+/* ---------- Commande vocale : données + réponse (moteur dans /petrin-voice.js) ---------- */
+(function(){
+  function norm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
+  var DOUGHKW=[
+    {k:["bechamel","croque"],fam:"BECHAMEL"},
+    {k:["brisee","quiche","flan"],fam:"PATE BRISEE"},
+    {k:["brioche","babka","chinois","pompe"],fam:"BRIOCHE"},
+    {k:["plf","pate levee","levee feuilletee"],fam:"PLF"},
+    {k:["pf","pate feuilletee","palmier","chausson","pate a chausson"],fam:"PF"}
+  ];
+  function findFam(t){ for(var i=0;i<DOUGHKW.length;i++) for(var j=0;j<DOUGHKW[i].k.length;j++) if(t.indexOf(DOUGHKW[i].k[j])>=0) return DOUGHKW[i].fam; return null; }
+  function famLabel(f){ return {PLF:"la pâte levée feuilletée","PF":"la pâte feuilletée",BRIOCHE:"la brioche","PATE BRISEE":"la pâte brisée",BECHAMEL:"la béchamel"}[f]||f; }
+  function sumLines(L,re){ var g=0; L.forEach(function(l){ if(re.test(l.n)) g+=l.g; }); return g; }
+  function fmtA(g){ return Math.round(g).toLocaleString("fr-FR")+" grammes"; }
+  function answerRules(tr){
+    var t=norm(tr), fam=findFam(t);
+    if(!fam) return {sp:"Je n'ai pas reconnu la pâte. Dites par exemple : combien de farine pour la PLF ?", h:"« "+escA(tr)+" » — pâte non reconnue."};
+    var D=computeData(cur), item=(D.per||[]).find(function(p){ return p.fam===fam; });
+    var pretty=famLabel(fam), jour=(cur==="today"?"aujourd'hui":"demain");
+    if(!item) return {sp:"Aucune pétrissée saisie pour "+pretty+" "+jour+".", h:"« "+escA(tr)+" » — rien de saisi pour "+escA(pretty)+" "+jour+"."};
+    var L=item.lines, g=null, label="";
+    if(/farine/.test(t) && /\btype|\bquel|lesquel|detail|compos|differ/.test(t)){
+      var fl=L.filter(function(l){ return /^farine/i.test(l.n); });
+      if(!fl.length) return {sp:"Pas de farine listée pour "+pretty+".", h:"« "+escA(tr)+" » — pas de farine."};
+      var spF=fl.map(function(l){ return l.n+", "+fmtA(l.g); }).join(" ; ");
+      var hF=fl.map(function(l){ return "• "+escA(l.n)+" : <b>"+fmtA(l.g)+"</b>"; }).join("<br>");
+      return {sp:"Pour "+pretty+" : "+spF+".", h:"<b>« "+escA(tr)+" »</b><br>Farines "+escA(pretty)+" ("+jour+") :<br>"+hF};
+    }
+    if(/ingredient|recette|compos|tout|detail/.test(t) && !/farine|eau|\bsel|levain|levure|beurre|sucre|oeuf|œuf|lait|pate|poids/.test(t)){
+      var spI=L.map(function(l){ return l.n+", "+fmtA(l.g); }).join(" ; ");
+      var hI=L.map(function(l){ return "• "+escA(l.n)+" : <b>"+fmtA(l.g)+"</b>"; }).join("<br>");
+      return {sp:"Pour "+pretty+", "+Math.round(item.dough).toLocaleString("fr-FR")+" grammes de pâte : "+spI+".", h:"<b>« "+escA(tr)+" »</b><br>"+escA(pretty)+" ("+jour+") — pâte "+fmtA(item.dough)+" :<br>"+hI};
+    }
+    if(/farine/.test(t)){ g=sumLines(L,/^farine/i); label="farine"; }
+    else if(/beurre/.test(t)){ g=sumLines(L,/beurre/i); label="beurre"; }
+    else if(/sucre/.test(t)){ g=sumLines(L,/^sucre/i); label="sucre"; }
+    else if(/oeuf|œuf/.test(t)){ g=sumLines(L,/œuf|oeuf/i); label="œuf"; }
+    else if(/poudre de lait|\blait/.test(t)){ g=sumLines(L,/lait/i); label="lait"; }
+    else if(/eau|hydrat/.test(t)){ g=sumLines(L,/^eau/i); label="eau"; }
+    else if(/\bsel/.test(t)){ g=sumLines(L,/sel/i); label="sel"; }
+    else if(/levure/.test(t)){ g=sumLines(L,/^levure/i); label="levure"; }
+    else if(/levain/.test(t)){ g=sumLines(L,/levain/i); label="levain"; }
+    else if(/pate|poids|pes/.test(t)){ g=item.dough; label="pâte totale"; }
+    if(g==null) return {sp:"Pour "+pretty+", je peux donner la farine, le beurre, le sucre, l'œuf, le lait, l'eau, le sel, le levain ou le poids de pâte.", h:"« "+escA(tr)+" » — ingrédient non reconnu."};
+    var de=/^[aeiouyéèêœ]/i.test(label)?"d'":"de ";
+    return {sp:fmtA(g)+" "+de+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
+  }
+  function buildSnapshot(){
+    var D=computeData(cur);
+    return {
+      famille:"viennoiseries",
+      note:"Poids en grammes, pas de perte (poids piece = poids pate). cout_charge = cout_matieres x coef_charges. marge = prix_vente_piece - cout_charge_piece.",
+      coef_charges:CHARGES,
+      prix_matieres_eur_par_kg:PRIX,
+      pates:DOUGHS.map(function(d){ return { fam:d.fam, label:d.label, pate_base_total_g:d.total, levain:d.levain, ingredients_base_g:d.pate, produits:d.produits }; }),
+      jour: cur==="today"?"aujourd'hui":"demain",
+      commande_du_jour:(D.per||[]).map(function(p){ return { pate:p.label, fam:p.fam, poids_pate_g:Math.round(p.dough), produits:p.prods, ingredients_g:p.lines.map(function(l){ return {n:l.n,g:Math.round(l.g)}; }) }; }),
+      totaux_du_jour:{ pate_g:Math.round(D.pate), ca_eur:Math.round(D.ca*100)/100, cout_matieres_eur:Math.round(D.coutMat*100)/100, cout_charge_eur:Math.round(D.coutMat*CHARGES*100)/100, marge_eur:Math.round((D.ca-D.coutMat*CHARGES)*100)/100 }
+    };
+  }
+  function askClaude(q){
+    if(!navigator.onLine) return Promise.resolve(null);
+    return fetch("/api/petrin-ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q,data:buildSnapshot()})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ return (j && j.answer) ? {sp:j.answer, h:"<b>« "+escA(q)+" »</b><br>"+escA(j.answer)} : null; })
+      .catch(function(){ return null; });
+  }
+  window.PETRIN_ANSWER=function(q){ return askClaude(q).then(function(a){ return a || answerRules(q); }); };
+})();
+
 setNet("Chargement…");
 Promise.all([loadDay("today"),loadDay("tomorrow"),loadMatieresPrix()]).then(function(){ buildOrder(); compute(); setNet("Prêt"); });
 setInterval(poll,5000);
 </script>
+<script src="/petrin-voice.js"></script>
 </body>
 </html>
