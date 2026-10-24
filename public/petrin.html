@@ -379,16 +379,31 @@ document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à
     return {sp:fmtA(g)+" "+de+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
   }
   // ---- Instantané des données pour l'assistant Claude (moteur vocal dans /petrin-voice.js) ----
+  // Pour chaque pain × format : tout est PRÉ-CALCULÉ par pièce (ingrédients, coût, marge)
+  // → une question « N pièces » = une simple multiplication, fiable et rapide.
+  function perPiece(r){
+    var out={};
+    FORMATS.forEach(function(f){
+      var crue=f.poids/LOSS, coeff=crue/r.total;
+      var ings=r.pate.map(function(i){ return {n:i.n, g:Math.round(i.g*coeff*10)/10}; });
+      ings.push({n:(r.levain.type==="epeautre"?"Levain petit épeautre":"Levain blé"), g:Math.round(r.levain.g*coeff*10)/10});
+      var coutMat=0; ings.forEach(function(x){ coutMat+=x.g/1000*prixKg(x.n); });
+      var pv=r.pvKg*f.poids/1000, coutCh=coutMat*CHARGES;
+      out[f.key]={ poids_cuit_g:f.poids, poids_pate_crue_g:Math.round(crue), ingredients_par_piece_g:ings,
+        cout_matieres_eur:Math.round(coutMat*100)/100, cout_charge_eur:Math.round(coutCh*100)/100,
+        prix_vente_eur:Math.round(pv*100)/100, marge_eur:Math.round((pv-coutCh)*100)/100 };
+    });
+    return out;
+  }
   function buildSnapshot(){
     var D=computeData(cur);
     return {
       famille:"pains",
-      note:"Poids en grammes. poids cru = poids cuit / pertes. cout_charge = cout_matieres x coef_charges. marge = prix_vente - cout_charge.",
-      pertes:LOSS, coef_charges:CHARGES, formats:FORMATS,
-      prix_matieres_eur_par_kg:PRIX,
-      recettes:RECIPES.map(function(r){ return { nom:r.nom, pate_base_total_g:r.total, prix_vente_eur_par_kg:r.pvKg, levain:{g:r.levain.g,type:r.levain.type}, ingredients_base_g:r.pate }; }),
+      note:"Poids en grammes. Tout est DÉJÀ calculé PAR PIÈCE dans par_piece (par format). Pour N pièces, multiplie simplement les valeurs par_piece par N — ne recalcule pas avec la recette de base. cout_charge = cout_matieres x coef_charges. marge = prix_vente - cout_charge.",
+      coef_charges:CHARGES, formats:FORMATS,
+      recettes:RECIPES.map(function(r){ return { nom:r.nom, prix_vente_eur_par_kg:r.pvKg, par_piece:perPiece(r) }; }),
       jour: cur==="today"?"aujourd'hui":"demain",
-      commande_du_jour:(D.per||[]).map(function(p){ return { nom:p.nom, pieces:p.qty, poids_pate_g:Math.round(p.dough), ingredients_g:p.lines.map(function(l){ return {n:l.n,g:Math.round(l.g)}; }) }; }),
+      commande_du_jour:(D.per||[]).map(function(p){ return { nom:p.nom, pieces:p.qty, poids_pate_total_g:Math.round(p.dough), ingredients_total_g:p.lines.map(function(l){ return {n:l.n,g:Math.round(l.g)}; }) }; }),
       totaux_du_jour:{ pate_g:Math.round(D.pate), ca_eur:Math.round(D.ca*100)/100, cout_matieres_eur:Math.round(D.coutMat*100)/100, cout_charge_eur:Math.round(D.coutMat*CHARGES*100)/100, marge_eur:Math.round((D.ca-D.coutMat*CHARGES)*100)/100 }
     };
   }

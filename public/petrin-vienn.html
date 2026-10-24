@@ -269,16 +269,28 @@ function loadMatieresPrix(){
     var de=/^[aeiouyéèêœ]/i.test(label)?"d'":"de ";
     return {sp:fmtA(g)+" "+de+label+" pour "+pretty+".", h:"<b>« "+escA(tr)+" »</b><br>"+label.charAt(0).toUpperCase()+label.slice(1)+" "+escA(pretty)+" ("+jour+") : <b>"+fmtA(g)+"</b>"};
   }
+  // Pour chaque pâte et chaque produit : tout PRÉ-CALCULÉ par pièce (pas de perte).
+  function perProduits(d){
+    return d.produits.map(function(p){
+      var coeff=p.poids/d.total;
+      var ings=d.pate.map(function(i){ return {n:i.n, g:Math.round(i.g*coeff*10)/10}; });
+      if(d.levain){ ings.push({n:(d.levain.type==="epeautre"?"Levain petit épeautre":"Levain blé"), g:Math.round(d.levain.g*coeff*10)/10}); }
+      var coutMat=0; ings.forEach(function(x){ coutMat+=x.g/1000*prixKg(x.n); });
+      var coutCh=coutMat*CHARGES, pv=p.pv||0;
+      return { nom:p.n, poids_piece_g:p.poids, ingredients_par_piece_g:ings,
+        cout_matieres_eur:Math.round(coutMat*100)/100, cout_charge_eur:Math.round(coutCh*100)/100,
+        prix_vente_eur:Math.round(pv*100)/100, marge_eur:Math.round((pv-coutCh)*100)/100 };
+    });
+  }
   function buildSnapshot(){
     var D=computeData(cur);
     return {
       famille:"viennoiseries",
-      note:"Poids en grammes, pas de perte (poids piece = poids pate). cout_charge = cout_matieres x coef_charges. marge = prix_vente_piece - cout_charge_piece.",
+      note:"Poids en grammes, pas de perte (poids piece = poids pate). Tout est DÉJÀ calculé PAR PIÈCE dans produits. Pour N pièces, multiplie les valeurs par N. cout_charge = cout_matieres x coef_charges. marge = prix_vente - cout_charge.",
       coef_charges:CHARGES,
-      prix_matieres_eur_par_kg:PRIX,
-      pates:DOUGHS.map(function(d){ return { fam:d.fam, label:d.label, pate_base_total_g:d.total, levain:d.levain, ingredients_base_g:d.pate, produits:d.produits }; }),
+      pates:DOUGHS.map(function(d){ return { fam:d.fam, label:d.label, pate_base_total_g:d.total, produits:perProduits(d) }; }),
       jour: cur==="today"?"aujourd'hui":"demain",
-      commande_du_jour:(D.per||[]).map(function(p){ return { pate:p.label, fam:p.fam, poids_pate_g:Math.round(p.dough), produits:p.prods, ingredients_g:p.lines.map(function(l){ return {n:l.n,g:Math.round(l.g)}; }) }; }),
+      commande_du_jour:(D.per||[]).map(function(p){ return { pate:p.label, fam:p.fam, poids_pate_total_g:Math.round(p.dough), produits:p.prods, ingredients_total_g:p.lines.map(function(l){ return {n:l.n,g:Math.round(l.g)}; }) }; }),
       totaux_du_jour:{ pate_g:Math.round(D.pate), ca_eur:Math.round(D.ca*100)/100, cout_matieres_eur:Math.round(D.coutMat*100)/100, cout_charge_eur:Math.round(D.coutMat*CHARGES*100)/100, marge_eur:Math.round((D.ca-D.coutMat*CHARGES)*100)/100 }
     };
   }
