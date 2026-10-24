@@ -19,6 +19,9 @@
   .top{background:var(--bd);color:var(--cr);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:10px;flex-wrap:wrap;}
   .top .t{font-family:var(--serif);font-size:19px;font-style:italic;white-space:nowrap;}
   .top .net{font-size:11px;opacity:.85;}
+  .fam{display:flex;gap:8px;background:var(--bd);padding:0 12px 8px;}
+  .fam a{flex:1;text-align:center;padding:9px;border-radius:9px;background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;font-weight:600;text-decoration:none;}
+  .fam a.on{background:var(--cr);color:var(--bd);}
   .tabs{display:flex;gap:8px;background:var(--bd);padding:0 12px 10px;position:sticky;top:44px;z-index:9;}
   .tab{flex:1;padding:10px;border:none;border-radius:10px;background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
   .tab.on{background:var(--cr);color:var(--bd);}
@@ -82,6 +85,7 @@
   <span class="t">🥖 Pétrin</span>
   <span class="net" id="net">…</span>
 </div>
+<div class="fam"><a href="/petrin" class="on">🥖 Pains</a><a href="/petrin-vienn">🥐 Viennoiseries</a></div>
 <div class="tabs">
   <button class="tab on" id="tabToday" data-day="today"></button>
   <button class="tab" id="tabTomorrow" data-day="tomorrow"></button>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pétrin — viennoiseries · à contre-temps</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/icons/icon-192.png" />
+<meta name="theme-color" content="#3E5A70" />
+<link rel="manifest" href="/petrin-manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#4A7C59;--rd:#B0402F;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:40px;}
+  .top{background:var(--bd);color:var(--cr);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:10px;}
+  .top .t{font-family:var(--serif);font-size:19px;font-style:italic;}
+  .top .net{font-size:11px;opacity:.85;}
+  .fam{display:flex;gap:8px;background:var(--bd);padding:0 12px 8px;}
+  .fam a{flex:1;text-align:center;padding:9px;border-radius:9px;background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;font-weight:600;text-decoration:none;}
+  .fam a.on{background:var(--cr);color:var(--bd);}
+  .tabs{display:flex;gap:8px;background:var(--bd);padding:0 12px 10px;position:sticky;top:44px;z-index:9;}
+  .tab{flex:1;padding:10px;border:none;border-radius:10px;background:rgba(243,231,218,.14);color:var(--cr);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+  .tab.on{background:var(--cr);color:var(--bd);}
+  .tab small{display:block;font-weight:400;opacity:.8;font-size:10.5px;}
+  .wrap{max-width:900px;margin:0 auto;padding:16px 14px;}
+  h2{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--bd);margin:20px 0 9px;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 6px 20px rgba(43,41,37,.04);}
+  .doughgrp{margin-bottom:10px;}
+  .doughgrp .gh{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ru);font-weight:700;padding:8px 2px 4px;border-bottom:2px solid var(--bs);margin-bottom:4px;}
+  .prow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid #EFE9E1;}
+  .prow .pn{font-size:14px;color:var(--ink);}
+  .prow .pn small{color:var(--is);font-size:11.5px;}
+  .prow input{width:62px;padding:9px 4px;border:1px solid var(--bs);border-radius:8px;font-size:17px;text-align:center;font-family:var(--sans);background:var(--pp);color:var(--ink);}
+  .prow input:focus{outline:none;border-color:var(--bd);background:#fff;}
+  .sub{color:var(--is);font-size:12.5px;}
+  .pain{border:1px solid var(--bs);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+  .pain .ph{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;background:#fff;}
+  .pain .ph .nm{font-family:var(--serif);font-size:16px;color:var(--bd);}
+  .pain .ph .meta{font-size:11.5px;color:var(--is);text-align:right;}
+  .pain .pb{display:none;padding:4px 14px 14px;background:var(--pp);border-top:1px solid var(--bs);}
+  .pain.open .pb{display:block;}
+  .pain.open .ph{background:var(--cr);}
+  .pain.alldone .ph{background:#EAF3EC;}
+  .prodsline{font-size:12px;color:var(--is);padding:6px 0 2px;}
+  .ingr{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px;padding:9px 8px;border-bottom:1px solid #EFE9E1;cursor:pointer;border-radius:8px;}
+  .ingr:last-child{border:none;}
+  .ingr .lbl{display:flex;align-items:center;gap:9px;}
+  .ingr .chk{width:20px;height:20px;border-radius:50%;border:2px solid var(--bs);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .ingr .q{font-weight:700;color:var(--bd);white-space:nowrap;font-size:17px;}
+  .ingr.done{background:#EAF3EC;} .ingr.done .lbl{color:var(--gn);} .ingr.done .q{color:var(--gn);text-decoration:line-through;}
+  .ingr.done .chk{background:var(--gn);border-color:var(--gn);} .ingr.done .chk::after{content:"✓";color:#fff;font-size:12px;font-weight:700;}
+  .splitctl{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--is);margin:4px 0 10px;flex-wrap:wrap;}
+  .splitctl button{border:1px solid var(--bs);background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--bd);font-family:var(--sans);}
+  .splitctl button.on{background:var(--bd);color:var(--cr);border-color:var(--bd);}
+  .batch-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ru);font-weight:700;margin:12px 0 2px;}
+  .allbtn{width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1px solid var(--gn);background:#fff;color:var(--gn);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+  .pain.alldone .allbtn{background:var(--gn);color:#fff;}
+  .donebadge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--gn);color:#fff;font-size:12px;font-weight:700;}
+  .tot-line{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px;font-size:14px;border-bottom:1px solid #EFE9E1;} .tot-line:last-child{border:none;} .tot-line b{color:var(--bd);}
+  .grandtot{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--bd);margin-top:8px;padding-top:8px;font-size:15px;} .grandtot b{color:var(--bd);font-size:17px;}
+  .lev{background:var(--cr);border-radius:12px;padding:14px;} .lev h3{font-family:var(--serif);font-size:16px;color:var(--bd);margin-bottom:8px;}
+  .marge .mrow{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px;font-size:14px;} .marge .big{font-family:var(--serif);font-size:17px;}
+  .btn.ghost{background:transparent;color:var(--bd);border:1px solid var(--bs);padding:11px 20px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;}
+  .empty{color:var(--is);font-size:14px;text-align:center;padding:22px 0;}
+  .banner{background:#FBF4E8;border:1px solid #EADFC9;border-radius:10px;padding:9px 12px;font-size:12.5px;color:var(--ru);margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="top"><span class="t">🥐 Pétrin</span><span class="net" id="net">…</span></div>
+<div class="fam"><a href="/petrin">🥖 Pains</a><a href="/petrin-vienn" class="on">🥐 Viennoiseries</a></div>
+<div class="tabs">
+  <button class="tab on" id="tabToday" data-day="today"></button>
+  <button class="tab" id="tabTomorrow" data-day="tomorrow"></button>
+</div>
+<div class="wrap">
+  <div class="banner" id="levanBanner" style="display:none"></div>
+  <h2>1 · Commande</h2>
+  <div class="card" id="ordBody"></div>
+  <div style="display:flex;gap:10px;margin:-4px 0 14px;flex-wrap:wrap;align-items:center;"><button class="btn ghost" id="btnReset">Remettre à zéro</button><span class="sub" id="savedHint"></span></div>
+  <h2>2 · À produire <span class="sub" style="font-weight:400">(touchez une pâte)</span></h2>
+  <div id="perPain"><div class="card"><div class="empty">Saisissez des quantités pour voir les pétrissées.</div></div></div>
+  <h2>3 · Total des matières</h2>
+  <div class="card" id="totMat"><div class="empty">—</div></div>
+  <h2>4 · Coût &amp; marge</h2>
+  <div class="card marge" id="margeBlock"><div class="empty">—</div></div>
+  <h2>5 · Rafraîchi du levain <span class="sub" id="levWhen" style="font-weight:400"></span></h2>
+  <div class="card lev" id="levBlock"><div class="empty" style="color:var(--is)">—</div></div>
+</div>
+<script>
+var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co", SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Object.assign({},opts,{headers:Object.assign({apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json",Prefer:opts.method==="POST"?"resolution=merge-duplicates,return=representation":"return=representation"},opts.headers||{})})); }
+
+/* ---------- Recettes viennoiseries (extraites de « Fiches recette - VIENNOISERIES ») ---------- */
+var CHARGES=4.5;
+var DOUGHS=[
+  { fam:"PLF", label:"Pâte levée feuilletée", total:2520, levain:{g:200,type:"ble"},
+    pate:[ {n:"Farine blé T65",g:1000},{n:"Sel fin",g:20},{n:"Sucre",g:120},{n:"Levure",g:45},{n:"Poudre de lait",g:50},{n:"Eau",g:405},{n:"Œuf",g:50},{n:"Beurre doux",g:60},{n:"Beurre de tourage",g:570} ],
+    produits:[ {n:"Croissant",poids:70,pv:1.30},{n:"Pain au chocolat",poids:68,pv:1.50},{n:"Pain aux raisins",poids:65,pv:1.90},{n:"Cruffin",poids:50,pv:2.20},{n:"Jalousie",poids:60,pv:2.10},{n:"Suisse",poids:60,pv:1.90},{n:"Oranais",poids:60,pv:1.90} ] },
+  { fam:"PF", label:"Pâte feuilletée", total:2113, levain:null,
+    pate:[ {n:"Farine blé T65",g:1000},{n:"Sel fin",g:20},{n:"Eau",g:493},{n:"Beurre doux",g:100},{n:"Beurre de tourage",g:500} ],
+    produits:[ {n:"Palmier",poids:70,pv:1.80},{n:"Chausson citron",poids:50,pv:2.50},{n:"Chausson aux pommes",poids:50,pv:2.10},{n:"Pâté aux pommes de terre",poids:68,pv:5.10},{n:"Tarte aux fruits (plaque)",poids:700,pv:0} ] },
+  { fam:"BRIOCHE", label:"Brioche", total:1000, levain:null,
+    pate:[ {n:"Farine blé T65",g:400},{n:"Sel fin",g:10},{n:"Sucre",g:60},{n:"Levure",g:20},{n:"Œuf (jaune)",g:80},{n:"Œuf (blanc)",g:180},{n:"Beurre doux",g:250} ],
+    produits:[ {n:"Brioche nature",poids:350,pv:4.90},{n:"Briochette nature",poids:60,pv:1.20},{n:"Brioche pralines",poids:250,pv:5.50},{n:"Briochette pralines",poids:50,pv:1.90},{n:"Brioche pépites chocolat",poids:250,pv:5.50},{n:"Briochette pépites chocolat",poids:50,pv:1.90},{n:"Babka",poids:180,pv:4.90},{n:"Babka individuelle",poids:50,pv:2.10},{n:"Chinois",poids:180,pv:4.90},{n:"Pompe aux grattons",poids:180,pv:4.90} ] },
+  { fam:"PATE BRISEE", label:"Pâte brisée (quiche / flan)", total:1800, levain:null,
+    pate:[ {n:"Farine blé T65",g:1000},{n:"Sel fin",g:20},{n:"Eau",g:200},{n:"Œuf (jaune)",g:80},{n:"Beurre doux",g:500} ],
+    produits:[ {n:"Base quiche (Ø20)",poids:300,pv:0},{n:"Base flan (Ø20)",poids:360,pv:0} ] },
+  { fam:"BECHAMEL", label:"Béchamel", total:1205, levain:null,
+    pate:[ {n:"Farine blé T65",g:100},{n:"Beurre doux",g:100},{n:"Lait",g:1000},{n:"Sel fin",g:5} ],
+    produits:[ {n:"Croque-Monsieur XL",poids:180,pv:4.50},{n:"Croissant au jambon",poids:80,pv:0},{n:"Crêpe garnie",poids:100,pv:0} ] }
+];
+var PRIX={ "Farine blé T65":1.24,"Farine blé T55":2.10,"Sel fin":0.41,"Sucre":0.90,"Levure":2.51,"Poudre de lait":7.23,
+  "Œuf":5.60,"Œuf (jaune)":5.60,"Œuf (blanc)":5.60,"Beurre doux":7.86,"Beurre de tourage":9.84,"Levain blé":0.622,"Lait":1.00,"Crème pâtissière":4.80 };
+function prixKg(n){ if(PRIX[n]!=null) return PRIX[n]; if(/^eau/i.test(n)) return 0.003; return 0; }
+
+function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function labelDate(d){ return d.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short"}); }
+var now=new Date();
+var DAYS={ today:iso(now)+"#v", tomorrow:iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()+1))+"#v" };
+document.getElementById("tabToday").innerHTML="Aujourd'hui<small>"+labelDate(now)+"</small>";
+document.getElementById("tabTomorrow").innerHTML="Demain<small>"+labelDate(new Date(now.getFullYear(),now.getMonth(),now.getDate()+1))+"</small>";
+var cur="today", orders={today:{},tomorrow:{}}, updatedAt={today:null,tomorrow:null}, lastEdit=0, expanded={}, splits={}, done={};
+function loadDone(){ try{ return JSON.parse(localStorage.getItem("petrinv_done_"+DAYS[cur])||"{}")||{}; }catch(e){ return {}; } }
+function saveDone(){ try{ localStorage.setItem("petrinv_done_"+DAYS[cur], JSON.stringify(done)); }catch(e){} }
+done=loadDone();
+
+function fmtG(g){ g=Math.round(g); return g>=1000 ? (Math.round(g/10)/100).toLocaleString("fr-FR")+" kg" : g+" g"; }
+function eur(n){ return (Math.round(n*100)/100).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
+function escA(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+
+function setNet(m){ document.getElementById("net").textContent=m; }
+function loadDay(w){ return sb("petrin_days?day=eq."+encodeURIComponent(DAYS[w])+"&select=data,updated_at").then(function(r){return r.ok?r.json():[];}).then(function(rows){ var row=(Array.isArray(rows)&&rows[0])||null; orders[w]=(row&&row.data)||{}; updatedAt[w]=row?row.updated_at:null; }).catch(function(){}); }
+function saveDay(w){ updatedAt[w]=new Date().toISOString(); return sb("petrin_days",{method:"POST",body:JSON.stringify({day:DAYS[w],data:orders[w],updated_at:updatedAt[w]})}).then(function(r){ setNet(r.ok?"Enregistré ✓":"Non enregistré"); }).catch(function(){ setNet("Hors ligne"); }); }
+function poll(){ if(Date.now()-lastEdit<4000) return; sb("petrin_days?day=eq."+encodeURIComponent(DAYS[cur])+"&select=updated_at").then(function(r){return r.ok?r.json():[];}).then(function(rows){ var u=(Array.isArray(rows)&&rows[0])?rows[0].updated_at:null; if(u&&u!==updatedAt[cur]){ loadDay(cur).then(function(){ buildOrder(); compute(); setNet("Mis à jour ↻"); }); } }).catch(function(){}); }
+var saveT=null; function scheduleSave(){ clearTimeout(saveT); setNet("…"); saveT=setTimeout(function(){ saveDay(cur); },700); }
+
+/* ---------- Saisie (produits groupés par pâte) ---------- */
+function buildOrder(){
+  var c=document.getElementById("ordBody");
+  c.innerHTML=DOUGHS.map(function(d){
+    return '<div class="doughgrp"><div class="gh">'+d.label+'</div>'
+      + d.produits.map(function(p){ var v=orders[cur][p.n]||""; return '<div class="prow"><span class="pn">'+p.n+' <small>'+p.poids+' g'+(p.pv?' · '+eur(p.pv):'')+'</small></span><input inputmode="numeric" data-prod="'+escA(p.n)+'" value="'+(v||"")+'" placeholder="0" /></div>'; }).join("")
+      + '</div>';
+  }).join("");
+  c.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("input",function(){ var p=inp.getAttribute("data-prod"), n=parseInt(String(inp.value).replace(/\D/g,""),10)||0; orders[cur][p]=n; lastEdit=Date.now(); compute(); scheduleSave(); }); });
+}
+
+/* ---------- Calcul ---------- */
+function groupsFor(p){ var n=splits[p.fam]||1; if(n<=1) return [{label:null,lines:p.lines}]; var gs=[]; for(var k=0;k<n;k++){ gs.push({label:"Pétrin "+(k+1)+" / "+n, lines:p.lines.map(function(l){return {n:l.n,g:l.g/n};})}); } return gs; }
+function computeData(which){
+  var order=orders[which]||{}, per=[], mat={}, levBle=0, pate=0, coutMat=0, ca=0;
+  DOUGHS.forEach(function(d){
+    var dough=0, prods=[];
+    d.produits.forEach(function(p){ var n=order[p.n]||0; if(n>0){ dough+=n*p.poids; ca+=n*(p.pv||0); prods.push(n+"× "+p.n); } });
+    if(dough<=0) return;
+    var coeff=dough/d.total, lines=d.pate.map(function(i){return {n:i.n,g:i.g*coeff};});
+    if(d.levain){ var lg=d.levain.g*coeff; lines.push({n:"Levain blé",g:lg}); levBle+=lg; }
+    pate+=dough;
+    lines.forEach(function(l){ mat[l.n]=(mat[l.n]||0)+l.g; coutMat+=l.g/1000*prixKg(l.n); });
+    per.push({fam:d.fam,label:d.label,dough:dough,coeff:coeff,lines:lines,prods:prods,rec:d});
+  });
+  return {per:per,mat:mat,levBle:levBle,pate:pate,coutMat:coutMat,ca:ca};
+}
+function compute(){
+  var D=computeData(cur), pp=document.getElementById("perPain");
+  if(!D.per.length){ pp.innerHTML='<div class="card"><div class="empty">Saisissez des quantités pour voir les pétrissées.</div></div>'; }
+  else {
+    pp.innerHTML=D.per.map(function(p){
+      var op=expanded[p.fam]?" open":"", groups=groupsFor(p), inner="", dks=[], n=splits[p.fam]||1;
+      inner+='<div class="prodsline">'+p.prods.join(" · ")+'</div>';
+      inner+='<div class="splitctl">Pétrir en&nbsp;: '+[1,2,3].map(function(k){return '<button data-split="'+k+'" data-fam="'+escA(p.fam)+'" class="'+(n===k?'on':'')+'">'+k+'×</button>';}).join("")+'</div>';
+      groups.forEach(function(g){ if(g.label) inner+='<div class="batch-label">'+g.label+'</div>';
+        inner+=g.lines.map(function(l){ var dk=p.fam+"|"+(g.label||"")+"|"+l.n; dks.push(dk); return '<div class="ingr'+(done[dk]?" done":"")+'" data-dk="'+escA(dk)+'"><span class="lbl"><span class="chk"></span>'+l.n+'</span><span class="q">'+fmtG(l.g)+'</span></div>'; }).join(""); });
+      var allDone=dks.length>0&&dks.every(function(k){return done[k];});
+      inner+='<button class="allbtn">'+(allDone?"↩︎ Tout décocher":"✓ Tout fait")+'</button>';
+      inner+='<div class="sub" style="text-align:right;margin-top:8px">coefficient ×'+(Math.round(p.coeff*100)/100).toLocaleString("fr-FR")+' · pâte '+fmtG(p.dough)+'</div>';
+      return '<div class="pain'+op+(allDone?" alldone":"")+'" data-fam="'+escA(p.fam)+'"><div class="ph"><span class="nm">'+(allDone?'<span class="donebadge">✓</span> ':'')+p.label+'</span><span class="meta">pâte '+fmtG(p.dough)+' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3E5A70" stroke-width="3" style="vertical-align:middle"><polyline points="9 6 15 12 9 18"/></svg></span></div><div class="pb">'+inner+'</div></div>';
+    }).join("");
+    pp.querySelectorAll(".pain").forEach(function(el){ el.querySelector(".ph").onclick=function(){ var f=el.getAttribute("data-fam"); expanded[f]=!el.classList.contains("open"); el.classList.toggle("open"); }; });
+    pp.querySelectorAll(".splitctl button").forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); splits[b.getAttribute("data-fam")]=parseInt(b.getAttribute("data-split"),10); compute(); }; });
+    pp.querySelectorAll(".ingr").forEach(function(li){ li.onclick=function(e){ e.stopPropagation(); var dk=li.getAttribute("data-dk"); if(done[dk]) delete done[dk]; else done[dk]=true; saveDone(); compute(); }; });
+    pp.querySelectorAll(".allbtn").forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); var pain=b.closest(".pain"), lines=pain.querySelectorAll(".ingr"), all=true; lines.forEach(function(li){ if(!li.classList.contains("done")) all=false; }); lines.forEach(function(li){ var dk=li.getAttribute("data-dk"); if(all) delete done[dk]; else done[dk]=true; }); saveDone(); compute(); }; });
+  }
+  var tm=document.getElementById("totMat"), keys=Object.keys(D.mat);
+  if(!keys.length){ tm.innerHTML='<div class="empty">—</div>'; }
+  else { keys.sort(function(a,b){ function rk(n){ if(/^farine/i.test(n))return 0; if(/^eau|lait/i.test(n))return 1; if(/beurre/i.test(n))return 3; if(/^levain/i.test(n))return 6; return 4; } return rk(a)-rk(b)||a.localeCompare(b); });
+    tm.innerHTML=keys.map(function(k){return '<div class="tot-line"><span>'+k+'</span><b>'+fmtG(D.mat[k])+'</b></div>';}).join("")+'<div class="grandtot"><span>Poids total de pâte</span><b>'+fmtG(D.pate)+'</b></div>'; }
+  var mb=document.getElementById("margeBlock");
+  if(D.ca<=0){ mb.innerHTML='<div class="empty">—</div>'; }
+  else { var cc=D.coutMat*CHARGES, mg=D.ca-cc, pct=D.ca>0?mg/D.ca*100:0;
+    mb.innerHTML='<div class="mrow"><span>Chiffre d\'affaires (vente)</span><b class="big" style="color:var(--bd)">'+eur(D.ca)+'</b></div>'
+      +'<div class="mrow"><span class="sub">Coût matières</span><span>'+eur(D.coutMat)+'</span></div>'
+      +'<div class="mrow"><span class="sub">Coût chargé (× '+CHARGES.toLocaleString("fr-FR")+')</span><span>'+eur(cc)+'</span></div>'
+      +'<div class="mrow" style="border-top:2px solid var(--bd);margin-top:4px;padding-top:8px;"><span>Marge estimée</span><b class="big" style="color:'+(mg>=0?'var(--gn)':'var(--rd)')+'">'+eur(mg)+' · '+Math.round(pct)+'%</b></div>'; }
+  var lb=document.getElementById("levBlock");
+  document.getElementById("levWhen").textContent = cur==="tomorrow" ? "(à rafraîchir ce soir pour demain)" : "(pour aujourd'hui)";
+  if(D.levBle<=0){ lb.innerHTML='<div class="empty" style="color:var(--is)">—</div>'; }
+  else { lb.innerHTML='<h3>🌾 Levain blé — '+fmtG(D.levBle)+' à préparer</h3>'
+    +'<div class="ingr"><span class="lbl">Farine (⅓)</span><span class="q">'+fmtG(D.levBle/3)+'</span></div>'
+    +'<div class="ingr"><span class="lbl">Eau (⅓)</span><span class="q">'+fmtG(D.levBle/3)+'</span></div>'
+    +'<div class="ingr"><span class="lbl">Souche (⅓)</span><span class="q">'+fmtG(D.levBle/3)+'</span></div>'; }
+  var bn=document.getElementById("levanBanner"), T=computeData("tomorrow");
+  if(cur==="today" && T.levBle>0){ bn.style.display=""; bn.innerHTML='🌙 <b>Ce soir</b>, rafraîchissez le levain pour <b>demain</b> : '+fmtG(T.levBle)+' de levain blé. <span class="sub">(onglet Demain)</span>'; }
+  else bn.style.display="none";
+}
+
+function switchDay(w){ cur=w; done=loadDone(); document.getElementById("tabToday").classList.toggle("on",w==="today"); document.getElementById("tabTomorrow").classList.toggle("on",w==="tomorrow"); buildOrder(); compute(); }
+document.getElementById("tabToday").onclick=function(){ switchDay("today"); };
+document.getElementById("tabTomorrow").onclick=function(){ switchDay("tomorrow"); };
+document.getElementById("btnReset").onclick=function(){ if(!confirm("Remettre à zéro ?")) return; orders[cur]={}; buildOrder(); compute(); saveDay(cur); };
+
+setNet("Chargement…");
+Promise.all([loadDay("today"),loadDay("tomorrow")]).then(function(){ buildOrder(); compute(); setNet("Prêt"); });
+setInterval(poll,5000);
+</script>
+</body>
+</html>
