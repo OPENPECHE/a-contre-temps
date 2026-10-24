@@ -127,6 +127,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
         Articles & instants
       </button>
+      <button class="nb" onclick="goTab('couts',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Coûts &amp; marges
+      </button>
       <button class="nb" onclick="goTab('categories',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Catégories
@@ -241,6 +245,19 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         </div>
       </div>
       <div id="products-list"></div>
+    </div>
+
+    <!-- COUTS & MARGES -->
+    <div id="page-couts" class="page">
+      <h1>Coûts &amp; marges</h1>
+      <p class="sub">Coût de revient (prix d'achat chargé) par produit — <b>la référence unique</b> lue par la caisse et tous les calculs de marge. Modifiez une case, c'est enregistré automatiquement.</p>
+      <div id="couts-summary" class="stats" style="margin-bottom:1rem"></div>
+      <div class="card card0" id="couts-table"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:1.6rem 0 .6rem">
+        <p class="fd" style="font-size:17px;margin:0">Casse (invendus / périmés)</p>
+        <button class="btn bg bsm" onclick="openCasseAdmin()">+ Enregistrer une casse</button>
+      </div>
+      <div class="card card0" id="casse-list"></div>
     </div>
 
     <!-- CATEGORIES -->
@@ -576,6 +593,7 @@ function goTab(name,btn){
   if(name==="orders") loadOrders();
   if(name==="clients") loadClients();
   if(name==="products") loadProducts();
+  if(name==="couts") loadCouts();
   if(name==="categories") loadCategories();
   if(name==="pickup") loadPickups();
   if(name==="delivery") loadDelivery();
@@ -731,6 +749,135 @@ async function renderMargeCard(){
       </div>
       <div style="font-size:11.5px;color:var(--is)">Marge brute ${eur(margeBrute)} − casse ${eur(casseCout)} = marge nette ${eur(margeNette)}. Caisse ${eur(c.ca)} · en ligne ${eur(o.ca)}.${couv<99?` <b>Marge calculée sur ${eur(caCoste)} de CA (${couv} %)</b> — produits dont le coût est renseigné ; les ventes anciennes (autres libellés) ne sont pas comptées.`:""}</div>`;
   }catch(e){ el.innerHTML=`<div style="font-size:12.5px;color:var(--is)">Marge indisponible (vérifiez la table casse et la colonne cost).</div>`; }
+}
+
+// ── Coûts & marges (référence unique) ─────────────────────────────────────────
+function money(v){ return `${(Math.round((Number(v)||0)*100)/100).toFixed(2).replace(".",",")} €`; }
+function escC(s){ return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+async function loadCouts(){
+  if(!allProducts || !allProducts.length){ allProducts=await sbFetch("products?order=position.asc"); }
+  renderCouts(); loadCasseList();
+}
+function renderCouts(){
+  const prods=(allProducts||[]).filter(p=>p&&p.name);
+  const withCost=prods.filter(p=>p.cost!=null&&p.cost!=="");
+  const avgPct=(()=>{ let n=0,s=0; withCost.forEach(p=>{ const pv=Number(p.price)||0; if(pv>0){ s+=(pv-Number(p.cost))/pv*100; n++; } }); return n?Math.round(s/n):0; })();
+  document.getElementById("couts-summary").innerHTML=`
+    <div class="stat"><div class="sl">PRODUITS</div><div class="sv">${prods.length}</div></div>
+    <div class="stat"><div class="sl">COÛT RENSEIGNÉ</div><div class="sv">${withCost.length}</div><div class="ss">sur ${prods.length}</div></div>
+    <div class="stat acc"><div class="sl">MARGE MOYENNE</div><div class="sv" style="color:#4A7C59">${avgPct} %</div><div class="ss">produits costés</div></div>`;
+  const cats=[...new Set(prods.map(p=>p.cat||"—"))];
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:13.5px">
+    <thead><tr style="text-align:left;color:#A6713F;font-size:11px;text-transform:uppercase;border-bottom:2px solid var(--bs,#D6DFE5)">
+      <th style="padding:8px 6px">Produit</th><th style="padding:8px 6px;text-align:right">Prix vente</th>
+      <th style="padding:8px 6px;text-align:right">Coût de revient</th><th style="padding:8px 6px;text-align:right">Marge</th><th style="padding:8px 6px;text-align:right">Marge %</th></tr></thead><tbody>`;
+  cats.forEach(cat=>{
+    html+=`<tr><td colspan="5" style="padding:12px 6px 4px;font-weight:600;color:var(--bd,#3E5A70)">${escC(cat)}</td></tr>`;
+    prods.filter(p=>(p.cat||"—")===cat).forEach(p=>{
+      const pv=Number(p.price)||0, has=p.cost!=null&&p.cost!=="", cost=Number(p.cost)||0;
+      const mg=pv-cost, pct=pv>0?Math.round(mg/pv*100):0;
+      const col=!has?"#999":(mg<0?"#B0402F":"#4A7C59");
+      html+=`<tr style="border-bottom:1px solid #EFE9E1">
+        <td style="padding:7px 6px">${escC(p.name)}</td>
+        <td style="padding:7px 6px;text-align:right">${money(pv)}</td>
+        <td style="padding:7px 6px;text-align:right"><input class="cinp" data-id="${p.id}" type="number" step="0.01" min="0" value="${has?cost:""}" placeholder="—" style="width:84px;text-align:right;padding:6px;border:1px solid var(--bs,#D6DFE5);border-radius:7px"> €</td>
+        <td class="mg-${p.id}" style="padding:7px 6px;text-align:right;color:${col}">${has?money(mg):"—"}</td>
+        <td class="mp-${p.id}" style="padding:7px 6px;text-align:right;color:${col}">${has?pct+" %":"—"}</td></tr>`;
+    });
+  });
+  html+=`</tbody></table>`;
+  const box=document.getElementById("couts-table"); box.innerHTML=html;
+  box.querySelectorAll(".cinp").forEach(inp=>{ inp.onchange=()=>saveCost(inp); });
+}
+async function saveCost(inp){
+  const id=inp.getAttribute("data-id");
+  const raw=inp.value, cost=(raw==null||raw==="")?null:(parseFloat(raw)||0);
+  inp.disabled=true;
+  try{
+    await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({cost})});
+    allProducts=allProducts.map(p=>p.id===id?{...p,cost}:p);
+    const p=allProducts.find(x=>x.id===id), pv=Number(p.price)||0, has=cost!=null;
+    const mg=pv-(cost||0), pct=pv>0?Math.round(mg/pv*100):0, col=!has?"#999":(mg<0?"#B0402F":"#4A7C59");
+    const mgc=document.querySelector(".mg-"+id), mpc=document.querySelector(".mp-"+id);
+    if(mgc){ mgc.textContent=has?money(mg):"—"; mgc.style.color=col; }
+    if(mpc){ mpc.textContent=has?pct+" %":"—"; mpc.style.color=col; }
+    const s=document.getElementById("couts-summary"); if(s){ renderCoutsSummary(); }
+  }catch(e){ alert("Enregistrement du coût impossible."); }
+  finally{ inp.disabled=false; }
+}
+function renderCoutsSummary(){
+  const prods=(allProducts||[]).filter(p=>p&&p.name), withCost=prods.filter(p=>p.cost!=null&&p.cost!=="");
+  let n=0,s=0; withCost.forEach(p=>{ const pv=Number(p.price)||0; if(pv>0){ s+=(pv-Number(p.cost))/pv*100; n++; } });
+  const avgPct=n?Math.round(s/n):0;
+  document.getElementById("couts-summary").innerHTML=`
+    <div class="stat"><div class="sl">PRODUITS</div><div class="sv">${prods.length}</div></div>
+    <div class="stat"><div class="sl">COÛT RENSEIGNÉ</div><div class="sv">${withCost.length}</div><div class="ss">sur ${prods.length}</div></div>
+    <div class="stat acc"><div class="sl">MARGE MOYENNE</div><div class="sv" style="color:#4A7C59">${avgPct} %</div><div class="ss">produits costés</div></div>`;
+}
+async function loadCasseList(){
+  const box=document.getElementById("casse-list"); if(!box) return;
+  box.innerHTML=`<div style="padding:1rem;font-size:13px;color:var(--is)">Chargement…</div>`;
+  const n=new Date(), from=new Date(n.getFullYear(),n.getMonth(),1).toISOString();
+  let rows;
+  try{ rows=await sbFetch(`casse?order=created_at.desc&limit=50`); }catch(e){ box.innerHTML=`<div style="padding:1rem;font-size:13px;color:var(--is)">Table casse indisponible (exécutez cost-and-casse.sql).</div>`; return; }
+  rows=Array.isArray(rows)?rows:[];
+  const moisCout=rows.filter(r=>r.created_at>=from).reduce((s,r)=>s+(Number(r.total_cost)||0),0);
+  if(!rows.length){ box.innerHTML=`<div style="padding:1rem;font-size:13px;color:var(--is)">Aucune casse enregistrée. Utilisez « + Enregistrer une casse » ou la caisse (écran Journée).</div>`; return; }
+  box.innerHTML=`<div style="padding:.7rem 1rem;background:#FBEDEA;color:#B0402F;font-size:13px;border-radius:9px;margin-bottom:.6rem"><b>Casse ce mois : ${money(moisCout)}</b> de coût matières perdu.</div>`
+    + rows.map(r=>{
+      const d=new Date(r.created_at), it=(Array.isArray(r.items)?r.items:[]).map(x=>`${x.qty}× ${x.name}`).join(", ");
+      return `<div style="padding:9px 6px;border-bottom:1px solid #EFE9E1;font-size:13px;display:flex;justify-content:space-between;gap:10px">
+        <span><b>${d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</b>${r.lieu?` · ${escC(r.lieu)}`:""}<br><span style="color:var(--is)">${escC(it)}</span></span>
+        <span style="white-space:nowrap;text-align:right;color:#B0402F"><b>${money(r.total_cost)}</b><br><span style="color:var(--is);font-size:11px">PV ${money(r.total_pv)}</span></span></div>`;
+    }).join("");
+}
+function openCasseAdmin(){
+  const list=(allProducts||[]).filter(p=>p&&p.name);
+  if(!list.length){ alert("Produits non chargés."); return; }
+  const qty={};
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(43,41,37,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px";
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:1.2rem">
+    <h2 style="margin:0 0 .3rem">🗑️ Enregistrer une casse</h2>
+    <p class="sub" style="margin:0 0 .8rem">Invendus / périmés qui ne seront pas vendus. Indiquez les quantités jetées.</p>
+    <input id="caSearch" placeholder="Rechercher un produit…" style="width:100%;padding:9px;border:1px solid var(--bs,#D6DFE5);border-radius:8px;margin-bottom:.6rem">
+    <div id="caList" style="max-height:42vh;overflow:auto"></div>
+    <div id="caTot" style="background:#FBF8F4;border:1px solid var(--bs,#D6DFE5);border-radius:9px;padding:10px;font-size:14px;margin-top:.7rem"></div>
+    <div style="display:flex;gap:8px;margin-top:.9rem"><button class="btn bg" id="caSave" style="flex:1">Enregistrer</button><button class="btn" id="caCancel">Annuler</button></div></div>`;
+  document.body.appendChild(ov);
+  const listBox=ov.querySelector("#caList");
+  function draw(filter){
+    const f=(filter||"").toLowerCase();
+    listBox.innerHTML=list.filter(p=>!f||p.name.toLowerCase().includes(f)).map(p=>{
+      const i=list.indexOf(p), cost=Number(p.cost)||0;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #EFE9E1;font-size:13px">
+        <span style="flex:1">${escC(p.name)}<br><span style="color:var(--is);font-size:11px">PV ${money(p.price)}${cost?` · coût ${money(cost)}`:" · coût non saisi"}</span></span>
+        <button class="caM" data-i="${i}" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bs,#D6DFE5);background:#fff">−</button>
+        <b id="caq${i}" style="min-width:24px;text-align:center">${qty[i]||0}</b>
+        <button class="caP" data-i="${i}" style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bs,#D6DFE5);background:#fff">+</button></div>`;
+    }).join("")||`<div class="sub" style="padding:1rem">Aucun produit.</div>`;
+    listBox.querySelectorAll(".caP").forEach(b=>b.onclick=()=>{ const i=b.dataset.i; qty[i]=(qty[i]||0)+1; document.getElementById("caq"+i).textContent=qty[i]; recompute(); });
+    listBox.querySelectorAll(".caM").forEach(b=>b.onclick=()=>{ const i=b.dataset.i; qty[i]=Math.max(0,(qty[i]||0)-1); document.getElementById("caq"+i).textContent=qty[i]; recompute(); });
+  }
+  function recompute(){
+    let tc=0,tp=0,nn=0; list.forEach((p,i)=>{ const q=qty[i]||0; tc+=(Number(p.cost)||0)*q; tp+=(Number(p.price)||0)*q; nn+=q; });
+    ov.querySelector("#caTot").innerHTML=`<div style="display:flex;justify-content:space-between"><span>Articles jetés</span><b>${nn}</b></div>
+      <div style="display:flex;justify-content:space-between;color:#A6713F"><span>Coût matières perdu</span><b>${money(tc)}</b></div>
+      <div style="display:flex;justify-content:space-between"><span>Valeur de vente manquée</span><b>${money(tp)}</b></div>`;
+  }
+  ov.querySelector("#caSearch").oninput=e=>draw(e.target.value);
+  ov.querySelector("#caCancel").onclick=()=>ov.remove();
+  ov.querySelector("#caSave").onclick=async()=>{
+    const items=[]; let tc=0,tp=0;
+    list.forEach((p,i)=>{ const q=qty[i]||0; if(q>0){ items.push({name:p.name,qty:q,cost:Number(p.cost)||0,pv:Number(p.price)||0}); tc+=(Number(p.cost)||0)*q; tp+=(Number(p.price)||0)*q; } });
+    if(!items.length){ alert("Rien à enregistrer."); return; }
+    ov.querySelector("#caSave").disabled=true;
+    try{
+      await sbFetch("casse",{method:"POST",body:JSON.stringify({lieu:"Fournil",items,total_cost:Math.round(tc*100)/100,total_pv:Math.round(tp*100)/100})});
+      ov.remove(); loadCasseList();
+    }catch(e){ ov.querySelector("#caSave").disabled=false; alert("Enregistrement impossible."); }
+  };
+  draw("");recompute();
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
