@@ -117,11 +117,14 @@
     .center p{color:var(--is);margin-top:16px;font-size:16px;}
 
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;}
-    .card{background:var(--pp);border:1px solid var(--bs);border-radius:14px;padding:26px;}
-    .card .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ru);}
+    .card{background:var(--pp);border:1px solid var(--bs);border-radius:14px;padding:26px;display:flex;flex-direction:column;}
+    .card .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ru);min-height:13px;}
     .card h3{font-size:21px;color:var(--bd);margin:8px 0 10px;}
-    .card .win{display:inline-block;font-size:11px;font-weight:600;color:var(--ru);background:var(--cr);border-radius:6px;padding:3px 9px;margin-bottom:10px;}
-    .card .cardcta{display:inline-block;margin-top:16px;background:var(--bd);color:var(--cr);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:11px 20px;border-radius:999px;text-decoration:none;font-weight:500;}
+    .card .win{align-self:flex-start;font-size:11px;font-weight:600;color:var(--ru);background:var(--cr);border-radius:6px;padding:3px 9px;margin-bottom:10px;}
+    .card .cardcta{align-self:flex-start;margin-top:auto;background:var(--bd);color:var(--cr);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:11px 20px;border-radius:999px;text-decoration:none;font-weight:500;}
+    /* Grille "Nos univers" : rangées centrées, cartes homogènes */
+    .grid.univers{display:flex;flex-wrap:wrap;justify-content:center;}
+    .grid.univers .card{flex:1 1 280px;max-width:328px;}
     .card .cardcta.alt{background:transparent;color:var(--bd);border:1px solid var(--bs);}
     .card p{color:var(--is);font-size:14.5px;}
 
@@ -177,7 +180,7 @@
         <h2>Que souhaitez‑vous commander ?</h2>
         <p>Du pain du marché au brunch livré, en passant par l'apéro, le déjeuner d'entreprise et vos événements sur mesure — tout est fait maison, au levain.</p>
       </div>
-      <div class="grid">
+      <div class="grid univers">
         <div class="card">
           <div class="k">🥖 Sur les marchés</div>
           <span class="win">Du mardi au dimanche</span>
