@@ -1,134 +1,256 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- SEO principal -->
-    <title>Boulangerie, viennoiserie & brunch à Clermont-Ferrand — à contre-temps, fournil vivant</title>
-    <meta name="description" content="Fournil artisanal à Clermont-Ferrand : pain au levain, viennoiserie artisanale, brunchs, apéritifs, cafés gourmands et biscuiterie. Farine bio, fait maison, circuit court. Livraison et retrait sur les marchés." />
-    <meta name="keywords" content="boulangerie Clermont-Ferrand, viennoiserie artisanale Clermont-Ferrand, pain au levain, croissant farine bio, brunch Clermont-Ferrand, apéritif, café gourmand, biscuiterie artisanale, fournil Gerzat" />
-    <meta name="author" content="à contre-temps — Fournil vivant" />
-    <!-- PRE-LANCEMENT : site de commande en pause pour Google. Au lancement, remettre "index, follow, max-image-preview:large" et retirer la redirection "/" dans vercel.json. -->
-    <meta name="robots" content="noindex, follow" />
-    <link rel="canonical" href="https://www.fournilvivant.fr/" />
+  <title>à contre-temps — Fournil vivant · Boulangerie & biscuiterie artisanale</title>
+  <meta name="description" content="à contre-temps, fournil vivant : pain au levain, viennoiseries, brunchs, apéros et déjeuners livrés autour de Clermont-Ferrand — et notre biscuiterie artisanale (diamants, sablés, coffrets) expédiée partout en France. Farine bio, fait maison." />
+  <meta name="keywords" content="boulangerie Clermont-Ferrand, pain au levain, viennoiserie artisanale, brunch Clermont-Ferrand, biscuiterie artisanale, diamants sablés, coffret gourmand, fournil Gerzat" />
+  <meta name="author" content="à contre-temps — Fournil vivant" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://www.fournilvivant.fr/" />
 
-    <!-- Géociblage local -->
-    <meta name="geo.region" content="FR-63" />
-    <meta name="geo.placename" content="Clermont-Ferrand, Gerzat" />
-    <meta name="geo.position" content="45.8281;3.1447" />
-    <meta name="ICBM" content="45.8281, 3.1447" />
+  <meta name="geo.region" content="FR-63" />
+  <meta name="geo.placename" content="Clermont-Ferrand, Gerzat" />
+  <meta name="geo.position" content="45.8281;3.1447" />
+  <meta name="ICBM" content="45.8281, 3.1447" />
 
-    <!-- Open Graph (Facebook, LinkedIn, WhatsApp…) -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="à contre-temps — Fournil vivant" />
-    <meta property="og:title" content="Boulangerie, viennoiserie & brunch à Clermont-Ferrand — à contre-temps" />
-    <meta property="og:description" content="Fournil artisanal à Clermont-Ferrand : pain au levain, viennoiserie artisanale, brunchs, apéritifs, cafés gourmands et biscuiterie. Farine bio, fait maison. Livraison et marchés." />
-    <meta property="og:url" content="https://www.fournilvivant.fr/" />
-    <meta property="og:image" content="https://www.fournilvivant.fr/og-image.png?v=3" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:locale" content="fr_FR" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="à contre-temps — Fournil vivant" />
+  <meta property="og:title" content="à contre-temps — Fournil vivant · Boulangerie & biscuiterie artisanale" />
+  <meta property="og:description" content="Le fournil local autour de Clermont-Ferrand et la biscuiterie artisanale expédiée partout en France. Farine bio, fait maison." />
+  <meta property="og:url" content="https://www.fournilvivant.fr/" />
+  <meta property="og:image" content="https://www.fournilvivant.fr/og-image.png?v=3" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="1200" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.fournilvivant.fr/og-image.png?v=3" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Boulangerie, viennoiserie & brunch à Clermont-Ferrand — à contre-temps" />
-    <meta name="twitter:description" content="Fournil artisanal à Clermont-Ferrand : petits-déjeuners d'entreprise, brunchs, lunchs, apéritifs, cafés gourmands et biscuiterie. Fait maison, au levain." />
-    <meta name="twitter:image" content="https://www.fournilvivant.fr/og-image.png?v=3" />
+  <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#3E5A70" />
 
-    <!-- PWA / icônes -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#3E5A70" />
-    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-    <!-- Données structurées : commerce local (boulangerie) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Bakery",
-      "name": "à contre-temps — Fournil vivant",
-      "description": "Boulangerie et viennoiserie artisanale à Clermont-Ferrand : pains au levain, croissants, brunchs, apéritifs, cafés gourmands et biscuiterie. Farine bio, fait maison, circuit court.",
-      "url": "https://www.fournilvivant.fr/",
-      "image": "https://www.fournilvivant.fr/og-image.png",
-      "email": "acontretemps@fournilvivant.fr",
-      "telephone": "+33601482890",
-      "priceRange": "€€",
-      "servesCuisine": ["Boulangerie", "Pâtisserie", "Traiteur"],
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Gerzat",
-        "postalCode": "63360",
-        "addressRegion": "Auvergne-Rhône-Alpes",
-        "addressCountry": "FR"
-      },
-      "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": 45.8281,
-        "longitude": 3.1447
-      },
-      "areaServed": [
-        { "@type": "City", "name": "Clermont-Ferrand" },
-        { "@type": "City", "name": "Gerzat" },
-        { "@type": "City", "name": "Riom" },
-        { "@type": "AdministrativeArea", "name": "Puy-de-Dôme" }
-      ],
-      "makesOffer": [
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Petit-déjeuner d'entreprise", "description": "Viennoiseries, pains spéciaux, confitures de producteurs et jus pressés, livrés au bureau." } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Plateau brunch", "description": "Mini-viennoiseries sucrées-salées et accompagnements de producteurs locaux." } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Lunch / déjeuner traiteur", "description": "Sandwiches sur pain au levain, salades composées et pains à partager." } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Plateau apéritif", "description": "Planches à composer, charcuterie, fromages et accompagnements locaux." } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Café gourmand" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Biscuiterie artisanale", "description": "Sablés au beurre, biscuits du fournil et mendiants, expédiés en Chronopost partout en France." } }
-      ]
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "à contre-temps — Fournil vivant",
+    "url": "https://www.fournilvivant.fr/",
+    "logo": "https://www.fournilvivant.fr/icons/icon-512.png",
+    "description": "Fournil artisanal : boulangerie et traiteur autour de Clermont-Ferrand, biscuiterie artisanale expédiée partout en France.",
+    "email": "acontretemps@fournilvivant.fr",
+    "telephone": "+33601482890",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Gerzat",
+      "postalCode": "63360",
+      "addressRegion": "Auvergne-Rhône-Alpes",
+      "addressCountry": "FR"
     }
-    </script>
+  }
+  </script>
 
-    <!-- Données structurées : FAQ -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Livrez-vous des petits-déjeuners et plateaux traiteur à Clermont-Ferrand ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Oui. Nous livrons petits-déjeuners d'entreprise, brunchs, lunchs et plateaux apéritif à Clermont-Ferrand et dans sa métropole (Gerzat, Riom et alentours), du fait maison au levain, en circuit court." }
-        },
-        {
-          "@type": "Question",
-          "name": "Proposez-vous des petits-déjeuners pour les entreprises ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Oui, nous composons des petits-déjeuners d'entreprise récurrents ou ponctuels (séminaires, réunions, événements), livrés à l'heure qui vous arrange." }
-        },
-        {
-          "@type": "Question",
-          "name": "Où peut-on vous retrouver sur les marchés ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Nous sommes présents sur plusieurs marchés de la région clermontoise. Vous pouvez réserver vos produits en ligne et les retirer directement sur place." }
-        },
-        {
-          "@type": "Question",
-          "name": "Peut-on commander de la biscuiterie en ligne ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Oui, notre biscuiterie artisanale (sablés au beurre, biscuits du fournil, mendiants) est expédiée partout en France en Chronopost." }
-        },
-        {
-          "@type": "Question",
-          "name": "Proposez-vous des cafés gourmands et des plateaux apéritif ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Oui : cafés gourmands, planches à composer, charcuterie, fromages et accompagnements de producteurs locaux font partie de nos instants à partager." }
-        }
-      ]
+  <style>
+    :root{
+      --bd:#3E5A70; --b:#7C97AC; --bs:#D6DFE5; --cr:#F3E7DA; --pp:#FBF8F4;
+      --ink:#2B2925; --is:rgba(43,41,37,.62); --ru:#A6713F; --gn:#7C8B5E;
+      --serif:'Fraunces', Georgia, serif; --sans:'Outfit', system-ui, sans-serif;
     }
-    </script>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;-webkit-font-smoothing:antialiased;}
+    a{color:inherit;}
+    .wrap{max-width:1000px;margin:0 auto;padding:0 24px;}
+    .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ru);}
+    h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.15;}
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="/_vercel/insights/script.js"></script>
+    /* Header */
+    header{position:fixed;top:0;left:0;right:0;z-index:10;background:var(--bd);}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:1000px;margin:0 auto;}
+    .brand{display:inline-flex;align-items:center;gap:11px;font-family:var(--serif);font-size:26px;color:var(--cr);text-decoration:none;letter-spacing:-.01em;}
+    .brand img{height:38px;width:auto;display:block;}
+    .nav .right{display:flex;gap:16px;align-items:center;}
+    .nav a.account{color:var(--cr);text-decoration:none;font-size:13px;font-weight:500;opacity:.92;}
+    .nav a.cta{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bd);background:var(--cr);padding:10px 18px;border-radius:999px;text-decoration:none;}
+
+    /* Hero */
+    .hero{background:var(--b);color:var(--cr);text-align:center;padding:112px 24px 70px;}
+    .hero .launch{display:inline-block;margin-bottom:24px;background:rgba(243,231,218,.15);border:1px solid rgba(243,231,218,.5);color:var(--cr);padding:7px 16px;border-radius:999px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;}
+    .hero .heart{height:76px;width:auto;margin:0 auto 20px;display:block;}
+    .hero h1{font-size:clamp(34px,6vw,58px);font-style:italic;color:var(--cr);}
+    .hero p.lead{margin:20px auto 0;max-width:600px;font-size:17px;font-weight:300;opacity:.93;}
+
+    section{padding:66px 0;}
+    .center{text-align:center;max-width:640px;margin:0 auto 42px;}
+    .center h2{font-size:clamp(26px,4vw,40px);margin-top:14px;}
+    .center p{color:var(--is);margin-top:16px;font-size:16px;}
+
+    /* Carrefour : les 2 mondes */
+    .worlds{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;}
+    .world{position:relative;background:#fff;border:1px solid var(--bs);border-radius:20px;padding:34px 30px 32px;display:flex;flex-direction:column;box-shadow:0 10px 34px -22px rgba(43,41,37,.4);}
+    .world .ico{font-size:40px;line-height:1;}
+    .world .tag{display:inline-block;margin-top:16px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ru);background:var(--cr);border-radius:999px;padding:5px 13px;align-self:flex-start;}
+    .world h3{font-size:27px;color:var(--bd);margin:14px 0 6px;}
+    .world .sub{font-size:14px;color:var(--is);font-style:italic;margin-bottom:14px;}
+    .world ul{list-style:none;margin:6px 0 22px;padding:0;}
+    .world li{font-size:14.5px;color:var(--ink);padding:7px 0 7px 26px;position:relative;border-bottom:1px solid #F0ECE5;}
+    .world li:last-child{border-bottom:none;}
+    .world li::before{content:"✦";position:absolute;left:0;top:7px;color:var(--ru);font-size:12px;}
+    .world .go{margin-top:auto;display:inline-block;text-align:center;background:var(--bd);color:var(--cr);padding:14px 24px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;font-weight:500;}
+    .world.biscuit .go{background:var(--ru);}
+    .world .note{text-align:center;margin-top:12px;font-size:12.5px;color:var(--is);}
+
+    /* Démarche */
+    .band{background:var(--cr);}
+    .vals{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;}
+    .val{background:var(--pp);border:1px solid var(--bs);border-radius:14px;padding:24px;}
+    .val .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ru);}
+    .val h3{font-size:19px;color:var(--bd);margin:8px 0 8px;}
+    .val p{color:var(--is);font-size:14px;}
+
+    .final{background:var(--bd);color:var(--cr);text-align:center;}
+    .final h2{color:var(--cr);font-size:clamp(26px,4vw,38px);}
+    .final p{opacity:.9;margin-top:16px;max-width:540px;margin-left:auto;margin-right:auto;}
+    .final .btns{margin-top:30px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+    .final .btn{display:inline-block;background:var(--cr);color:var(--bd);padding:14px 28px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;}
+    .final .btn.ghost{background:transparent;color:var(--cr);border:1px solid rgba(243,231,218,.6);}
+
+    footer{background:var(--pp);border-top:1px solid var(--bs);padding:36px 24px;text-align:center;color:var(--is);font-size:13px;line-height:1.9;}
+    footer a{color:var(--b);text-decoration:none;}
+
+    @media(max-width:560px){
+      .nav{padding:12px 14px;}
+      .brand{white-space:nowrap;font-size:18px;gap:7px;}
+      .brand img{height:28px;}
+      .nav .right{gap:10px;}
+      .nav a.account{font-size:12px;}
+      .nav a.cta{font-size:10px;padding:8px 13px;}
+      .hero{padding:98px 20px 56px;}
+    }
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
-  <body>
-    <div id="root">
-      <noscript>
-        <h1>à contre-temps — Fournil vivant, artisan boulanger à Clermont-Ferrand</h1>
-        <p>Petits-déjeuners d'entreprise, plateaux brunch, lunch, apéritif, cafés gourmands et biscuiterie artisanale. Fait maison, au levain, en circuit court. Livraison à Clermont-Ferrand et retrait sur les marchés.</p>
-      </noscript>
+<body>
+  <header>
+    <div class="nav">
+      <a href="/" class="brand"><img src="/heart-cream.png" alt="" /> à contre-temps</a>
+      <div class="right">
+        <a href="/mon-compte" class="account">Mon compte</a>
+        <a href="/commander" class="cta">Commander</a>
+      </div>
     </div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+  </header>
+
+  <section class="hero">
+    <span class="launch">✦ Fournil vivant · Clermont-Ferrand</span>
+    <img class="heart" src="/heart-cream.png" alt="à contre-temps — Fournil vivant" />
+    <h1>à contre-temps</h1>
+    <p class="lead">Un fournil artisanal, à la farine bio et fait maison. Près de chez nous autour de Clermont-Ferrand, et partout en France pour nos douceurs.</p>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="center">
+        <span class="eyebrow">Par où commencer ?</span>
+        <h2>Deux façons de nous retrouver</h2>
+        <p>Choisissez votre univers — tout est fait maison, au levain, au bon rythme.</p>
+      </div>
+      <div class="worlds">
+
+        <div class="world fournil">
+          <div class="ico">🥖</div>
+          <span class="tag">Autour de Clermont-Ferrand</span>
+          <h3>Le Fournil</h3>
+          <div class="sub">Sur les marchés & en livraison locale</div>
+          <ul>
+            <li>Pains au levain & viennoiseries, à retirer sur nos marchés</li>
+            <li>Brunchs, apéros, cafés gourmands & planches livrés chez vous</li>
+            <li>Déjeuners & lunchs d'entreprise</li>
+            <li>Événements & réceptions sur mesure</li>
+          </ul>
+          <a href="/traiteur-clermont-ferrand" class="go">Découvrir le fournil</a>
+          <p class="note">Marchés · livraison · sur-mesure, dans la métropole clermontoise</p>
+        </div>
+
+        <div class="world biscuit">
+          <div class="ico">🍪</div>
+          <span class="tag">Expédiée partout en France</span>
+          <h3>La Biscuiterie</h3>
+          <div class="sub">Nos douceurs qui voyagent</div>
+          <ul>
+            <li>Nos diamants artisanaux — nature, pistache, framboise, spéculoos</li>
+            <li>Sablés & biscuits du fournil</li>
+            <li>Sachets individuels & assortiments</li>
+            <li>Coffrets cadeaux gourmands à offrir</li>
+          </ul>
+          <a href="/biscuiterie" class="go">Découvrir la biscuiterie</a>
+          <p class="note">Commande en ligne · expédition dans toute la France</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="center">
+        <span class="eyebrow">Notre démarche</span>
+        <h2>Un fournil qui a du sens</h2>
+        <p>Nous faisons le choix de prendre soin du temps… et de ce qui nous entoure.</p>
+      </div>
+      <div class="vals">
+        <div class="val">
+          <div class="k">Matières premières</div>
+          <h3>Bio, local & à la commande</h3>
+          <p>Farine bio, producteurs locaux quand c'est possible, et travail à la commande pour limiter les pertes.</p>
+        </div>
+        <div class="val">
+          <div class="k">Sans additif</div>
+          <h3>Ni améliorant ni conservateur</h3>
+          <p>Rien que des matières premières brutes, travaillées simplement et cuites sur place.</p>
+        </div>
+        <div class="val">
+          <div class="k">Zéro gaspillage</div>
+          <h3>Transformer & réinventer</h3>
+          <p>Rien ne se perd si l'on peut faire autrement : le « zéro gaspillage » comme source de créativité.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Envie de nous commander quelque chose ?</h2>
+      <p>Pain du marché, brunch livré ou coffret de douceurs expédié — choisissez votre univers et laissez-vous porter.</p>
+      <div class="btns">
+        <a href="/traiteur-clermont-ferrand" class="btn">Le Fournil local</a>
+        <a href="/biscuiterie" class="btn ghost">La Biscuiterie</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    à contre-temps — Fournil vivant · Gerzat (63360) ·
+    <a href="mailto:acontretemps@fournilvivant.fr">acontretemps@fournilvivant.fr</a><br>
+    <a href="/traiteur-clermont-ferrand">Le Fournil</a> ·
+    <a href="/biscuiterie">La Biscuiterie</a> ·
+    <a href="/contact">Contact</a> ·
+    <a href="/mon-compte">Mon compte</a><br>
+    <a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a>
+  </footer>
+
+  <script>
+  (function(){
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
+    }
+  })();
+  </script>
+</body>
 </html>
