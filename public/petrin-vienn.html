@@ -102,6 +102,7 @@
   <div id="perPain"><div class="card"><div class="empty">Saisissez des quantités pour voir les pétrissées.</div></div></div>
   <h2>3 · Total des matières</h2>
   <div class="card" id="totMat"><div class="empty">—</div></div>
+  <button class="btn ghost" id="btnCourses" style="width:100%;margin:-2px 0 14px;">🛒 Liste de courses (pains + viennoiseries)</button>
   <h2>4 · Coût &amp; marge</h2>
   <div class="card marge" id="margeBlock"><div class="empty">—</div></div>
   <h2>5 · Rafraîchi du levain <span class="sub" id="levWhen" style="font-weight:400"></span></h2>
@@ -391,5 +392,12 @@ Promise.all([loadDay("today"),loadDay("tomorrow"),loadMatieresPrix(),loadConfig(
 setInterval(poll,5000);
 </script>
 <script src="/petrin-voice.js"></script>
+<script src="/petrin-shop.js"></script>
+<script>
+document.getElementById("btnCourses").onclick=function(){
+  var iso=DAYS[cur].replace("#v",""), lbl=new Date(iso+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long"});
+  window.petrinShoppingList(iso, lbl);
+};
+</script>
 </body>
 </html>
