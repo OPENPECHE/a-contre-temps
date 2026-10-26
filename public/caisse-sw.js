@@ -1,6 +1,6 @@
 // Service worker de la Caisse — permet le chargement hors-ligne (app shell).
 // Périmètre : /caisse uniquement. Les appels Supabase / /api passent par le réseau.
-var CACHE = "caisse-v34";
+var CACHE = "caisse-v35";
 var SHELL = "/caisse";
 
 self.addEventListener("install", function(e){
