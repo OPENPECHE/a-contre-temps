@@ -112,6 +112,9 @@
     .world .go{margin-top:auto;display:inline-block;text-align:center;background:var(--bd);color:var(--cr);padding:14px 24px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;font-weight:500;}
     .world.biscuit .go{background:var(--ru);}
     .world .note{text-align:center;margin-top:12px;font-size:12.5px;color:var(--is);}
+    .world .soon-box{margin:4px 0 20px;background:var(--cr);border-radius:14px;padding:18px 16px;text-align:center;}
+    .world .soon-badge{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ru);font-weight:600;}
+    .world .soon-box p{font-size:13.5px;color:var(--ink);margin-top:8px;line-height:1.55;}
 
     /* Démarche */
     .band{background:var(--cr);}
@@ -191,12 +194,11 @@
           <span class="tag">Expédiée partout en France</span>
           <h3>La Boutique</h3>
           <div class="sub">Biscuiterie & épicerie fine, livrées chez vous</div>
-          <ul>
-            <li><a href="/biscuiterie"><span class="lbl"><span class="ico-sm">💎</span> Nos diamants & biscuits artisanaux</span><span class="chev">›</span></a></li>
-            <li><a href="/coffret-cadeau-gourmand"><span class="lbl"><span class="ico-sm">🎁</span> Coffrets cadeaux gourmands</span><span class="chev">›</span></a></li>
-            <li class="soon"><span class="ico-sm">🫙</span> Épicerie fine <span class="badge">Bientôt</span></li>
-          </ul>
-          <a href="/biscuiterie" class="go">Tout voir — La Boutique</a>
+          <div class="soon-box">
+            <span class="soon-badge">✦ Bientôt disponible</span>
+            <p>Nos diamants sablés (nature, pistache, framboise, spéculoos), nos coffrets gourmands et bientôt notre épicerie fine — expédiés partout en France. La commande en ligne ouvre très vite.</p>
+          </div>
+          <a href="/biscuiterie" class="go">En savoir plus</a>
           <p class="note">Commande en ligne · expédition dans toute la France</p>
         </div>
 

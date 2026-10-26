@@ -135,7 +135,19 @@ function load(){
     .then(function(r){return r.ok?r.json():[];}).then(function(d){
       var list=Array.isArray(d)?d:[];
       var box=document.getElementById("prodList");
-      if(!list.length){ box.innerHTML='<div class="card" style="text-align:center;color:var(--is)">La boutique arrive très bientôt. Revenez vite&nbsp;! <br><a href="/biscuiterie-clermont-ferrand" style="color:var(--bd)">En savoir plus</a></div>'; return; }
+      if(!list.length){
+        var steps=document.querySelector(".steps"); if(steps) steps.style.display="none";
+        var h=document.querySelector("#p1 h2"); if(h) h.textContent="La Boutique ouvre bientôt";
+        var lead=document.querySelector("#p1 p.lead"); if(lead) lead.innerHTML='Notre biscuiterie artisanale — <b>diamants sablés</b> (nature, pistache, framboise, spéculoos), coffrets gourmands, et bientôt notre <b>épicerie fine</b> — <b>expédiés partout en France</b>.';
+        box.innerHTML='<div class="card" style="text-align:center;padding:28px 18px;">'
+          +'<div style="font-size:44px;">🍪</div>'
+          +'<div style="font-family:var(--serif);font-size:23px;color:var(--bd);margin:10px 0 2px;">Bientôt disponible</div>'
+          +'<p style="color:var(--is);font-size:14px;max-width:430px;margin:8px auto 18px;">Nous préparons nos gourmandises. La commande en ligne, expédiée partout en France, arrive très bientôt — revenez vite&nbsp;!</p>'
+          +'<a class="btn ghost" href="/traiteur-clermont-ferrand" style="display:inline-block;text-decoration:none;margin:4px;">🥖 Nous retrouver au marché</a> '
+          +'<a class="btn ghost" href="/contact" style="display:inline-block;text-decoration:none;margin:4px;">Nous contacter</a>'
+          +'</div>';
+        return;
+      }
       list.forEach(function(p){ articlesById[p.id]=p; });
       box.innerHTML=list.map(function(p){
         var w=p.weight_g?(Number(p.weight_g)>=1000?(Number(p.weight_g)/1000)+" kg":Number(p.weight_g)+" g"):"";
