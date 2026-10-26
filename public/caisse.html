@@ -628,37 +628,45 @@ function cashPrompt(){
   ov.innerHTML='<div class="card">'
     +'<h3 style="text-align:center;">💶 Paiement espèces</h3>'
     +'<div class="sub" style="text-align:center;margin-top:2px;">À payer : <b style="color:var(--bd);font-size:22px;">'+eur(total)+'</b></div>'
-    +'<label style="font-size:12px;color:var(--is);margin-top:12px;display:block;">Montant reçu</label>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:12px;display:block;">Montant reçu <span style="opacity:.7">(facultatif)</span></label>'
     +'<input class="fi" id="cashRecu" inputmode="decimal" placeholder="0,00" style="font-size:28px;text-align:center;margin-top:4px;" />'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;">'
     +  notes.map(function(b){ return '<button type="button" class="qbtn" data-v="'+b.val+'" style="padding:9px 13px;border-radius:10px;border:1px solid var(--bs);background:#fff;font-size:14px;cursor:pointer;color:var(--bd);">'+b.label+'</button>'; }).join("")
     +'</div>'
     +'<div id="cashRendu" style="text-align:center;margin-top:16px;min-height:30px;"></div>'
-    +'<button class="big ok" id="cashGo" style="margin-top:8px;" disabled>Encaisser</button>'
+    +'<button class="big ok" id="cashGo" style="margin-top:8px;">Encaisser</button>'
     +'<button class="big ghost" id="cashCancel" style="margin-top:10px;">Annuler</button>'
     +'</div>';
   document.body.appendChild(ov);
   var inp=ov.querySelector("#cashRecu");
   function parse(){ return parseFloat(String(inp.value).replace(",",".").replace(/[^\d.]/g,""))||0; }
   function paint(){
-    var recu=parse(), r=ov.querySelector("#cashRendu"), btn=ov.querySelector("#cashGo");
+    var recu=parse(), r=ov.querySelector("#cashRendu");
     if(recu>=total){
       var rendu=Math.round((recu-total)*100)/100;
       r.innerHTML='À rendre <b style="color:var(--gn);font-size:30px;display:block;margin-top:2px;">'+eur(rendu)+'</b>';
-      btn.disabled=false;
-    } else { r.innerHTML='<span style="color:var(--is);font-size:14px;">Entrez le montant reçu (≥ '+eur(total)+')</span>'; btn.disabled=true; }
+    } else if(recu>0){
+      r.innerHTML='<span style="color:var(--is);font-size:13px;">Montant inférieur au total — laissez vide pour valider sans calculer le rendu.</span>';
+    } else {
+      r.innerHTML='<span style="color:var(--is);font-size:13px;">Facultatif : saisissez le montant reçu pour calculer le rendu.</span>';
+    }
   }
   inp.addEventListener("input", paint);
-  inp.addEventListener("keydown", function(e){ if(e.key==="Enter" && parse()>=total){ ov.querySelector("#cashGo").click(); } });
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ ov.querySelector("#cashGo").click(); } });
   ov.querySelectorAll(".qbtn").forEach(function(b){ b.onclick=function(){ inp.value=String(b.getAttribute("data-v")).replace(".",","); paint(); }; });
   ov.querySelector("#cashCancel").onclick=function(){ ov.remove(); };
   ov.querySelector("#cashGo").onclick=function(){
-    var recu=parse(); if(recu<total) return;
-    var rendu=Math.round((recu-total)*100)/100;
+    var recu=parse();
     ov.remove();
-    recordSale("especes", { cash_given:recu, cash_change:rendu });
-    if(rendu>0) toast("À rendre : "+eur(rendu));
+    if(recu>=total){
+      var rendu=Math.round((recu-total)*100)/100;
+      recordSale("especes", { cash_given:recu, cash_change:rendu });
+      if(rendu>0) toast("À rendre : "+eur(rendu));
+    } else {
+      recordSale("especes");   // rendu non saisi → vente validée sans détail de monnaie
+    }
   };
+  paint();
   setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
 }
 /* Espèces / Carte (hors terminal) */
