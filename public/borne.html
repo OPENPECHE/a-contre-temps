@@ -103,6 +103,13 @@
   <p style="color:var(--bd);font-weight:600;font-size:clamp(15px,2.2vw,19px);">Scannez le QR code<br><span style="color:var(--is);font-weight:400;">ou allez sur fournilvivant.fr/creer-compte</span></p>
 </div>
 
+<div class="screen" id="qr" style="display:none;background:var(--pp);">
+  <h2 style="font-family:var(--serif);color:var(--bd);font-size:clamp(24px,4vw,34px);">Votre ticket 🧾</h2>
+  <p style="color:var(--is);font-size:clamp(14px,2vw,18px);margin-top:6px;max-width:560px;">Scannez ce code avec l'appareil photo de votre téléphone pour récupérer votre ticket.</p>
+  <img id="qrImg" alt="QR ticket" style="width:min(62vw,320px);height:auto;margin:22px auto;border:10px solid #fff;border-radius:18px;box-shadow:0 8px 24px rgba(43,41,37,.12);background:#fff;" />
+  <div id="qrAmt" style="color:var(--bd);font-weight:600;font-size:clamp(16px,2.4vw,20px);"></div>
+</div>
+
 <div class="screen" id="setup">
   <div class="card">
     <h2 style="font-family:var(--serif);color:var(--bd);font-size:24px;margin-bottom:6px;">Borne client</h2>
@@ -119,7 +126,8 @@ function sb(path,opts){ opts=opts||{}; return fetch(SB_URL+"/rest/v1/"+path, Obj
 function normPhone(s){ return String(s||"").replace(/\D/g,""); }
 function fmtPhone(p){ return String(p||"").replace(/(\d{2})(?=\d)/g,"$1 ").trim(); }
 function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €"; }
-function show(id){ ["idle","ask","thanks","create","setup","scan"].forEach(function(s){ document.getElementById(s).style.display = (s===id?"flex":"none"); }); if(id!=="scan") stopScan(); }
+function show(id){ ["idle","ask","thanks","create","setup","scan","qr"].forEach(function(s){ document.getElementById(s).style.display = (s===id?"flex":"none"); }); if(id!=="scan") stopScan(); }
+function openTicket(url, amount){ if(!url) return; document.getElementById("qrImg").src="https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=12&data="+encodeURIComponent(url); document.getElementById("qrAmt").textContent=amount?("🧾 "+eur(amount)):""; show("qr"); }
 
 var CODE = (new URLSearchParams(location.search).get("code")||"").trim().toUpperCase();
 try{ if(CODE) localStorage.setItem("borne_code",CODE); else CODE=(localStorage.getItem("borne_code")||"").trim().toUpperCase(); }catch(e){}
@@ -257,12 +265,13 @@ function startPolling(){
   tick(); setInterval(tick, 700);
 }
 function tick(){
-  sb("pos_link?code=eq."+encodeURIComponent(CODE)+"&select=state,amount,updated_at")
+  sb("pos_link?code=eq."+encodeURIComponent(CODE)+"&select=state,amount,updated_at,ticket")
     .then(function(r){ return r.json(); })
     .then(function(rows){
       var row=(Array.isArray(rows)&&rows[0])||null;
       var st=row?row.state:"idle";
       if(st==="asking" && lastState!=="asking"){ openAsk(row.amount); }
+      else if(st==="ticket" && lastState!=="ticket"){ openTicket(row.ticket, row.amount); }
       else if(st==="idle" && lastState!=="idle"){ var sc=document.getElementById("scan").style.display, su=document.getElementById("setup").style.display; if(sc==="none"&&su==="none") show("idle"); }
       lastState=st;
     })
