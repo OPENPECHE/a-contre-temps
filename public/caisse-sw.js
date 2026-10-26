@@ -1,6 +1,6 @@
 // Service worker de la Caisse — permet le chargement hors-ligne (app shell).
 // Périmètre : /caisse uniquement. Les appels Supabase / /api passent par le réseau.
-var CACHE = "caisse-v33";
+var CACHE = "caisse-v34";
 var SHELL = "/caisse";
 
 self.addEventListener("install", function(e){
@@ -24,18 +24,23 @@ self.addEventListener("fetch", function(e){
   if (url.origin !== self.location.origin) return;      // Supabase, SumUp… → réseau direct
   if (url.pathname.indexOf("/api/") === 0) return;        // fonctions serverless → réseau
 
-  // App shell : cache d'abord, réseau en secours (met le cache à jour en arrière-plan)
+  // Page (HTML) : réseau d'abord → toujours la dernière version ; cache en secours hors-ligne.
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req).then(function(resp){
+        if (resp && resp.ok && resp.type === "basic") { var copy=resp.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
+        return resp;
+      }).catch(function(){ return caches.match(req).then(function(c){ return c || caches.match(SHELL); }); })
+    );
+    return;
+  }
+  // Autres ressources : cache d'abord, réseau en secours (mise à jour du cache en arrière-plan).
   e.respondWith(
     caches.match(req).then(function(cached){
       var net = fetch(req).then(function(resp){
-        if (resp && resp.ok && resp.type === "basic") {
-          var copy = resp.clone();
-          caches.open(CACHE).then(function(c){ c.put(req, copy); });
-        }
+        if (resp && resp.ok && resp.type === "basic") { var copy = resp.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
         return resp;
-      }).catch(function(){
-        return cached || (req.mode === "navigate" ? caches.match(SHELL) : undefined);
-      });
+      }).catch(function(){ return cached; });
       return cached || net;
     })
   );

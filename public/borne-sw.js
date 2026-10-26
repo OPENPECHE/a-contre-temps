@@ -2,7 +2,7 @@
 // Périmètre : /borne uniquement (n'interfère pas avec /caisse ni le reste du site).
 // La borne a besoin du réseau pour fonctionner ; le cache sert juste à ouvrir
 // l'app en plein écran rapidement. Supabase / /api passent toujours par le réseau.
-var CACHE = "borne-v4";
+var CACHE = "borne-v5";
 var SHELL = "/borne";
 
 self.addEventListener("install", function(e){
@@ -27,17 +27,23 @@ self.addEventListener("fetch", function(e){
   if (url.pathname.indexOf("/api/") === 0) return;        // fonctions serverless → réseau
   if (url.pathname.indexOf("/borne") !== 0) return;       // hors périmètre → on ne touche pas
 
+  // Page (HTML) : réseau d'abord → toujours la dernière version ; cache en secours hors-ligne.
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req).then(function(resp){
+        if (resp && resp.ok && resp.type === "basic") { var copy=resp.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
+        return resp;
+      }).catch(function(){ return caches.match(req).then(function(c){ return c || caches.match(SHELL); }); })
+    );
+    return;
+  }
+  // Autres ressources : cache d'abord, réseau en secours.
   e.respondWith(
     caches.match(req).then(function(cached){
       var net = fetch(req).then(function(resp){
-        if (resp && resp.ok && resp.type === "basic") {
-          var copy = resp.clone();
-          caches.open(CACHE).then(function(c){ c.put(req, copy); });
-        }
+        if (resp && resp.ok && resp.type === "basic") { var copy = resp.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
         return resp;
-      }).catch(function(){
-        return cached || (req.mode === "navigate" ? caches.match(SHELL) : undefined);
-      });
+      }).catch(function(){ return cached; });
       return cached || net;
     })
   );
