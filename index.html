@@ -98,10 +98,17 @@
     .world .tag{display:inline-block;margin-top:16px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ru);background:var(--cr);border-radius:999px;padding:5px 13px;align-self:flex-start;}
     .world h3{font-size:27px;color:var(--bd);margin:14px 0 6px;}
     .world .sub{font-size:14px;color:var(--is);font-style:italic;margin-bottom:14px;}
-    .world ul{list-style:none;margin:6px 0 22px;padding:0;}
-    .world li{font-size:14.5px;color:var(--ink);padding:7px 0 7px 26px;position:relative;border-bottom:1px solid #F0ECE5;}
+    .world ul{list-style:none;margin:6px 0 20px;padding:0;}
+    .world li{border-bottom:1px solid #F0ECE5;}
     .world li:last-child{border-bottom:none;}
-    .world li::before{content:"✦";position:absolute;left:0;top:7px;color:var(--ru);font-size:12px;}
+    .world li a{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14.5px;color:var(--ink);text-decoration:none;padding:11px 2px;transition:color .15s;}
+    .world li a:hover,.world li a:focus{color:var(--bd);}
+    .world li a .lbl{display:flex;align-items:center;gap:10px;}
+    .world li a .ico-sm{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+    .world li a .chev{color:var(--ru);opacity:.65;font-size:17px;}
+    .world li.soon{font-size:14.5px;color:var(--is);padding:11px 2px;display:flex;align-items:center;gap:10px;}
+    .world li.soon .ico-sm{font-size:16px;width:20px;text-align:center;opacity:.6;}
+    .world li.soon .badge{margin-left:auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ru);background:var(--cr);border-radius:999px;padding:3px 9px;}
     .world .go{margin-top:auto;display:inline-block;text-align:center;background:var(--bd);color:var(--cr);padding:14px 24px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;font-weight:500;}
     .world.biscuit .go{background:var(--ru);}
     .world .note{text-align:center;margin-top:12px;font-size:12.5px;color:var(--is);}
@@ -169,27 +176,27 @@
           <h3>Le Fournil</h3>
           <div class="sub">Sur les marchés & en livraison locale</div>
           <ul>
-            <li>Pains au levain & viennoiseries, à retirer sur nos marchés</li>
-            <li>Brunchs, apéros, cafés gourmands & planches livrés chez vous</li>
-            <li>Déjeuners & lunchs d'entreprise</li>
-            <li>Événements & réceptions sur mesure</li>
+            <li><a href="/commander-marche"><span class="lbl"><span class="ico-sm">🥖</span> Pain & viennoiserie au marché</span><span class="chev">›</span></a></li>
+            <li><a href="/brunch-clermont-ferrand"><span class="lbl"><span class="ico-sm">🥐</span> Brunch livré</span><span class="chev">›</span></a></li>
+            <li><a href="/plateau-aperitif-clermont-ferrand"><span class="lbl"><span class="ico-sm">🧀</span> Apéro & planches</span><span class="chev">›</span></a></li>
+            <li><a href="/lunch-clermont-ferrand"><span class="lbl"><span class="ico-sm">🥪</span> Lunch & déjeuner d'entreprise</span><span class="chev">›</span></a></li>
+            <li><a href="/traiteur-evenement-clermont-ferrand"><span class="lbl"><span class="ico-sm">🎉</span> Événements & réceptions</span><span class="chev">›</span></a></li>
           </ul>
-          <a href="/traiteur-clermont-ferrand" class="go">Découvrir le fournil</a>
-          <p class="note">Marchés · livraison · sur-mesure, dans la métropole clermontoise</p>
+          <a href="/traiteur-clermont-ferrand" class="go">Tout voir — Le Fournil</a>
+          <p class="note">Nos biscuits & douceurs sont aussi au marché et en livraison locale.</p>
         </div>
 
         <div class="world biscuit">
           <div class="ico">🍪</div>
           <span class="tag">Expédiée partout en France</span>
-          <h3>La Biscuiterie</h3>
-          <div class="sub">Nos douceurs qui voyagent</div>
+          <h3>La Boutique</h3>
+          <div class="sub">Biscuiterie & épicerie fine, livrées chez vous</div>
           <ul>
-            <li>Nos diamants artisanaux — nature, pistache, framboise, spéculoos</li>
-            <li>Sablés & biscuits du fournil</li>
-            <li>Sachets individuels & assortiments</li>
-            <li>Coffrets cadeaux gourmands à offrir</li>
+            <li><a href="/biscuiterie"><span class="lbl"><span class="ico-sm">💎</span> Nos diamants & biscuits artisanaux</span><span class="chev">›</span></a></li>
+            <li><a href="/coffret-cadeau-gourmand"><span class="lbl"><span class="ico-sm">🎁</span> Coffrets cadeaux gourmands</span><span class="chev">›</span></a></li>
+            <li class="soon"><span class="ico-sm">🫙</span> Épicerie fine <span class="badge">Bientôt</span></li>
           </ul>
-          <a href="/biscuiterie" class="go">Découvrir la biscuiterie</a>
+          <a href="/biscuiterie" class="go">Tout voir — La Boutique</a>
           <p class="note">Commande en ligne · expédition dans toute la France</p>
         </div>
 
@@ -230,7 +237,7 @@
       <p>Pain du marché, brunch livré ou coffret de douceurs expédié — choisissez votre univers et laissez-vous porter.</p>
       <div class="btns">
         <a href="/traiteur-clermont-ferrand" class="btn">Le Fournil local</a>
-        <a href="/biscuiterie" class="btn ghost">La Biscuiterie</a>
+        <a href="/biscuiterie" class="btn ghost">La Boutique en ligne</a>
       </div>
     </div>
   </section>
@@ -239,7 +246,7 @@
     à contre-temps — Fournil vivant · Gerzat (63360) ·
     <a href="mailto:acontretemps@fournilvivant.fr">acontretemps@fournilvivant.fr</a><br>
     <a href="/traiteur-clermont-ferrand">Le Fournil</a> ·
-    <a href="/biscuiterie">La Biscuiterie</a> ·
+    <a href="/biscuiterie">La Boutique</a> ·
     <a href="/contact">Contact</a> ·
     <a href="/mon-compte">Mon compte</a><br>
     <a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a>
