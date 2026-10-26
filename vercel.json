@@ -8,6 +8,7 @@
     { "source": "/qr", "destination": "/qr.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/caisse", "destination": "/caisse.html" },
+    { "source": "/ticket", "destination": "/ticket.html" },
     { "source": "/petrin", "destination": "/petrin.html" },
     { "source": "/petrin-vienn", "destination": "/petrin-vienn.html" },
     { "source": "/commander", "destination": "/commander.html" },

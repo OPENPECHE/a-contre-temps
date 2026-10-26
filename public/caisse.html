@@ -1166,12 +1166,71 @@ function showDocMenu(s){
   var ov=document.createElement("div"); ov.className="ov";
   ov.innerHTML='<div class="card"><h3>Reçu / Facture</h3><div class="sub">Dernière vente : '+eur(s.total)+' · '+(PAYNAME[s.payment_method]||s.payment_method)+'</div>'
     + '<button class="big ok" id="dkT">🧾 Ticket de caisse</button>'
+    + '<button class="big ghost" id="dkSend" style="margin-top:10px;">📤 Envoyer au client (WhatsApp · SMS · e-mail)</button>'
     + '<button class="big ghost" id="dkF" style="margin-top:10px;">Facture (client pro)</button>'
     + '<button class="big ghost" id="dkC" style="margin-top:10px;">Fermer</button></div>';
   document.body.appendChild(ov);
   ov.querySelector("#dkC").onclick=function(){ ov.remove(); };
   ov.querySelector("#dkT").onclick=function(){ ov.remove(); printDoc(receiptHTML(s)); };
+  ov.querySelector("#dkSend").onclick=function(){ ov.remove(); sendTicketMenu(s); };
   ov.querySelector("#dkF").onclick=function(){ ov.remove(); showFactureForm(s); };
+}
+
+/* ───────────────── Envoi du ticket au client ───────────────── */
+function receiptText(s){
+  var lines=(s.items||[]).map(function(l){ return (l.qty||1)+"× "+l.name+"  "+eur((l.price||0)*(l.qty||0)); });
+  return "🧾 à contre-temps — Fournil vivant\nTicket du "+fdate(s.created_at)+"\n\n"+lines.join("\n")
+    +"\n\nTOTAL : "+eur(s.total)+" (payé "+(PAYNAME[s.payment_method]||s.payment_method)+")\n\nMerci et à bientôt !\n"+SELLER.web+" · "+SELLER.tel;
+}
+function openLink(url){ var a=document.createElement("a"); a.href=url; a.target="_blank"; a.rel="noopener"; document.body.appendChild(a); a.click(); setTimeout(function(){ a.remove(); },100); }
+function sendTicketMenu(s){
+  if(!s){ toast("Aucune vente récente"); return; }
+  var ov=document.createElement("div"); ov.className="ov";
+  var phone=(s.phone||"").replace(/\D/g,"");
+  ov.innerHTML='<div class="card"><h3>Envoyer le ticket</h3><div class="sub">Dernière vente : '+eur(s.total)+' · '+(PAYNAME[s.payment_method]||s.payment_method)+'</div>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:12px;display:block;">Téléphone (WhatsApp / SMS)</label>'
+    +'<input class="fi" id="stPhone" inputmode="tel" placeholder="06 12 34 56 78" value="'+phone+'" />'
+    +'<div class="row" style="margin-top:8px;"><button class="big ok" id="stWa">💬 WhatsApp</button><button class="big ghost" id="stSms">✉️ SMS</button></div>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:14px;display:block;">E-mail</label>'
+    +'<input class="fi" id="stMail" type="email" inputmode="email" placeholder="client@email.fr" />'
+    +'<button class="big ghost" id="stMailGo" style="margin-top:8px;">📧 Envoyer par e-mail</button>'
+    +'<button class="big ghost" id="stQr" style="margin-top:8px;">📱 QR code (le client scanne &amp; récupère)</button>'
+    +'<div id="stMsg" style="font-size:12.5px;min-height:16px;margin-top:8px;color:var(--is);"></div>'
+    +'<button class="big ghost" id="stC" style="margin-top:8px;">Fermer</button></div>';
+  document.body.appendChild(ov);
+  var txt=receiptText(s), msg=ov.querySelector("#stMsg");
+  function intl(p){ p=(p||"").replace(/\D/g,""); if(p.charAt(0)==="0") p="33"+p.slice(1); return p; }
+  ov.querySelector("#stC").onclick=function(){ ov.remove(); };
+  ov.querySelector("#stQr").onclick=function(){ ov.remove(); showTicketQR(s); };
+  ov.querySelector("#stWa").onclick=function(){ var p=intl(ov.querySelector("#stPhone").value); if(p.length<8){ msg.style.color="var(--rd)"; msg.textContent="Numéro invalide."; return; } openLink("https://wa.me/"+p+"?text="+encodeURIComponent(txt)); msg.style.color="var(--gn)"; msg.textContent="WhatsApp ouvert — envoyez le message."; };
+  ov.querySelector("#stSms").onclick=function(){ var p=(ov.querySelector("#stPhone").value||"").replace(/[^\d+]/g,""); if(p.length<8){ msg.style.color="var(--rd)"; msg.textContent="Numéro invalide."; return; } openLink("sms:"+p+"?&body="+encodeURIComponent(txt)); msg.style.color="var(--gn)"; msg.textContent="SMS ouvert — envoyez le message."; };
+  ov.querySelector("#stMailGo").onclick=function(){
+    var mail=(ov.querySelector("#stMail").value||"").trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ msg.style.color="var(--rd)"; msg.textContent="E-mail invalide."; return; }
+    if(!navigator.onLine){ msg.style.color="var(--rd)"; msg.textContent="E-mail : connexion nécessaire."; return; }
+    var b=ov.querySelector("#stMailGo"); b.disabled=true; b.textContent="Envoi…";
+    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"ticket",ticket:{email:mail,items:s.items,total:s.total,payment_method:s.payment_method,created_at:s.created_at}})})
+      .then(function(r){ return r.json().catch(function(){return{};}); })
+      .then(function(j){ if(j&&j.ticket&&j.ticket.ok){ msg.style.color="var(--gn)"; msg.textContent="✓ Ticket envoyé à "+mail; b.textContent="✓ Envoyé"; } else { msg.style.color="var(--rd)"; msg.textContent="Envoi impossible"+(j&&j.error?" : "+j.error:"")+"."; b.disabled=false; b.textContent="📧 Envoyer par e-mail"; } })
+      .catch(function(){ msg.style.color="var(--rd)"; msg.textContent="Erreur réseau."; b.disabled=false; b.textContent="📧 Envoyer par e-mail"; });
+  };
+}
+function ticketURL(s){
+  var data={ d:s.created_at, p:s.payment_method, t:s.total, i:(s.items||[]).map(function(l){ return [l.name,l.qty||1,l.price||0]; }) };
+  var b64=""; try{ b64=btoa(unescape(encodeURIComponent(JSON.stringify(data)))); }catch(e){}
+  return "https://www.fournilvivant.fr/ticket#"+b64;
+}
+function showTicketQR(s){
+  if(!s){ toast("Aucune vente récente"); return; }
+  var url=ticketURL(s);
+  var ov=document.createElement("div"); ov.className="ov";
+  ov.innerHTML='<div class="card" style="text-align:center;"><h3>Scannez pour votre ticket</h3>'
+    +'<div class="sub">Le client scanne ce code avec l\'appareil photo de son téléphone.</div>'
+    +'<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=12&data='+encodeURIComponent(url)+'" alt="QR ticket" style="width:260px;height:260px;max-width:78vw;margin:14px auto;display:block;border-radius:12px;background:#fff;padding:8px;" onerror="this.insertAdjacentHTML(\'afterend\',\'<div style=&quot;color:var(--rd);font-size:13px;margin:12px&quot;>QR indisponible hors ligne. Essayez WhatsApp / e-mail.</div>\');this.remove();" />'
+    +'<div class="sub" style="font-size:13px;color:var(--bd);">🧾 '+eur(s.total)+' · '+(PAYNAME[s.payment_method]||s.payment_method)+'</div>'
+    +'<button class="big ghost" id="qrC" style="margin-top:14px;">Fermer</button></div>';
+  document.body.appendChild(ov);
+  ov.querySelector("#qrC").onclick=function(){ ov.remove(); };
 }
 
 function showFactureForm(s){

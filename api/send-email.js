@@ -75,6 +75,14 @@ function recapBlock(invoiceNum, items, total, note) {
 function siteButton(label = "VOIR LE SITE", href = "https://fournilvivant.fr") {
   return `<a href="${href}" style="display:inline-block;padding:.75rem 1.5rem;background:#3E5A70;color:#F3E7DA;border-radius:999px;font-size:11px;letter-spacing:.12em;text-decoration:none;">${label}</a>`;
 }
+function reviewBlock() {
+  return `
+      <div style="margin:1.5rem 0 0;padding:1.1rem 1.25rem;background:#F3E7DA;border-radius:10px;text-align:center;">
+        <div style="font-size:20px;color:#F4B400;letter-spacing:3px;">★★★★★</div>
+        <p style="font-size:13.5px;color:rgba(43,41,37,.75);margin:.4rem 0 .8rem;">Vous avez aimé&nbsp;? Votre avis nous aide énormément.</p>
+        <a href="https://www.fournilvivant.fr/avis" style="display:inline-block;padding:.7rem 1.4rem;background:#3E5A70;color:#F3E7DA;border-radius:999px;font-size:12px;letter-spacing:.06em;text-decoration:none;font-weight:600;">Laisser un avis Google</a>
+      </div>`;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -125,6 +133,38 @@ export default async function handler(req, res) {
     }
   }
 
+  // ───────────────────────── TICKET DE CAISSE ────────────────────────────────
+  if (type === "ticket") {
+    const t = req.body.ticket || {};
+    if (!t.email) return res.status(400).json({ error: "Missing email" });
+    const items = Array.isArray(t.items) ? t.items : [];
+    const money = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
+    const PAY = { especes: "espèces", carte: "carte bancaire", sumup: "carte bancaire (SumUp)" };
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    let when = "";
+    try { when = new Date(t.created_at || Date.now()).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch { /* */ }
+    const rows = items.map((l) => `<tr><td style="padding:5px 0;font-size:13px;color:#2B2925;">${Number(l.qty) || 1}× ${esc(l.name)}</td><td style="padding:5px 0;font-size:13px;text-align:right;color:#2B2925;white-space:nowrap;">${money((Number(l.price) || 0) * (Number(l.qty) || 0))}</td></tr>`).join("");
+    const body = `
+      <h1 style="font-size:20px;font-weight:400;color:#3E5A70;margin:0 0 .2rem;">Votre ticket 🧾</h1>
+      <p style="font-size:12.5px;color:rgba(43,41,37,.6);margin:0 0 1rem;">à contre-temps — Fournil vivant · ${esc(when)}</p>
+      <table style="width:100%;border-collapse:collapse;border-top:1px solid #E6DFD3;border-bottom:1px solid #E6DFD3;">${rows}</table>
+      <p style="font-size:18px;font-weight:600;color:#3E5A70;text-align:right;margin:.8rem 0 .15rem;">Total : ${money(t.total)}</p>
+      <p style="font-size:12px;color:rgba(43,41,37,.6);text-align:right;margin:0 0 1.3rem;">Payé en ${esc(PAY[t.payment_method] || t.payment_method || "")}</p>
+      <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;">Merci pour votre achat et à très vite, sur le marché ou en livraison&nbsp;!</p>`;
+    const html = shell(body);
+    const text = `Votre ticket — à contre-temps\n${when}\n\n` +
+      items.map((l) => `${Number(l.qty) || 1}x ${l.name}  ${money((Number(l.price) || 0) * (Number(l.qty) || 0))}`).join("\n") +
+      `\n\nTotal : ${money(t.total)} (payé ${PAY[t.payment_method] || t.payment_method || ""})\n\nMerci ! https://fournilvivant.fr`;
+    try {
+      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [t.email], reply_to: OWNER, subject: "Votre ticket — à contre-temps 🧾", html, text });
+      if (!r.ok) console.error("Resend ticket error:", r.status, r.data);
+      return res.status(200).json({ ticket: { ok: r.ok, status: r.status, error: r.ok ? null : r.data } });
+    } catch (e) {
+      console.error("Send ticket error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ───────────────── E-MAILS LIÉS À UNE COMMANDE (received / confirmed) ───────
   const { order } = req.body;
   if (!order?.email) return res.status(400).json({ error: "Missing order data" });
@@ -150,7 +190,8 @@ export default async function handler(req, res) {
       <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
         À très bientôt, et merci de votre confiance&nbsp;!
       </p>
-      ${siteButton()}`;
+      ${siteButton()}
+      ${reviewBlock()}`;
     const html = shell(body);
     const text =
       `Bonjour ${firstName},\n\n` +
