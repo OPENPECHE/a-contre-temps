@@ -43,7 +43,8 @@
   .step .q{min-width:22px;text-align:center;font-weight:600;font-size:15px;}
   .step .mz[hidden]{display:none;}
   /* barre panier */
-  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--bd);color:var(--cr);display:flex;align-items:center;justify-content:space-between;padding:12px 18px;z-index:30;box-shadow:0 -3px 16px rgba(43,41,37,.2);}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--bd);color:var(--cr);z-index:30;box-shadow:0 -3px 16px rgba(43,41,37,.2);}
+  .barin{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;}
   .bar .t{font-family:var(--serif);font-size:22px;} .bar .c{font-size:12px;opacity:.85;margin-left:8px;}
   .bar button{background:var(--cr);color:var(--bd);border:none;border-radius:999px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;}
   .bar button[disabled]{opacity:.5;}
@@ -136,8 +137,10 @@
 </footer>
 
 <div class="bar">
-  <div><span class="t" id="barTotal">0,00&nbsp;€</span><span class="c" id="barCount"></span></div>
-  <button id="barGo" disabled>Commander</button>
+  <div class="barin">
+    <div><span class="t" id="barTotal">0,00&nbsp;€</span><span class="c" id="barCount"></span></div>
+    <button id="barGo" disabled>Commander</button>
+  </div>
 </div>
 
 <script>
