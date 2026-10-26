@@ -1419,8 +1419,9 @@ async function loadProducts(){
   allProducts=await sbFetch("products?order=position.asc");
   renderProducts();
 }
+function catMinPos(cat){ let m=Infinity; allProducts.forEach(p=>{ if(p.cat===cat){ const v=(p.position==null?1e9:Number(p.position)); if(v<m)m=v; } }); return m; }
 function renderProducts(){
-  const cats=[...new Set(allProducts.map(p=>p.cat))];
+  const cats=[...new Set(allProducts.map(p=>p.cat))].sort((a,b)=>catMinPos(a)-catMinPos(b));
   // Mettre à jour la liste déroulante des catégories
   const sel=document.getElementById("new-cat-select");
   if(sel){
@@ -1429,7 +1430,7 @@ function renderProducts(){
     sel.value=cur;
   }
   document.getElementById("products-list").innerHTML=cats.map(cat=>{
-    const cprods=allProducts.filter(p=>p.cat===cat);
+    const cprods=allProducts.filter(p=>p.cat===cat).sort((a,b)=>((a.position==null?1e9:a.position)-(b.position==null?1e9:b.position))||String(a.name).localeCompare(String(b.name)));
     const catOn=cprods.length>0 && cprods.every(p=>p.sell_market!=null?p.sell_market:p.on_market);
     return `
     <div style="margin-bottom:1.25rem">
@@ -1439,6 +1440,12 @@ function renderProducts(){
           style="font-size:10px;font-weight:600;border:1px solid ${catOn?'#4A7C59':'var(--bs)'};background:${catOn?'#4A7C5915':'transparent'};color:${catOn?'#4A7C59':'var(--is)'};border-radius:5px;padding:2px 8px;cursor:pointer">${catOn?'🛒 Sur le marché':'◻ Pas au marché'}</button>
         <button onclick="renameCategory(this.getAttribute('data-cat'))" data-cat="${cat}"
           style="font-size:10px;color:var(--is);border:1px solid var(--bs);background:transparent;border-radius:5px;padding:2px 7px;cursor:pointer">✏ Renommer</button>
+        <span style="margin-left:auto;display:inline-flex;gap:4px">
+          <button onclick="moveCategory(this.getAttribute('data-cat'),-1)" data-cat="${cat}" title="Monter la catégorie"
+            style="font-size:13px;line-height:1;color:var(--is);border:1px solid var(--bs);background:transparent;border-radius:5px;padding:3px 8px;cursor:pointer">↑</button>
+          <button onclick="moveCategory(this.getAttribute('data-cat'),1)" data-cat="${cat}" title="Descendre la catégorie"
+            style="font-size:13px;line-height:1;color:var(--is);border:1px solid var(--bs);background:transparent;border-radius:5px;padding:3px 8px;cursor:pointer">↓</button>
+        </span>
       </div>
       <div class="card card0">
         ${cprods.map(p=>productRow(p)).join("")}
@@ -1516,6 +1523,8 @@ function productRow(p){
       ${meta.length?`<p style="font-size:11px;color:var(--ru);margin-top:2px">${meta.join(" · ")}</p>`:""}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <button class="btn bg bsm" style="padding:3px 7px;font-size:14px;line-height:1" onclick="moveProduct('${p.id}',-1)" title="Monter dans la catégorie">↑</button>
+      <button class="btn bg bsm" style="padding:3px 7px;font-size:14px;line-height:1" onclick="moveProduct('${p.id}',1)" title="Descendre dans la catégorie">↓</button>
       <span style="font-size:13px;color:var(--is);min-width:50px;text-align:right">${Number(p.price).toFixed(2)} €</span>
       <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="openBoxDetail('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="Contenu, options & photo">📋 Détail</button>
       <button class="btn bg bsm" style="padding:3px 6px" onclick="startEditProd('${p.id}')">✏</button>
@@ -1551,6 +1560,47 @@ async function toggleProd(id){
   const p=allProducts.find(x=>x.id===id);
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({active:!p.active})});
   allProducts=allProducts.map(x=>x.id===id?{...x,active:!p.active}:x);
+  renderProducts();
+}
+// Réordonner un produit dans sa catégorie (↑/↓) — échange de position avec le voisin.
+async function moveProduct(id, dir){
+  const p=allProducts.find(x=>x.id===id); if(!p) return;
+  const sibs=allProducts.filter(x=>x.cat===p.cat).sort((a,b)=>((a.position==null?1e9:a.position)-(b.position==null?1e9:b.position))||String(a.name).localeCompare(String(b.name)));
+  const i=sibs.findIndex(x=>x.id===id), j=i+dir;
+  if(i<0||j<0||j>=sibs.length) return;
+  const q=sibs[j], pPos=p.position, qPos=q.position;
+  if(pPos==null||qPos==null||pPos===qPos){
+    // positions non fiables -> renumérote la catégorie dans l'ordre courant, avec i/j échangés
+    const arr=sibs.slice(); const t=arr[i]; arr[i]=arr[j]; arr[j]=t;
+    const base=(catMinPos(p.cat)===Infinity?1:catMinPos(p.cat));
+    const updates=arr.map((s,k)=>({id:s.id, np:base+k}));
+    await Promise.all(updates.map(u=>sbFetch(`products?id=eq.${u.id}`,{method:"PATCH",body:JSON.stringify({position:u.np})})));
+    const m={}; updates.forEach(u=>m[u.id]=u.np);
+    allProducts=allProducts.map(x=>m[x.id]!=null?{...x,position:m[x.id]}:x);
+  } else {
+    await Promise.all([
+      sbFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:JSON.stringify({position:qPos})}),
+      sbFetch(`products?id=eq.${q.id}`,{method:"PATCH",body:JSON.stringify({position:pPos})})
+    ]);
+    allProducts=allProducts.map(x=>x.id===p.id?{...x,position:qPos}:(x.id===q.id?{...x,position:pPos}:x));
+  }
+  renderProducts();
+}
+// Réordonner une catégorie (↑/↓) — renumérote les produits pour que les catégories
+// forment des blocs contigus dans le nouvel ordre (l'ordre interne est conservé).
+async function moveCategory(cat, dir){
+  const cats=[...new Set(allProducts.map(p=>p.cat))].sort((a,b)=>catMinPos(a)-catMinPos(b));
+  const i=cats.indexOf(cat), j=i+dir;
+  if(i<0||j<0||j>=cats.length) return;
+  const nc=cats.slice(); const t=nc[i]; nc[i]=nc[j]; nc[j]=t;
+  let pos=1; const updates=[];
+  nc.forEach(c=>{
+    allProducts.filter(x=>x.cat===c)
+      .sort((a,b)=>((a.position==null?1e9:a.position)-(b.position==null?1e9:b.position))||String(a.name).localeCompare(String(b.name)))
+      .forEach(s=>{ if(s.position!==pos) updates.push({id:s.id, np:pos}); s.__np=pos; pos++; });
+  });
+  if(updates.length) await Promise.all(updates.map(u=>sbFetch(`products?id=eq.${u.id}`,{method:"PATCH",body:JSON.stringify({position:u.np})})));
+  allProducts=allProducts.map(x=>x.__np!=null?{...x,position:x.__np,__np:undefined}:x);
   renderProducts();
 }
 async function addProduct(){
