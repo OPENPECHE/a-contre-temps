@@ -44,13 +44,16 @@
     .brand{display:inline-flex;align-items:center;gap:11px;font-family:var(--serif);font-size:26px;color:var(--cr);text-decoration:none;}
     .brand img{height:38px;width:auto;display:block;}
     .nav a.cta{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bd);background:var(--cr);padding:10px 18px;border-radius:999px;text-decoration:none;white-space:nowrap;}
-    .hero{background:linear-gradient(rgba(40,58,74,.52),rgba(40,58,74,.70)),url('/img/hero-gourmandises.jpg') center/cover;color:var(--cr);text-align:center;padding:84px 24px 92px;}
-    .hero h1{text-shadow:0 2px 20px rgba(28,20,12,.35);}
-    .hero .launch{display:inline-block;margin-bottom:24px;background:rgba(243,231,218,.15);border:1px solid rgba(243,231,218,.5);color:var(--cr);padding:7px 16px;border-radius:999px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;}
-    .hero .heart{height:66px;width:auto;margin:0 auto 20px;display:block;}
-    .hero h1{font-size:clamp(29px,5vw,50px);color:var(--cr);max-width:780px;margin:0 auto;}
-    .hero p.lead{margin:22px auto 0;max-width:640px;font-size:17px;font-weight:300;opacity:.92;}
-    .hero .btn{display:inline-block;margin-top:32px;background:var(--cr);color:var(--bd);padding:14px 30px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;background:var(--bd);color:var(--cr);text-align:left;}
+    .hero .htext{padding:clamp(44px,6vw,80px) clamp(24px,4vw,56px);display:flex;flex-direction:column;justify-content:center;}
+    .hero .hpic{background:center/cover url('/img/hero-gourmandises.jpg');min-height:430px;}
+    .hero .launch{display:inline-block;align-self:flex-start;margin-bottom:20px;background:rgba(243,231,218,.15);border:1px solid rgba(243,231,218,.5);color:var(--cr);padding:7px 16px;border-radius:999px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;}
+    .hero .heart{height:46px;width:auto;margin:0 0 16px;display:block;}
+    .hero h1{font-size:clamp(28px,4vw,44px);color:var(--cr);max-width:15ch;margin:0;line-height:1.1;}
+    .hero p.lead{margin:18px 0 0;max-width:46ch;font-size:16px;font-weight:300;opacity:.92;}
+    .hero .btns{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;}
+    .hero .btn{display:inline-block;background:var(--cr);color:var(--bd);padding:13px 26px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;}
+    @media(max-width:760px){.hero{grid-template-columns:1fr;}.hero .hpic{min-height:280px;order:-1;}.hero .htext{padding:38px 24px;text-align:center;align-items:center;}.hero .launch,.hero .heart{align-self:center;margin-left:auto;margin-right:auto;}.hero h1,.hero p.lead{max-width:none;}.hero .btns{justify-content:center;}}
     section{padding:66px 0;}
     .center{text-align:center;max-width:660px;margin:0 auto 44px;}
     .center h2{font-size:clamp(26px,4vw,38px);margin-top:14px;}
@@ -89,12 +92,17 @@
     </div>
   </header>
   <section class="hero">
-    <span class="launch">✦ À Clermont-Ferrand & sa métropole</span>
-    <img class="heart" src="/heart-cream.png" alt="à contre-temps — Fournil vivant" />
-    <h1>Biscuiterie artisanale à Clermont-Ferrand</h1>
-    <p class="lead">Cookies moelleux, fondants au chocolat, sablés au beurre — tout est fait maison au fournil. À croquer sur nos marchés autour de Clermont-Ferrand, à offrir en coffret ou à recevoir chez vous.</p>
-    <a href="/biscuiterie" class="btn">Commander en ligne</a>
-    <a href="#offres" class="btn" style="background:transparent;color:var(--cr);border:1px solid var(--cr);margin-left:10px;">Découvrir</a>
+    <div class="htext">
+      <span class="launch">✦ À Clermont-Ferrand & sa métropole</span>
+      <img class="heart" src="/heart-cream.png" alt="à contre-temps — Fournil vivant" />
+      <h1>Biscuiterie artisanale à Clermont-Ferrand</h1>
+      <p class="lead">Cookies moelleux, fondants au chocolat, sablés au beurre — tout est fait maison au fournil. À croquer sur nos marchés, à offrir en coffret ou à recevoir chez vous.</p>
+      <div class="btns">
+        <a href="/biscuiterie" class="btn">Commander en ligne</a>
+        <a href="#offres" class="btn" style="background:transparent;color:var(--cr);border:1px solid var(--cr);">Découvrir</a>
+      </div>
+    </div>
+    <div class="hpic"></div>
   </section>
   <section id="offres">
     <div class="wrap">
