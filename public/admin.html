@@ -1430,7 +1430,7 @@ function renderProducts(){
   }
   document.getElementById("products-list").innerHTML=cats.map(cat=>{
     const cprods=allProducts.filter(p=>p.cat===cat);
-    const catOn=cprods.length>0 && cprods.every(p=>p.on_market);
+    const catOn=cprods.length>0 && cprods.every(p=>p.sell_market!=null?p.sell_market:p.on_market);
     return `
     <div style="margin-bottom:1.25rem">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.6rem;flex-wrap:wrap">
@@ -1447,10 +1447,10 @@ function renderProducts(){
 }
 async function toggleCatMarket(cat){
   const cprods=allProducts.filter(p=>p.cat===cat);
-  const catOn=cprods.length>0 && cprods.every(p=>p.on_market);
+  const catOn=cprods.length>0 && cprods.every(p=>p.sell_market!=null?p.sell_market:p.on_market);
   const val=!catOn;
-  await sbFetch(`products?cat=eq.${encodeURIComponent(cat)}`,{method:"PATCH",body:JSON.stringify({on_market:val})});
-  allProducts=allProducts.map(p=>p.cat===cat?{...p,on_market:val}:p);
+  await sbFetch(`products?cat=eq.${encodeURIComponent(cat)}`,{method:"PATCH",body:JSON.stringify({sell_market:val,on_market:val})});
+  allProducts=allProducts.map(p=>p.cat===cat?{...p,sell_market:val,on_market:val}:p);
   renderProducts();
 }
 
@@ -1476,10 +1476,14 @@ function productRow(p){
     return `<div class="prow" style="flex-direction:column;align-items:stretch;gap:7px" id="prow-${p.id}">
       <input class="einp" id="ename-${p.id}" style="width:100%" value="${esc(p.name)}" placeholder="Nom de l'article" />
       <textarea class="einp" id="edesc-${p.id}" rows="2" style="width:100%;resize:vertical" placeholder="Description (optionnel)">${esc(p.description)}</textarea>
-      <label style="font-size:12px;color:var(--is);display:flex;align-items:center;gap:7px;cursor:pointer">
-        <input type="checkbox" id="emarket-${p.id}" ${p.on_market?"checked":""} style="width:16px;height:16px" />
-        🛒 Afficher sur la page de commande (marché)
-      </label>
+      <div style="border:1px solid var(--bs);border-radius:9px;padding:9px 11px;background:var(--pp)">
+        <div style="font-size:11px;color:var(--is);margin-bottom:6px;font-weight:600">Canaux de vente</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="emarket-${p.id}" ${(p.sell_market!=null?p.sell_market:p.on_market)?"checked":""} style="width:16px;height:16px" /> 🛒 Marché</label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="eship-${p.id}" ${p.sell_shipping?"checked":""} style="width:16px;height:16px" /> 📦 En ligne (expédition)</label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="edeliv-${p.id}" ${p.sell_delivery?"checked":""} style="width:16px;height:16px" /> 🚲 Livraison locale</label>
+        </div>
+      </div>
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:var(--is);white-space:nowrap">🔖 Code‑barres</span>
         <input class="einp" id="ebarcode-${p.id}" style="flex:1;min-width:120px" value="${esc(p.barcode||'')}" placeholder="Cliquez puis scannez avec la douchette, ou saisissez" />
@@ -1505,7 +1509,7 @@ function productRow(p){
       ${p.active?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:""}
     </button>
     <div style="flex:1;min-width:0">
-      <p style="font-size:13px">${esc(p.name)}${p.on_market?` <span style="font-size:10px;color:#4A7C59;border:1px solid #4A7C5955;border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap">🛒 Marché</span>`:""}</p>
+      <p style="font-size:13px">${esc(p.name)}${(()=>{const b=(t)=>`<span style="font-size:10px;color:#4A7C59;border:1px solid #4A7C5955;border-radius:4px;padding:1px 5px;margin-left:5px;white-space:nowrap">${t}</span>`;let o="";if(p.sell_market!=null?p.sell_market:p.on_market)o+=b("🛒 Marché");if(p.sell_shipping)o+=b("📦 En ligne");if(p.sell_delivery)o+=b("🚲 Livraison");return o;})()}</p>
       ${p.description?`<p style="font-size:11px;color:var(--is);margin-top:2px;white-space:pre-line;line-height:1.5">${esc(p.description)}</p>`:""}
       ${meta.length?`<p style="font-size:11px;color:var(--ru);margin-top:2px">${meta.join(" · ")}</p>`:""}
     </div>
@@ -1528,11 +1532,14 @@ async function saveProd(id){
   const wRaw=document.getElementById("eweight-"+id).value;
   const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
   const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
-  const on_market=!!document.getElementById("emarket-"+id)?.checked;
+  const sell_market=!!document.getElementById("emarket-"+id)?.checked;
+  const sell_shipping=!!document.getElementById("eship-"+id)?.checked;
+  const sell_delivery=!!document.getElementById("edeliv-"+id)?.checked;
   const barcode=(document.getElementById("ebarcode-"+id)?.value||"").trim()||null;
   const costRaw=document.getElementById("ecost-"+id)?.value;
   const cost=(costRaw==null||costRaw==="")?null:(parseFloat(costRaw)||null);
-  const patch={name,price,description,price_per_kg,weight_g,on_market,barcode,cost};
+  // on_market reste synchronisé avec le canal Marché pour la caisse (compat)
+  const patch={name,price,description,price_per_kg,weight_g,on_market:sell_market,sell_market,sell_shipping,sell_delivery,barcode,cost};
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)});
   allProducts=allProducts.map(p=>p.id===id?{...p,...patch}:p);
   editingProdId=null;renderProducts();
