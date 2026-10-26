@@ -257,7 +257,7 @@ function colorFor(cat){
 }
 function mapProducts(d){
   return (Array.isArray(d)?d:[]).map(function(p){
-    return { id:p.id, name:p.name, price:Number(p.price)||0, cost:Number(p.cost)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0, barcode:(p.barcode||"").trim() };
+    return { id:p.id, name:p.name, price:Number(p.price)||0, cost:Number(p.cost)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0, barcode:(p.barcode||"").trim(), sold_by_weight:!!p.sold_by_weight, price_per_kg:Number(p.price_per_kg)||0 };
   });
 }
 var INSTANTS_LABEL = "NOS INSTANTS";   // libellé du rayon « instants » dans la caisse
@@ -286,8 +286,10 @@ function renderArticles(){
   order.forEach(function(c){
     html += '<div class="cat">'+esc(c)+'</div><div class="grid">';
     cats[c].forEach(function(a){
+      var isW = a.sold_by_weight && a.price_per_kg>0;
+      var pLabel = isW ? (eur(a.price_per_kg)+'/kg') : eur(+a.price);
       html += '<button class="art" style="background:'+(a.color||"#7C97AC")+'" data-id="'+a.id+'">'
-           +  '<span class="n">'+esc(a.name)+'</span><span class="p">'+eur(+a.price)+'</span></button>';
+           +  '<span class="n">'+(isW?'⚖️ ':'')+esc(a.name)+'</span><span class="p">'+pLabel+'</span></button>';
     });
     html += '</div>';
   });
@@ -302,7 +304,8 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ ret
 function addToTicket(id){
   var a = articles.find(function(x){ return String(x.id)===String(id); });
   if (!a) return;
-  var ln = ticket.find(function(x){ return x.id===a.id; });
+  if (a.sold_by_weight && a.price_per_kg>0){ weightPrompt(a); return; }   // vente au poids → saisie des grammes
+  var ln = ticket.find(function(x){ return x.id===a.id && !x.by_weight; });
   if (ln) ln.qty++;
   else ticket.push({ id:a.id, name:a.name, price:+a.price, cost:+a.cost||0, qty:1 });
   renderTicket();
@@ -311,6 +314,44 @@ function changeQty(id, d){
   var ln = ticket.find(function(x){ return x.id===id; }); if(!ln) return;
   ln.qty += d; if (ln.qty<=0) ticket = ticket.filter(function(x){ return x.id!==id; });
   renderTicket();
+}
+function removeLine(id){ ticket = ticket.filter(function(x){ return x.id!==id; }); renderTicket(); }
+
+/* Vente au poids : on pèse, on saisit les grammes, le prix se calcule (prix/kg × poids). */
+var lineSeq = 0;
+function weightPrompt(a){
+  var ov=document.createElement("div"); ov.className="ov";
+  var chips=[100,150,200,250,300,400,500];
+  ov.innerHTML='<div class="card">'
+    +'<h3 style="text-align:center;">⚖️ '+esc(a.name)+'</h3>'
+    +'<div class="sub" style="text-align:center;margin-top:2px;">Vendu au poids · <b style="color:var(--bd)">'+eur(a.price_per_kg)+' / kg</b></div>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:12px;display:block;">Poids pesé (en grammes)</label>'
+    +'<input class="fi" id="wG" inputmode="numeric" placeholder="0" style="font-size:28px;text-align:center;margin-top:4px;" />'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;">'
+    + chips.map(function(g){ return '<button type="button" class="qbtn" data-g="'+g+'" style="padding:9px 13px;border-radius:10px;border:1px solid var(--bs);background:#fff;font-size:14px;cursor:pointer;color:var(--bd);">'+g+' g</button>'; }).join("")
+    +'</div>'
+    +'<div id="wCalc" style="text-align:center;margin-top:16px;min-height:34px;"></div>'
+    +'<button class="big ok" id="wGo" style="margin-top:8px;" disabled>Ajouter</button>'
+    +'<button class="big ghost" id="wCancel" style="margin-top:10px;">Annuler</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  var inp=ov.querySelector("#wG"), go=ov.querySelector("#wGo");
+  function grams(){ return Math.max(0, Math.round(parseFloat(String(inp.value).replace(",",".").replace(/[^\d.]/g,""))||0)); }
+  function price(g){ return Math.round(a.price_per_kg*g/1000*100)/100; }
+  function paint(){ var g=grams(), c=ov.querySelector("#wCalc");
+    if(g>0){ c.innerHTML=g+' g × '+eur(a.price_per_kg)+'/kg = <b style="color:var(--bd);font-size:26px;display:block;margin-top:2px;">'+eur(price(g))+'</b>'; go.disabled=false; }
+    else { c.innerHTML='<span style="color:var(--is);font-size:13px;">Saisissez le poids pesé.</span>'; go.disabled=true; }
+  }
+  inp.addEventListener("input", paint);
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter" && grams()>0){ go.click(); } });
+  ov.querySelectorAll(".qbtn").forEach(function(b){ b.onclick=function(){ inp.value=b.getAttribute("data-g"); paint(); }; });
+  ov.querySelector("#wCancel").onclick=function(){ ov.remove(); };
+  go.onclick=function(){ var g=grams(); if(g<=0) return; ov.remove();
+    ticket.push({ id:"w"+(++lineSeq)+"_"+a.id, name:a.name+" · "+g+" g", price:price(g), cost:0, qty:1, by_weight:true, weight_g:g, price_per_kg:a.price_per_kg });
+    renderTicket();
+  };
+  paint();
+  setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
 }
 function subtotalAmt(){ return ticket.reduce(function(s,l){ return s + l.price*l.qty; }, 0); }
 function remiseAmt(){ var st=subtotalAmt(); if(!discount.mode || !discount.value) return 0; var r = discount.mode==="pct" ? st*discount.value/100 : discount.value; return Math.round(Math.max(0, Math.min(r, st))*100)/100; }
@@ -324,14 +365,21 @@ function renderTicket(){
   } else {
     var html = "";
     ticket.forEach(function(l){
-      html += '<div class="ln"><div class="ln-n"><b>'+esc(l.name)+'</b><span>'+eur(l.price)+'</span></div>'
-           +  '<button class="qbtn" data-m="'+l.id+'">−</button><span class="q">'+l.qty+'</span>'
-           +  '<button class="qbtn" data-p="'+l.id+'">+</button>'
-           +  '<span class="ln-t">'+eur(l.price*l.qty)+'</span></div>';
+      if (l.by_weight){
+        html += '<div class="ln"><div class="ln-n"><b>'+esc(l.name)+'</b><span>'+eur(l.price_per_kg)+'/kg</span></div>'
+             +  '<button class="qbtn" data-rm="'+l.id+'" title="Retirer" style="background:var(--cr)">✕</button>'
+             +  '<span class="ln-t">'+eur(l.price)+'</span></div>';
+      } else {
+        html += '<div class="ln"><div class="ln-n"><b>'+esc(l.name)+'</b><span>'+eur(l.price)+'</span></div>'
+             +  '<button class="qbtn" data-m="'+l.id+'">−</button><span class="q">'+l.qty+'</span>'
+             +  '<button class="qbtn" data-p="'+l.id+'">+</button>'
+             +  '<span class="ln-t">'+eur(l.price*l.qty)+'</span></div>';
+      }
     });
     box.innerHTML = html;
     box.querySelectorAll("[data-p]").forEach(function(b){ b.onclick=function(){ changeQty(b.getAttribute("data-p"),1); }; });
     box.querySelectorAll("[data-m]").forEach(function(b){ b.onclick=function(){ changeQty(b.getAttribute("data-m"),-1); }; });
+    box.querySelectorAll("[data-rm]").forEach(function(b){ b.onclick=function(){ removeLine(b.getAttribute("data-rm")); }; });
     document.getElementById("btnClear").classList.remove("hidden");
   }
   var tot = ticketTotal();
@@ -350,7 +398,7 @@ function renderTicket(){
 
 /* ───────────────── Encaissement ───────────────── */
 function recordSale(method, extra){
-  var its = ticket.map(function(l){ return {name:l.name, price:l.price, qty:l.qty, cost:Number(l.cost)||0}; });
+  var its = ticket.map(function(l){ var o={name:l.name, price:l.price, qty:l.qty, cost:Number(l.cost)||0}; if(l.by_weight){ o.weight_g=l.weight_g; o.price_per_kg=l.price_per_kg; } return o; });
   var rem = remiseAmt();
   if (rem>0) its.push({ name: remiseLabel(), price: -rem, qty: 1 });
   var sale = {
