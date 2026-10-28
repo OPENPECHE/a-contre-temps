@@ -1,6 +1,9 @@
 {
   "redirects": [
-    { "source": "/accueil", "destination": "/", "permanent": true }
+    { "source": "/accueil", "destination": "/", "permanent": true },
+    { "source": "/traiteur-clermont-ferrand", "destination": "/boulangerie-clermont-ferrand", "permanent": true },
+    { "source": "/traiteur-evenement-clermont-ferrand", "destination": "/evenement-clermont-ferrand", "permanent": true },
+    { "source": "/traiteur-vegetarien-clermont-ferrand", "destination": "/vegetarien-clermont-ferrand", "permanent": true }
   ],
   "rewrites": [
     { "source": "/vitrine", "destination": "/vitrine.html" },
@@ -25,7 +28,7 @@
     { "source": "/contact", "destination": "/contact.html" },
     { "source": "/mentions-legales", "destination": "/mentions-legales.html" },
     { "source": "/cgv", "destination": "/cgv.html" },
-    { "source": "/traiteur-clermont-ferrand", "destination": "/traiteur-clermont-ferrand.html" },
+    { "source": "/boulangerie-clermont-ferrand", "destination": "/boulangerie-clermont-ferrand.html" },
     { "source": "/brunch-clermont-ferrand", "destination": "/brunch-clermont-ferrand.html" },
     { "source": "/plateau-aperitif-clermont-ferrand", "destination": "/plateau-aperitif-clermont-ferrand.html" },
     { "source": "/lunch-clermont-ferrand", "destination": "/lunch-clermont-ferrand.html" },
@@ -33,8 +36,8 @@
     { "source": "/biscuiterie", "destination": "/biscuiterie.html" },
     { "source": "/biscuiterie-clermont-ferrand", "destination": "/biscuiterie-clermont-ferrand.html" },
     { "source": "/brunch-mariage-clermont-ferrand", "destination": "/brunch-mariage-clermont-ferrand.html" },
-    { "source": "/traiteur-evenement-clermont-ferrand", "destination": "/traiteur-evenement-clermont-ferrand.html" },
-    { "source": "/traiteur-vegetarien-clermont-ferrand", "destination": "/traiteur-vegetarien-clermont-ferrand.html" },
+    { "source": "/evenement-clermont-ferrand", "destination": "/evenement-clermont-ferrand.html" },
+    { "source": "/vegetarien-clermont-ferrand", "destination": "/vegetarien-clermont-ferrand.html" },
     { "source": "/coffret-cadeau-gourmand", "destination": "/coffret-cadeau-gourmand.html" },
     { "source": "/viennoiserie-artisanale-clermont-ferrand", "destination": "/viennoiserie-artisanale-clermont-ferrand.html" }
   ]
