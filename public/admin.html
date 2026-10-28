@@ -100,7 +100,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
     <input class="pin-inp" id="pin-inp" type="password" placeholder="Code PIN" />
     <p class="em" id="pin-err" style="display:none;color:var(--rd);font-size:11px;margin-bottom:8px">Code incorrect</p>
     <button class="btn bp" style="width:100%;justify-content:center" onclick="tryLogin()">ENTRER</button>
-    <p style="font-size:11px;color:var(--is);margin-top:1.25rem">Code par défaut : 1234</p>
+    <p style="font-size:11px;color:var(--is);margin-top:1.25rem">Code à définir dans Paramètres (par défaut : 1234)</p>
   </div>
 </div>
 
@@ -397,12 +397,15 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       </div>
 
       <div class="card" style="max-width:440px;margin-bottom:1.1rem">
-        <p class="sl-label">SÉCURITÉ — CODE PIN</p>
-        <div style="display:flex;gap:8px">
-          <input type="password" class="fi" id="new-pin" style="flex:1" placeholder="Nouveau code (min 4 chiffres)" />
-          <button class="btn bp" onclick="savePin()">Enregistrer</button>
-        </div>
-        <p id="pin-saved" style="display:none;color:var(--gn);font-size:12px;margin-top:6px">✓ Code enregistré</p>
+        <p class="sl-label">SÉCURITÉ — CODES D'ACCÈS (6 chiffres)</p>
+        <p style="font-size:12px;color:var(--is);margin:4px 0 12px">Définis une seule fois ici, ces codes s'appliquent sur <b>tous les appareils</b> (PC, tablette, téléphone). Ils sont stockés <b>chiffrés</b>. Laisse un champ vide pour ne pas le changer.</p>
+        <label style="font-size:12px;color:var(--is);font-weight:600">Code back-office (admin — vous)</label>
+        <input type="password" inputmode="numeric" maxlength="6" class="fi" id="new-admin-pin" placeholder="6 chiffres" style="margin:4px 0 12px;letter-spacing:.2em" />
+        <label style="font-size:12px;color:var(--is);font-weight:600">Code caisse (marché — équipe)</label>
+        <input type="password" inputmode="numeric" maxlength="6" class="fi" id="new-caisse-pin" placeholder="6 chiffres" style="margin:4px 0 12px;letter-spacing:.2em" />
+        <button class="btn bp" onclick="saveAccessCodes()">Enregistrer les codes</button>
+        <p id="pin-saved" style="display:none;color:var(--gn);font-size:12px;margin-top:8px">✓ Codes enregistrés — actifs sur tous les appareils</p>
+        <p id="pin-err2" style="display:none;color:var(--rd);font-size:12px;margin-top:8px"></p>
       </div>
       <div class="card" style="max-width:440px">
         <p class="sl-label">DONNÉES</p>
@@ -583,18 +586,42 @@ async function saveZone(){
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
+// Code admin centralisé : défini dans Paramètres, stocké CHIFFRÉ (SHA-256) dans
+// app_config → même code sur tous les appareils. Repli sur l'ancien code local
+// (act_pin) tant qu'aucun code central n'est défini.
+let ADMIN_HASH = localStorage.getItem("act_admin_hash") || "";
+let adminLockUntil = Number(localStorage.getItem("act_lock")||0)||0;
+let adminFails = Number(localStorage.getItem("act_fails")||0)||0;
+async function sha256hex(s){ const d=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s))); return Array.prototype.map.call(new Uint8Array(d), b=>b.toString(16).padStart(2,"0")).join(""); }
+async function loadAccessHashes(){
+  try{
+    const rows=await sbFetch("app_config?key=in.(admin_pin_hash,caisse_pin_hash)&select=key,value_text");
+    (rows||[]).forEach(r=>{
+      if(r.key==="admin_pin_hash" && r.value_text){ ADMIN_HASH=String(r.value_text); localStorage.setItem("act_admin_hash",ADMIN_HASH); }
+      if(r.key==="caisse_pin_hash" && r.value_text){ localStorage.setItem("caisse_pin_hash",String(r.value_text)); }
+    });
+  }catch(e){}
+}
+loadAccessHashes();
 document.getElementById("pin-inp").addEventListener("keydown",e=>{if(e.key==="Enter")tryLogin();});
-function tryLogin(){
-  const v=document.getElementById("pin-inp").value;
-  if(v===PIN){
+async function tryLogin(){
+  const inp=document.getElementById("pin-inp"), v=inp.value, err=document.getElementById("pin-err");
+  if(Date.now() < adminLockUntil){ err.textContent="Trop d'essais — réessayez dans "+Math.ceil((adminLockUntil-Date.now())/1000)+" s"; err.style.display="block"; inp.classList.add("err"); inp.value=""; return; }
+  let ok=false;
+  if(ADMIN_HASH){ try{ ok=(await sha256hex(v))===ADMIN_HASH; }catch(e){ ok=false; } }
+  else { ok=(v===PIN); }   // repli : ancien code local
+  if(ok){
+    adminFails=0; localStorage.setItem("act_fails",0); localStorage.setItem("act_lock",0);
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="flex";
-    document.getElementById("pin-err").style.display="none";
-    loadDashboard();
+    err.style.display="none"; inp.classList.remove("err"); inp.value="";
+    loadAccessHashes(); loadDashboard();
   } else {
-    document.getElementById("pin-inp").classList.add("err");
-    document.getElementById("pin-err").style.display="block";
-    document.getElementById("pin-inp").value="";
+    adminFails++; localStorage.setItem("act_fails",adminFails);
+    inp.classList.add("err"); inp.value="";
+    if(adminFails>=5){ adminLockUntil=Date.now()+30000; localStorage.setItem("act_lock",adminLockUntil); adminFails=0; localStorage.setItem("act_fails",0); err.textContent="Trop d'essais — bloqué 30 s"; }
+    else { err.textContent="Code incorrect"; }
+    err.style.display="block";
   }
 }
 function logout(){
@@ -2216,12 +2243,24 @@ async function deleteRule(id){
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function savePin(){
-  const v=document.getElementById("new-pin").value;
-  if(v.length<4){alert("Code trop court (minimum 4 caractères)");return;}
-  PIN=v;localStorage.setItem("act_pin",v);
-  document.getElementById("new-pin").value="";
-  const ok=document.getElementById("pin-saved");ok.style.display="block";setTimeout(()=>ok.style.display="none",2500);
+async function saveAccessCodes(){
+  const a=(document.getElementById("new-admin-pin").value||"").trim();
+  const c=(document.getElementById("new-caisse-pin").value||"").trim();
+  const err=document.getElementById("pin-err2"); err.style.display="none";
+  if(!a && !c){ err.textContent="Renseigne au moins un code."; err.style.display="block"; return; }
+  if(a && !/^\d{6}$/.test(a)){ err.textContent="Le code back-office doit faire exactement 6 chiffres."; err.style.display="block"; return; }
+  if(c && !/^\d{6}$/.test(c)){ err.textContent="Le code caisse doit faire exactement 6 chiffres."; err.style.display="block"; return; }
+  const rows=[];
+  if(a) rows.push({key:"admin_pin_hash", value_text:await sha256hex(a)});
+  if(c) rows.push({key:"caisse_pin_hash", value_text:await sha256hex(c)});
+  try{
+    const resp=await sbFetch("app_config",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(rows)});
+    if(!Array.isArray(resp) || !resp.length) throw new Error("vide");
+  }catch(e){ err.textContent="Enregistrement impossible (la base doit avoir la colonne value_text — voir migration)."; err.style.display="block"; return; }
+  if(a){ ADMIN_HASH=rows.find(r=>r.key==="admin_pin_hash").value_text; localStorage.setItem("act_admin_hash",ADMIN_HASH); }
+  if(c){ localStorage.setItem("caisse_pin_hash", rows.find(r=>r.key==="caisse_pin_hash").value_text); }
+  document.getElementById("new-admin-pin").value=""; document.getElementById("new-caisse-pin").value="";
+  const ok=document.getElementById("pin-saved"); ok.style.display="block"; setTimeout(()=>ok.style.display="none",3500);
 }
 async function exportCSV(){
   const orders=await sbFetch("orders?order=created_at.desc");

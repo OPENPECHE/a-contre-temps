@@ -193,7 +193,21 @@
 /* ───────────────── Config ───────────────── */
 var SB_URL = "https://jxxgafyqfbnqieiqltcn.supabase.co";
 var SB_KEY = "sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
-var DEFAULT_PIN = "2026"; // modifiable ci-dessous (localStorage caisse_pin)
+var DEFAULT_PIN = "2026"; // ancien code local (repli pendant la migration)
+// Code d'accès caisse centralisé : défini dans le back-office, stocké CHIFFRÉ (SHA-256)
+// dans app_config → même code sur tous les appareils. Mis en cache pour le hors-ligne.
+var CAISSE_HASH = LS.get("caisse_pin_hash","") || "";
+var PIN_LEN = CAISSE_HASH ? 6 : 4;
+var pinFails = Number(LS.get("caisse_pin_fails",0))||0;
+var pinLockUntil = Number(LS.get("caisse_pin_lock",0))||0;
+async function sha256hex(s){ var d=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s))); return Array.prototype.map.call(new Uint8Array(d), function(b){ return b.toString(16).padStart(2,"0"); }).join(""); }
+function loadPinHash(){
+  if(!navigator.onLine) return;
+  sbFetch("app_config?key=eq.caisse_pin_hash&select=value_text").then(function(r){ return r.json(); }).then(function(d){
+    var row=Array.isArray(d)?d[0]:null;
+    if(row && row.value_text){ CAISSE_HASH=String(row.value_text); LS.set("caisse_pin_hash",CAISSE_HASH); if(PIN_LEN!==6){ PIN_LEN=6; drawDots(); } }
+  }).catch(function(){});
+}
 
 function sbFetch(path, opts){
   opts = opts || {};
@@ -1359,16 +1373,30 @@ function buildPad(){
       if (k==="⌫"){ pinBuf=pinBuf.slice(0,-1); }
       else if (k){ pinBuf+=k; }
       drawDots();
-      if (pinBuf.length===4) checkPin();
+      if (pinBuf.length===PIN_LEN) checkPin();
     };
     pad.appendChild(b);
   });
 }
-function drawDots(){ var d=document.getElementById("pinDots").children; for(var i=0;i<4;i++) d[i].className = i<pinBuf.length?"f":""; }
-function checkPin(){
-  var good = LS.get("caisse_pin", DEFAULT_PIN);
-  if (pinBuf===good){ LS.set("caisse_unlocked_ts", Date.now()); document.getElementById("pinScreen").classList.add("hidden"); pinBuf=""; }
-  else { document.getElementById("pinErr").textContent="Code incorrect"; pinBuf=""; drawDots(); setTimeout(function(){document.getElementById("pinErr").textContent="";},1500); }
+function drawDots(){
+  var box=document.getElementById("pinDots");
+  if(box.children.length!==PIN_LEN){ box.innerHTML=""; for(var k=0;k<PIN_LEN;k++) box.appendChild(document.createElement("i")); }
+  var d=box.children; for(var i=0;i<PIN_LEN;i++) d[i].className = i<pinBuf.length?"f":"";
+}
+async function checkPin(){
+  var errEl=document.getElementById("pinErr");
+  if(Date.now() < pinLockUntil){ errEl.textContent="Trop d'essais — attendez "+Math.ceil((pinLockUntil-Date.now())/1000)+" s"; pinBuf=""; drawDots(); return; }
+  var entered=pinBuf; pinBuf=""; drawDots();
+  var ok=false;
+  if(CAISSE_HASH){ try{ ok=(await sha256hex(entered))===CAISSE_HASH; }catch(e){ ok=false; } }
+  else { ok=(entered===LS.get("caisse_pin", DEFAULT_PIN)); }   // repli : ancien code local
+  if(ok){ pinFails=0; LS.set("caisse_pin_fails",0); LS.set("caisse_pin_lock",0); LS.set("caisse_unlocked_ts", Date.now()); document.getElementById("pinScreen").classList.add("hidden"); }
+  else {
+    pinFails++; LS.set("caisse_pin_fails",pinFails);
+    if(pinFails>=5){ pinLockUntil=Date.now()+30000; LS.set("caisse_pin_lock",pinLockUntil); pinFails=0; LS.set("caisse_pin_fails",0); errEl.textContent="Trop d'essais — bloqué 30 s"; }
+    else { errEl.textContent="Code incorrect"; }
+    setTimeout(function(){ if(Date.now()>=pinLockUntil) errEl.textContent=""; },1500);
+  }
 }
 document.getElementById("btnLock").onclick = function(){ LS.set("caisse_unlocked_ts",0); pinBuf=""; drawDots(); document.getElementById("pinScreen").classList.remove("hidden"); };
 
@@ -1395,7 +1423,7 @@ document.getElementById("btnBorne").onclick = function(){
 updateBorneLabel();
 
 /* ───────────────── Init ───────────────── */
-buildPad(); drawDots();
+buildPad(); drawDots(); loadPinHash();
 if (!pinNeeded()) document.getElementById("pinScreen").classList.add("hidden");
 renderArticles(); renderTicket(); renderDay(); setNet(); loadArticles(); updateLieuLabel(); loadLieux();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.js", { scope:"/caisse" }).catch(function(){});
