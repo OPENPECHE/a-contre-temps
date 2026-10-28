@@ -134,6 +134,20 @@
     footer{background:var(--pp);border-top:1px solid var(--bs);padding:36px 24px;text-align:center;color:var(--is);font-size:13px;line-height:1.9;}
     footer a{color:var(--b);text-decoration:none;}
 
+    /* Message de bienvenue (nouveau visiteur) */
+    .wov{position:fixed;inset:0;background:rgba(43,41,37,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:18px;}
+    .wcard{position:relative;background:var(--pp);border:1px solid var(--bs);border-radius:20px;max-width:380px;width:100%;padding:30px 26px 24px;text-align:center;box-shadow:0 24px 60px -24px rgba(43,41,37,.5);}
+    .wcard .wheart{height:56px;width:auto;margin:0 auto 12px;display:block;}
+    .wcard h3{font-size:24px;color:var(--bd);margin-bottom:8px;}
+    .wcard p{font-size:14.5px;color:var(--is);line-height:1.55;}
+    .wbtn{display:block;width:100%;margin-top:18px;background:var(--bd);color:var(--cr);border:none;padding:14px;border-radius:999px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;cursor:pointer;font-family:var(--sans);}
+    .wios{font-size:12.5px;color:var(--is);margin-top:10px;}
+    .wsoc{display:flex;gap:10px;margin-top:16px;}
+    .wsoc a{flex:1;text-decoration:none;padding:12px 8px;border-radius:12px;border:1px solid var(--bs);font-size:13px;font-weight:600;color:var(--bd);background:#fff;display:flex;align-items:center;justify-content:center;gap:7px;}
+    .wsoc a svg{width:16px;height:16px;flex-shrink:0;}
+    .wlater{margin-top:14px;background:none;border:none;color:var(--is);font-size:13px;cursor:pointer;font-family:var(--sans);text-decoration:underline;}
+    .wclose{position:absolute;top:10px;right:14px;background:none;border:none;font-size:26px;line-height:1;color:var(--is);cursor:pointer;}
+
     @media(max-width:560px){
       .nav{padding:12px 14px;}
       .brand{white-space:nowrap;font-size:18px;gap:7px;}
@@ -254,11 +268,53 @@
     <a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a>
   </footer>
 
+  <div class="wov" id="welcome">
+    <div class="wcard">
+      <button class="wclose" id="wClose" aria-label="Fermer">&times;</button>
+      <img class="wheart" src="/heart-cream.png" alt="" />
+      <h3>Bienvenue&nbsp;!</h3>
+      <p>Installez notre application et suivez-nous pour ne rien manquer de nos nouveautés, marchés et événements.</p>
+      <button class="wbtn" id="wInstall">📲 Installer l'application</button>
+      <p class="wios" id="wIos" hidden></p>
+      <div class="wsoc">
+        <a href="https://www.instagram.com/acontretemps.fournilvivant/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          Instagram
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61593937666468" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 9h3V6h-3c-1.9 0-3 1.4-3 3.2V11H8.5v3H11v6h3v-6h2.3l.4-3H14V9.6c0-.4.3-.6.6-.6z"/></svg>
+          Facebook
+        </a>
+      </div>
+      <button class="wlater" id="wLater">Plus tard</button>
+    </div>
+  </div>
+
   <script>
   (function(){
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
     }
+    var SEEN="act_welcome_seen";
+    function seen(){ try{ return localStorage.getItem(SEEN)==="1"; }catch(e){ return false; } }
+    function markSeen(){ try{ localStorage.setItem(SEEN,"1"); }catch(e){} }
+    var ov=document.getElementById("welcome");
+    var isStandalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+    var isIOS=/iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    var deferred=null;
+    window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; });
+    function hide(){ if(ov) ov.style.display="none"; markSeen(); }
+    function show(){ if(!ov||seen()||isStandalone) return; ov.style.display="flex"; markSeen(); }
+    if(ov && !seen() && !isStandalone){ setTimeout(show, 2600); }
+    var c=document.getElementById("wClose"); if(c) c.onclick=hide;
+    var l=document.getElementById("wLater"); if(l) l.onclick=hide;
+    if(ov) ov.addEventListener('click', function(e){ if(e.target===ov) hide(); });
+    var ib=document.getElementById("wInstall");
+    if(ib) ib.onclick=async function(){
+      if(deferred){ deferred.prompt(); try{ await deferred.userChoice; }catch(e){} deferred=null; hide(); }
+      else { var h=document.getElementById("wIos"); if(h){ h.hidden=false; h.innerHTML = isIOS ? 'Sur iPhone/iPad : touchez <b>Partager</b> puis <b>« Sur l\'écran d\'accueil »</b>.' : 'Ouvrez le menu de votre navigateur, puis <b>« Installer l\'application »</b>.'; } }
+    };
+    window.addEventListener('appinstalled', hide);
   })();
   </script>
 </body>
