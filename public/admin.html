@@ -407,6 +407,17 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <p id="pin-saved" style="display:none;color:var(--gn);font-size:12px;margin-top:8px">✓ Codes enregistrés — actifs sur tous les appareils</p>
         <p id="pin-err2" style="display:none;color:var(--rd);font-size:12px;margin-top:8px"></p>
       </div>
+      <div class="card" style="max-width:440px;margin-bottom:1.1rem">
+        <p class="sl-label">CAISSES (marché)</p>
+        <p style="font-size:12px;color:var(--is);margin:4px 0 10px">Chaque caisse a son code à 6 chiffres. Sur la tablette, le code saisi <b>choisit la caisse</b> — les ventes lui sont attribuées pour les statistiques (total combiné + détail par caisse).</p>
+        <div id="caisses-list"></div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <input class="fi" id="new-caisse-name" placeholder="Nom (ex. Caisse 1)" style="flex:1;min-width:120px" />
+          <input class="fi" id="new-caisse-code" inputmode="numeric" maxlength="6" placeholder="Code 6 chiffres" style="width:140px;letter-spacing:.12em" />
+          <button class="btn bp" onclick="addCaisse()">Ajouter</button>
+        </div>
+        <p id="caisse-err" style="display:none;color:var(--rd);font-size:12px;margin-top:8px"></p>
+      </div>
       <div class="card" style="max-width:440px">
         <p class="sl-label">DONNÉES</p>
         <p style="font-size:13px;color:var(--is);margin-bottom:1rem">Exporter toutes les commandes en CSV compatible Excel.</p>
@@ -615,7 +626,7 @@ async function tryLogin(){
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="flex";
     err.style.display="none"; inp.classList.remove("err"); inp.value="";
-    loadAccessHashes(); loadDashboard();
+    loadAccessHashes(); loadCaisses(); loadDashboard();
   } else {
     adminFails++; localStorage.setItem("act_fails",adminFails);
     inp.classList.add("err"); inp.value="";
@@ -2261,6 +2272,58 @@ async function saveAccessCodes(){
   if(c){ localStorage.setItem("caisse_pin_hash", rows.find(r=>r.key==="caisse_pin_hash").value_text); }
   document.getElementById("new-admin-pin").value=""; document.getElementById("new-caisse-pin").value="";
   const ok=document.getElementById("pin-saved"); ok.style.display="block"; setTimeout(()=>ok.style.display="none",3500);
+}
+
+// ── Caisses (multi-caisses) ─────────────────────────────────────────────────────
+let CAISSES=[];
+async function loadCaisses(){
+  try{
+    const rows=await sbFetch("app_config?key=eq.caisses&select=value_text");
+    const raw=(rows&&rows[0]&&rows[0].value_text)||"[]";
+    CAISSES=JSON.parse(raw)||[];
+  }catch(e){ CAISSES=[]; }
+  renderCaisses();
+}
+async function saveCaisses(){
+  await sbFetch("app_config",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify([{key:"caisses",value_text:JSON.stringify(CAISSES)}])});
+}
+function renderCaisses(){
+  const box=document.getElementById("caisses-list"); if(!box) return;
+  if(!CAISSES.length){ box.innerHTML='<p style="font-size:12px;color:var(--is)">Aucune caisse définie. Ajoute ta première caisse ci-dessous.</p>'; return; }
+  const e=s=>String(s==null?"":s).replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  box.innerHTML=CAISSES.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bs)">
+    <b style="flex:1;font-size:14px">🧾 ${e(c.name)}</b>
+    <button class="btn bg bsm" style="padding:3px 8px;font-size:12px" onclick="changeCaisseCode('${c.id}')">Changer le code</button>
+    <button class="btn bsm" style="padding:3px 7px;color:var(--rd);border:1px solid var(--rd);background:transparent" onclick="deleteCaisse('${c.id}')" title="Supprimer">✕</button>
+  </div>`).join("");
+}
+async function addCaisse(){
+  const name=(document.getElementById("new-caisse-name").value||"").trim();
+  const code=(document.getElementById("new-caisse-code").value||"").trim();
+  const err=document.getElementById("caisse-err"); err.style.display="none";
+  if(!name){ err.textContent="Donne un nom à la caisse."; err.style.display="block"; return; }
+  if(!/^\d{6}$/.test(code)){ err.textContent="Le code doit faire exactement 6 chiffres."; err.style.display="block"; return; }
+  const hash=await sha256hex(code);
+  if(CAISSES.some(c=>c.hash===hash)){ err.textContent="Ce code est déjà utilisé par une autre caisse."; err.style.display="block"; return; }
+  CAISSES.push({id:"c"+Date.now().toString(36), name, hash});
+  try{ await saveCaisses(); }catch(e){ err.textContent="Enregistrement impossible."; err.style.display="block"; CAISSES.pop(); return; }
+  document.getElementById("new-caisse-name").value=""; document.getElementById("new-caisse-code").value="";
+  renderCaisses();
+}
+async function changeCaisseCode(id){
+  const code=prompt("Nouveau code à 6 chiffres pour cette caisse :");
+  if(code==null) return;
+  if(!/^\d{6}$/.test(String(code).trim())){ alert("Le code doit faire exactement 6 chiffres."); return; }
+  const hash=await sha256hex(String(code).trim());
+  if(CAISSES.some(c=>c.id!==id && c.hash===hash)){ alert("Ce code est déjà utilisé par une autre caisse."); return; }
+  CAISSES=CAISSES.map(c=>c.id===id?{...c,hash}:c);
+  await saveCaisses(); renderCaisses();
+}
+async function deleteCaisse(id){
+  const c=CAISSES.find(x=>x.id===id); if(!c) return;
+  if(!confirm("Supprimer la caisse « "+c.name+" » ? Les ventes déjà enregistrées gardent son nom.")) return;
+  CAISSES=CAISSES.filter(x=>x.id!==id);
+  await saveCaisses(); renderCaisses();
 }
 async function exportCSV(){
   const orders=await sbFetch("orders?order=created_at.desc");

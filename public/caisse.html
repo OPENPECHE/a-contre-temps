@@ -150,6 +150,7 @@
 
 <div class="top">
   <div class="brand"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F3E7DA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-7-10.2A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 7 2.8C19 15.4 12 20 12 20z"/></svg> Caisse</div>
+  <span id="caisseLabel" style="color:var(--cr);font-size:13px;font-weight:600;opacity:.92;white-space:nowrap;margin-left:2px"></span>
   <button class="tbtn" id="btnLieu" style="background:var(--cr);color:var(--bd)">📍 Lieu</button>
   <div class="spacer"></div>
   <div class="net off" id="net"><span class="dot"></span><span id="netLabel">…</span></div>
@@ -194,20 +195,6 @@
 var SB_URL = "https://jxxgafyqfbnqieiqltcn.supabase.co";
 var SB_KEY = "sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
 var DEFAULT_PIN = "2026"; // ancien code local (repli pendant la migration)
-// Code d'accès caisse centralisé : défini dans le back-office, stocké CHIFFRÉ (SHA-256)
-// dans app_config → même code sur tous les appareils. Mis en cache pour le hors-ligne.
-var CAISSE_HASH = LS.get("caisse_pin_hash","") || "";
-var PIN_LEN = CAISSE_HASH ? 6 : 4;
-var pinFails = Number(LS.get("caisse_pin_fails",0))||0;
-var pinLockUntil = Number(LS.get("caisse_pin_lock",0))||0;
-async function sha256hex(s){ var d=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s))); return Array.prototype.map.call(new Uint8Array(d), function(b){ return b.toString(16).padStart(2,"0"); }).join(""); }
-function loadPinHash(){
-  if(!navigator.onLine) return;
-  sbFetch("app_config?key=eq.caisse_pin_hash&select=value_text").then(function(r){ return r.json(); }).then(function(d){
-    var row=Array.isArray(d)?d[0]:null;
-    if(row && row.value_text){ CAISSE_HASH=String(row.value_text); LS.set("caisse_pin_hash",CAISSE_HASH); if(PIN_LEN!==6){ PIN_LEN=6; drawDots(); } }
-  }).catch(function(){});
-}
 
 function sbFetch(path, opts){
   opts = opts || {};
@@ -226,6 +213,28 @@ var LS = {
 function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace(".", ",") + " €"; }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 function toast(msg){ var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2200); }
+
+/* Code d'accès caisse : centralisé (app_config, chiffré SHA-256) + multi-caisses.
+   Mis en cache localStorage pour le hors-ligne. */
+var CAISSE_HASH = LS.get("caisse_pin_hash","") || "";       // code caisse unique (repli)
+var CAISSES_LIST = LS.get("caisses_list", []) || [];        // [{id,name,hash}] — multi-caisses
+var currentCaisse = LS.get("caisse_name","") || "";          // caisse active sur CETTE tablette
+var PIN_LEN = (CAISSES_LIST.length || CAISSE_HASH) ? 6 : 4;
+var pinFails = Number(LS.get("caisse_pin_fails",0))||0;
+var pinLockUntil = Number(LS.get("caisse_pin_lock",0))||0;
+async function sha256hex(s){ var d=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s))); return Array.prototype.map.call(new Uint8Array(d), function(b){ return b.toString(16).padStart(2,"0"); }).join(""); }
+function loadPinHash(){
+  if(!navigator.onLine) return;
+  sbFetch("app_config?key=in.(caisse_pin_hash,caisses)&select=key,value_text").then(function(r){ return r.json(); }).then(function(d){
+    if(!Array.isArray(d)) return;
+    d.forEach(function(row){
+      if(row.key==="caisse_pin_hash" && row.value_text){ CAISSE_HASH=String(row.value_text); LS.set("caisse_pin_hash",CAISSE_HASH); }
+      if(row.key==="caisses" && row.value_text){ try{ CAISSES_LIST=JSON.parse(row.value_text)||[]; LS.set("caisses_list", CAISSES_LIST); }catch(e){} }
+    });
+    var want=(CAISSES_LIST.length || CAISSE_HASH)?6:4;
+    if(PIN_LEN!==want){ PIN_LEN=want; drawDots(); }
+  }).catch(function(){});
+}
 
 /* ───────────────── État ───────────────── */
 var articles = LS.get("caisse_articles_cache", []);
@@ -422,6 +431,7 @@ function recordSale(method, extra){
     items: its,
     note: rem>0 ? (remiseLabel()+" (−"+eur(rem)+")") : null,
     lieu: currentLieu || null,
+    caisse: currentCaisse || null,
     created_at: new Date().toISOString()
   };
   if (extra && extra.sumup_tx_id) sale.sumup_tx_id = extra.sumup_tx_id;
@@ -851,19 +861,19 @@ function renderDay(){
 /* ───────────────── Export du journal de caisse (Excel) ───────────────── */
 function itemsSummary(items){ try{ return (items||[]).map(function(l){ return l.qty+"× "+l.name; }).join(", "); }catch(e){ return ""; } }
 function journalRows(ventes){
-  var rows = [["Date","Heure","Lieu","Référence","Désignation","Règlement","Montant (€)"]];
+  var rows = [["Date","Heure","Caisse","Lieu","Référence","Désignation","Règlement","Montant (€)"]];
   var tot=0, te=0, tc=0;
   ventes.forEach(function(v){
     var d = new Date(v.created_at);
     var pay = v.payment_method==="especes" ? "Espèces" : (v.payment_method==="sumup" ? "Carte (SumUp)" : "Carte");
     rows.push([ d.toLocaleDateString("fr-FR"), d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),
-      v.lieu||"", v.local_id||"", itemsSummary(v.items), pay, Number(v.total) ]);
+      v.caisse||"", v.lieu||"", v.local_id||"", itemsSummary(v.items), pay, Number(v.total) ]);
     tot+=Number(v.total); if(v.payment_method==="especes") te+=Number(v.total); else tc+=Number(v.total);
   });
   rows.push([]);
-  rows.push(["","","","","","Total espèces", Math.round(te*100)/100]);
-  rows.push(["","","","","","Total carte", Math.round(tc*100)/100]);
-  rows.push(["","","","","","TOTAL", Math.round(tot*100)/100]);
+  rows.push(["","","","","","","Total espèces", Math.round(te*100)/100]);
+  rows.push(["","","","","","","Total carte", Math.round(tc*100)/100]);
+  rows.push(["","","","","","","TOTAL", Math.round(tot*100)/100]);
   return rows;
 }
 function dl(blob, name){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
@@ -875,7 +885,7 @@ function exportCSV(rows, fn){
 function exportXLSX(rows, fn){
   function build(){ try{
     var wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"]=[{wch:11},{wch:7},{wch:22},{wch:16},{wch:42},{wch:14},{wch:12}];
+    ws["!cols"]=[{wch:11},{wch:7},{wch:14},{wch:22},{wch:16},{wch:42},{wch:14},{wch:12}];
     XLSX.utils.book_append_sheet(wb, ws, "Journal de caisse");
     XLSX.writeFile(wb, fn); toast("Journal exporté (Excel)");
   }catch(e){ exportCSV(rows, fn); } }
@@ -889,7 +899,7 @@ function exportJournal(period){
   if (period==="today"){ from=new Date(now.getFullYear(),now.getMonth(),now.getDate()); label="jour_"+from.toISOString().slice(0,10); }
   else if (period==="month"){ from=new Date(now.getFullYear(),now.getMonth(),1); label="mois_"+from.toISOString().slice(0,7); }
   else if (period==="lastmonth"){ from=new Date(now.getFullYear(),now.getMonth()-1,1); to=new Date(now.getFullYear(),now.getMonth(),1); label="mois_"+from.toISOString().slice(0,7); }
-  var q="caisse_ventes?select=created_at,local_id,total,payment_method,items,lieu&order=created_at.asc";
+  var q="caisse_ventes?select=created_at,local_id,total,payment_method,items,lieu,caisse&order=created_at.asc";
   if (from) q+="&created_at=gte."+from.toISOString();
   if (to)   q+="&created_at=lt."+to.toISOString();
   toast("Préparation de l'export…");
@@ -968,6 +978,13 @@ function aggLieux(ventes){
   a.sort(function(x,y){ return y.ca-x.ca; });
   return a;
 }
+function aggCaisses(ventes){
+  var m={};
+  ventes.forEach(function(v){ var k=v.caisse||"(non précisée)"; if(!m[k]) m[k]={ name:k, ca:0, nb:0 }; m[k].ca+=Number(v.total)||0; m[k].nb++; });
+  var a=Object.keys(m).map(function(k){ return m[k]; });
+  a.sort(function(x,y){ return y.ca-x.ca; });
+  return a;
+}
 function exportStats(s, label){
   var rows=[["Produit","Quantité vendue","Chiffre d'affaires (€)","Coût matières (€)","Marge (€)"]];
   s.prod.forEach(function(p){ rows.push([p.name, p.qty, Math.round(p.ca*100)/100, Math.round(p.cout*100)/100, Math.round(p.marge*100)/100]); });
@@ -1001,7 +1018,7 @@ document.getElementById("btnStats").onclick = function(){
     if(!navigator.onLine){ out.innerHTML='<div class="sub">Connexion nécessaire pour les statistiques.</div>'; return; }
     out.innerHTML='<div class="sub">Calcul…</div>';
     var rg=statsRange(period);
-    var q="caisse_ventes?select=total,payment_method,items,lieu,created_at&order=created_at.asc";
+    var q="caisse_ventes?select=total,payment_method,items,lieu,caisse,created_at&order=created_at.asc";
     if(rg.from) q+="&created_at=gte."+rg.from.toISOString();
     if(rg.to)   q+="&created_at=lt."+rg.to.toISOString();
     sbFetch(q).then(function(r){ return r.json(); }).then(function(v){
@@ -1033,6 +1050,15 @@ document.getElementById("btnStats").onclick = function(){
     return h+'</div>';
   }
   function render(ventes, label){
+    var caisses = aggCaisses(ventes), maxCc = caisses.length ? (caisses[0].ca||1) : 1;
+    var caisseHtml='';
+    if (caisses.length>1 || (caisses.length===1 && caisses[0].name!=="(non précisée)")){
+      caisseHtml='<div class="sub" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ru);margin:2px 0 6px;">Par caisse</div>';
+      caisses.forEach(function(c){ var w=Math.max(4,Math.round((c.ca/maxCc)*100));
+        caisseHtml+='<div style="padding:6px 0;"><div style="display:flex;justify-content:space-between;font-size:13.5px;"><span>🧾 '+esc(c.name)+' <span class="sub">('+c.nb+')</span></span><b>'+eur(c.ca)+'</b></div><div style="height:6px;background:var(--bs);border-radius:4px;margin-top:4px;overflow:hidden;"><div style="height:100%;width:'+w+'%;background:var(--bd);"></div></div></div>';
+      });
+      caisseHtml+='<div style="border-top:1px solid var(--bs);margin:12px 0 10px;"></div>';
+    }
     var lieux = aggLieux(ventes), maxCa = lieux.length ? (lieux[0].ca||1) : 1;
     var lieuxHtml='';
     if (lieux.length>1 || (lieux.length===1 && lieux[0].name!=="(non précisé)")){
@@ -1043,7 +1069,7 @@ document.getElementById("btnStats").onclick = function(){
       lieuxHtml+='<div style="border-top:1px solid var(--bs);margin:12px 0 10px;"></div>';
     }
     var sel='<option value="__all">Tous les lieux</option>'+lieux.map(function(l){ return '<option value="'+esc(l.name)+'">'+esc(l.name)+'</option>'; }).join('');
-    out.innerHTML = '<div id="stTop"></div>' + lieuxHtml
+    out.innerHTML = '<div id="stTop"></div>' + caisseHtml + lieuxHtml
       + '<div class="sub" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ru);margin-bottom:4px;">Produits</div>'
       + '<select id="stLieu" class="fi" style="margin:0 0 10px;">'+sel+'</select>'
       + '<div id="stProd"></div>'
@@ -1387,17 +1413,28 @@ async function checkPin(){
   var errEl=document.getElementById("pinErr");
   if(Date.now() < pinLockUntil){ errEl.textContent="Trop d'essais — attendez "+Math.ceil((pinLockUntil-Date.now())/1000)+" s"; pinBuf=""; drawDots(); return; }
   var entered=pinBuf; pinBuf=""; drawDots();
-  var ok=false;
-  if(CAISSE_HASH){ try{ ok=(await sha256hex(entered))===CAISSE_HASH; }catch(e){ ok=false; } }
-  else { ok=(entered===LS.get("caisse_pin", DEFAULT_PIN)); }   // repli : ancien code local
-  if(ok){ pinFails=0; LS.set("caisse_pin_fails",0); LS.set("caisse_pin_lock",0); LS.set("caisse_unlocked_ts", Date.now()); document.getElementById("pinScreen").classList.add("hidden"); }
-  else {
+  var ok=false, who="";
+  try{
+    if(CAISSES_LIST.length){
+      var h=await sha256hex(entered);
+      var m=CAISSES_LIST.filter(function(c){ return c.hash===h; })[0];
+      if(m){ ok=true; who=m.name||""; }
+    }
+    if(!ok && CAISSE_HASH){ ok=((await sha256hex(entered))===CAISSE_HASH); }   // code unique (repli)
+  }catch(e){ ok=false; }
+  if(!ok && !CAISSES_LIST.length && !CAISSE_HASH){ ok=(entered===LS.get("caisse_pin", DEFAULT_PIN)); }   // ancien code local
+  if(ok){
+    if(who){ currentCaisse=who; LS.set("caisse_name", currentCaisse); updateCaisseLabel(); }
+    pinFails=0; LS.set("caisse_pin_fails",0); LS.set("caisse_pin_lock",0); LS.set("caisse_unlocked_ts", Date.now());
+    document.getElementById("pinScreen").classList.add("hidden");
+  } else {
     pinFails++; LS.set("caisse_pin_fails",pinFails);
     if(pinFails>=5){ pinLockUntil=Date.now()+30000; LS.set("caisse_pin_lock",pinLockUntil); pinFails=0; LS.set("caisse_pin_fails",0); errEl.textContent="Trop d'essais — bloqué 30 s"; }
     else { errEl.textContent="Code incorrect"; }
     setTimeout(function(){ if(Date.now()>=pinLockUntil) errEl.textContent=""; },1500);
   }
 }
+function updateCaisseLabel(){ var el=document.getElementById("caisseLabel"); if(el) el.textContent = currentCaisse ? ("🧾 "+currentCaisse) : ""; }
 document.getElementById("btnLock").onclick = function(){ LS.set("caisse_unlocked_ts",0); pinBuf=""; drawDots(); document.getElementById("pinScreen").classList.remove("hidden"); };
 
 /* Borne client (2 tablettes) : appairage par code partagé. */
@@ -1423,7 +1460,7 @@ document.getElementById("btnBorne").onclick = function(){
 updateBorneLabel();
 
 /* ───────────────── Init ───────────────── */
-buildPad(); drawDots(); loadPinHash();
+buildPad(); drawDots(); loadPinHash(); updateCaisseLabel();
 if (!pinNeeded()) document.getElementById("pinScreen").classList.add("hidden");
 renderArticles(); renderTicket(); renderDay(); setNet(); loadArticles(); updateLieuLabel(); loadLieux();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.js", { scope:"/caisse" }).catch(function(){});
