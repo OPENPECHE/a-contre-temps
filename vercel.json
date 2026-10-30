@@ -39,6 +39,8 @@
     { "source": "/evenement-clermont-ferrand", "destination": "/evenement-clermont-ferrand.html" },
     { "source": "/vegetarien-clermont-ferrand", "destination": "/vegetarien-clermont-ferrand.html" },
     { "source": "/coffret-cadeau-gourmand", "destination": "/coffret-cadeau-gourmand.html" },
-    { "source": "/viennoiserie-artisanale-clermont-ferrand", "destination": "/viennoiserie-artisanale-clermont-ferrand.html" }
+    { "source": "/viennoiserie-artisanale-clermont-ferrand", "destination": "/viennoiserie-artisanale-clermont-ferrand.html" },
+    { "source": "/boulangerie-marche-ennezat", "destination": "/boulangerie-marche-ennezat.html" },
+    { "source": "/boulangerie-marche-chamalieres", "destination": "/boulangerie-marche-chamalieres.html" }
   ]
 }
