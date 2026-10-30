@@ -338,6 +338,9 @@ function renderArticles(){
 /* Menu des déclinaisons d'un pain (baguette, 500 g, 1 kg, au poids…) */
 function openDeclinaisons(prods){
   if(!prods || !prods.length) return;
+  // Trier par tarif croissant (ex. baguette avant boule avant miche)
+  function effPrice(p){ return (+p.price>0) ? +p.price : (+p.price_per_kg||0); }
+  prods = prods.slice().sort(function(a,b){ return effPrice(a)-effPrice(b); });
   var ov=document.createElement("div"); ov.className="ov";
   var btns = prods.map(function(p){
     var isW = p.sold_by_weight && p.price_per_kg>0;
