@@ -300,26 +300,58 @@ function loadArticles(){
     LS.set("caisse_articles_cache", articles); renderArticles();
   }).catch(function(){ renderArticles(); });
 }
+function baseName(name){ var s=String(name||""); var i=s.indexOf(" - "); return (i>0 ? s.slice(0,i) : s).trim(); }
+function variantLabel(name){ var s=String(name||""); var i=s.indexOf(" - "); return (i>0 ? s.slice(i+3) : s).trim(); }
+var groupMap = {};
 function renderArticles(){
   var box = document.getElementById("articles");
   if (!articles.length){ box.innerHTML = '<div class="tk-empty">Aucun article marché. Ajoutez des produits dans le back-office et cochez « Afficher sur le marché ».</div>'; return; }
   var cats = {}; var order = [];
   articles.forEach(function(a){ var c=a.category||"Articles"; if(!cats[c]){cats[c]=[];order.push(c);} cats[c].push(a); });
+  groupMap = {}; var gi = 0;
   var html = "";
   order.forEach(function(c){
     html += '<div class="cat">'+esc(c)+'</div><div class="grid">';
-    cats[c].forEach(function(a){
-      var isW = a.sold_by_weight && a.price_per_kg>0;
-      var pLabel = isW ? (eur(a.price_per_kg)+'/kg') : eur(+a.price);
-      html += '<button class="art" style="background:'+(a.color||"#7C97AC")+'" data-id="'+a.id+'">'
-           +  '<span class="n">'+(isW?'⚖️ ':'')+esc(a.name)+'</span><span class="p">'+pLabel+'</span></button>';
+    // Regroupement par nom de base (texte avant " - ") → 1 tuile par pain, déclinaisons au clic
+    var groups = {}; var gorder = [];
+    cats[c].forEach(function(a){ var k=baseName(a.name); if(!groups[k]){groups[k]=[];gorder.push(k);} groups[k].push(a); });
+    gorder.forEach(function(k){
+      var g = groups[k];
+      if (g.length === 1){
+        var a=g[0];
+        var isW = a.sold_by_weight && a.price_per_kg>0;
+        var pLabel = isW ? (eur(a.price_per_kg)+'/kg') : eur(+a.price);
+        html += '<button class="art" style="background:'+(a.color||"#7C97AC")+'" data-id="'+a.id+'">'
+             +  '<span class="n">'+(isW?'⚖️ ':'')+esc(a.name)+'</span><span class="p">'+pLabel+'</span></button>';
+      } else {
+        var key="g"+(gi++); groupMap[key]=g;
+        html += '<button class="art" style="background:'+(g[0].color||"#7C97AC")+'" data-group="'+key+'">'
+             +  '<span class="n">'+esc(k)+'</span><span class="p" style="font-size:12px;font-weight:500;opacity:.92">'+g.length+' formats ›</span></button>';
+      }
     });
     html += '</div>';
   });
   box.innerHTML = html;
-  box.querySelectorAll(".art").forEach(function(b){
-    b.addEventListener("click", function(){ addToTicket(b.getAttribute("data-id")); });
-  });
+  box.querySelectorAll(".art[data-id]").forEach(function(b){ b.addEventListener("click", function(){ addToTicket(b.getAttribute("data-id")); }); });
+  box.querySelectorAll(".art[data-group]").forEach(function(b){ b.addEventListener("click", function(){ openDeclinaisons(groupMap[b.getAttribute("data-group")]); }); });
+}
+/* Menu des déclinaisons d'un pain (baguette, 500 g, 1 kg, au poids…) */
+function openDeclinaisons(prods){
+  if(!prods || !prods.length) return;
+  var ov=document.createElement("div"); ov.className="ov";
+  var btns = prods.map(function(p){
+    var isW = p.sold_by_weight && p.price_per_kg>0;
+    var price = isW ? (eur(p.price_per_kg)+' /kg') : eur(+p.price);
+    return '<button class="big ghost decl" data-pid="'+p.id+'" style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;text-align:left;">'
+      +'<span>'+(isW?'⚖️ ':'')+esc(variantLabel(p.name))+'</span><b style="color:var(--bd);white-space:nowrap">'+price+'</b></button>';
+  }).join("");
+  ov.innerHTML='<div class="card"><h3 style="text-align:center;">'+esc(baseName(prods[0].name))+'</h3>'
+    +'<div class="sub" style="text-align:center;margin-top:2px;">Choisissez la déclinaison</div>'
+    + btns
+    +'<button class="big ghost" id="declCancel" style="margin-top:14px;">Annuler</button></div>';
+  document.body.appendChild(ov);
+  ov.querySelectorAll(".decl").forEach(function(b){ b.onclick=function(){ var id=b.getAttribute("data-pid"); ov.remove(); addToTicket(id); }; });
+  ov.querySelector("#declCancel").onclick=function(){ ov.remove(); };
 }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]; }); }
 
@@ -344,15 +376,11 @@ function removeLine(id){ ticket = ticket.filter(function(x){ return x.id!==id; }
 var lineSeq = 0;
 function weightPrompt(a){
   var ov=document.createElement("div"); ov.className="ov";
-  var chips=[100,150,200,250,300,400,500];
   ov.innerHTML='<div class="card">'
     +'<h3 style="text-align:center;">⚖️ '+esc(a.name)+'</h3>'
     +'<div class="sub" style="text-align:center;margin-top:2px;">Vendu au poids · <b style="color:var(--bd)">'+eur(a.price_per_kg)+' / kg</b></div>'
-    +'<label style="font-size:12px;color:var(--is);margin-top:12px;display:block;">Poids pesé (en grammes)</label>'
-    +'<input class="fi" id="wG" inputmode="numeric" placeholder="0" style="font-size:28px;text-align:center;margin-top:4px;" />'
-    +'<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;">'
-    + chips.map(function(g){ return '<button type="button" class="qbtn" data-g="'+g+'" style="padding:9px 13px;border-radius:10px;border:1px solid var(--bs);background:#fff;font-size:14px;cursor:pointer;color:var(--bd);">'+g+' g</button>'; }).join("")
-    +'</div>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:14px;display:block;text-align:center;">Poids pesé (en grammes)</label>'
+    +'<input class="fi" id="wG" inputmode="numeric" placeholder="0" style="font-size:34px;text-align:center;margin-top:6px;" />'
     +'<div id="wCalc" style="text-align:center;margin-top:16px;min-height:34px;"></div>'
     +'<button class="big ok" id="wGo" style="margin-top:8px;" disabled>Ajouter</button>'
     +'<button class="big ghost" id="wCancel" style="margin-top:10px;">Annuler</button>'
@@ -367,7 +395,6 @@ function weightPrompt(a){
   }
   inp.addEventListener("input", paint);
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter" && grams()>0){ go.click(); } });
-  ov.querySelectorAll(".qbtn").forEach(function(b){ b.onclick=function(){ inp.value=b.getAttribute("data-g"); paint(); }; });
   ov.querySelector("#wCancel").onclick=function(){ ov.remove(); };
   go.onclick=function(){ var g=grams(); if(g<=0) return; ov.remove();
     ticket.push({ id:"w"+(++lineSeq)+"_"+a.id, name:a.name+" · "+g+" g", price:price(g), cost:0, qty:1, by_weight:true, weight_g:g, price_per_kg:a.price_per_kg });
