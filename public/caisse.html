@@ -362,10 +362,15 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ ret
 function addToTicket(id){
   var a = articles.find(function(x){ return String(x.id)===String(id); });
   if (!a) return;
-  if (a.sold_by_weight && a.price_per_kg>0){ weightPrompt(a); return; }   // vente au poids → saisie des grammes
+  if (a.sold_by_weight && a.price_per_kg>0){ weightPrompt(a); return; }   // vente au poids → saisie des grammes ou pain entier
+  addUnitLine(a);
+}
+/* Ajoute une ligne « à l'unité » (fusionne si déjà présente). price optionnel pour forcer un tarif (ex. pain entier). */
+function addUnitLine(a, price){
+  var p = (price!=null) ? +price : +a.price;
   var ln = ticket.find(function(x){ return x.id===a.id && !x.by_weight; });
   if (ln) ln.qty++;
-  else ticket.push({ id:a.id, name:a.name, price:+a.price, cost:+a.cost||0, qty:1 });
+  else ticket.push({ id:a.id, name:a.name, price:p, cost:+a.cost||0, qty:1 });
   renderTicket();
 }
 function changeQty(id, d){
@@ -379,9 +384,18 @@ function removeLine(id){ ticket = ticket.filter(function(x){ return x.id!==id; }
 var lineSeq = 0;
 function weightPrompt(a){
   var ov=document.createElement("div"); ov.className="ov";
+  function price(g){ return Math.round(a.price_per_kg*g/1000*100)/100; }
+  var wg = Math.round(Number(a.weight_g)||0);                               // poids « nominal » du pain entier
+  var wholePrice = (+a.price>0) ? +a.price : price(wg);                     // prix du pain entier
+  var wFmt = wg>=1000 ? (String(wg/1000).replace(".",",")+" kg") : (wg+" g");
+  // Si le pain a un poids de référence, on propose de l'ajouter entier d'un seul geste.
+  var wholeBtn = (wg>0) ?
+      '<button class="big ok" id="wWhole" style="margin-top:14px;font-size:17px;">Pain entier · '+wFmt+' · '+eur(wholePrice)+'</button>'
+     +'<div class="sub" style="text-align:center;margin:12px 0 0;opacity:.75;">— ou pesée à la coupe —</div>' : '';
   ov.innerHTML='<div class="card">'
     +'<h3 style="text-align:center;">⚖️ '+esc(a.name)+'</h3>'
     +'<div class="sub" style="text-align:center;margin-top:2px;">Vendu au poids · <b style="color:var(--bd)">'+eur(a.price_per_kg)+' / kg</b></div>'
+    + wholeBtn
     +'<label style="font-size:12px;color:var(--is);margin-top:14px;display:block;text-align:center;">Poids pesé (en grammes)</label>'
     +'<input class="fi" id="wG" inputmode="numeric" placeholder="0" style="font-size:34px;text-align:center;margin-top:6px;" />'
     +'<div id="wCalc" style="text-align:center;margin-top:16px;min-height:34px;"></div>'
@@ -390,8 +404,9 @@ function weightPrompt(a){
     +'</div>';
   document.body.appendChild(ov);
   var inp=ov.querySelector("#wG"), go=ov.querySelector("#wGo");
+  var wb=ov.querySelector("#wWhole");
+  if(wb) wb.onclick=function(){ ov.remove(); addUnitLine(a, wholePrice); };
   function grams(){ return Math.max(0, Math.round(parseFloat(String(inp.value).replace(",",".").replace(/[^\d.]/g,""))||0)); }
-  function price(g){ return Math.round(a.price_per_kg*g/1000*100)/100; }
   function paint(){ var g=grams(), c=ov.querySelector("#wCalc");
     if(g>0){ c.innerHTML=g+' g × '+eur(a.price_per_kg)+'/kg = <b style="color:var(--bd);font-size:26px;display:block;margin-top:2px;">'+eur(price(g))+'</b>'; go.disabled=false; }
     else { c.innerHTML='<span style="color:var(--is);font-size:13px;">Saisissez le poids pesé.</span>'; go.disabled=true; }
