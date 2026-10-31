@@ -264,7 +264,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         </div>
         <label style="font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:10px">
           <input type="checkbox" id="new-market" checked style="width:16px;height:16px" />
-          🛒 Afficher sur la page de commande au marché
+          🛒 En vente au marché (caisse + commande en ligne)
         </label>
         <div style="display:flex;gap:7px">
           <button class="btn bp bsm" onclick="addProduct()">Ajouter</button>
@@ -1617,10 +1617,12 @@ function productRow(p){
       <input class="einp" id="ename-${p.id}" style="width:100%" value="${esc(p.name)}" placeholder="Nom de l'article" />
       <textarea class="einp" id="edesc-${p.id}" rows="2" style="width:100%;resize:vertical" placeholder="Description (optionnel)">${esc(p.description)}</textarea>
       <div style="border:1px solid var(--bs);border-radius:9px;padding:9px 11px;background:var(--pp)">
-        <div style="font-size:11px;color:var(--is);margin-bottom:6px;font-weight:600">Canaux de vente</div>
+        <div style="font-size:11px;color:var(--is);margin-bottom:6px;font-weight:600">Où le vendre ?</div>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="ecaisse-${p.id}" ${p.on_market?"checked":""} style="width:16px;height:16px" /> 📱 Caisse <span style="color:var(--is);font-size:11px">(tablette, vente en direct)</span></label>
+        <div style="font-size:10.5px;color:var(--is);margin:0 0 5px;font-weight:600;letter-spacing:.03em;border-top:1px solid var(--bs);padding-top:7px">En ligne sur le site</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="emarket-${p.id}" ${(p.sell_market!=null?p.sell_market:p.on_market)?"checked":""} style="width:16px;height:16px" /> 🛒 Marché</label>
-          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="eship-${p.id}" ${p.sell_shipping?"checked":""} style="width:16px;height:16px" /> 📦 En ligne (expédition)</label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="emarket-${p.id}" ${(p.sell_market!=null?p.sell_market:p.on_market)?"checked":""} style="width:16px;height:16px" /> 🌐 En ligne <span style="color:var(--is);font-size:11px">(commande au marché)</span></label>
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="eship-${p.id}" ${p.sell_shipping?"checked":""} style="width:16px;height:16px" /> 📦 Expédition</label>
           <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="edeliv-${p.id}" ${p.sell_delivery?"checked":""} style="width:16px;height:16px" /> 🚲 Livraison locale</label>
         </div>
       </div>
@@ -1651,7 +1653,14 @@ function productRow(p){
       ${p.active?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`:""}
     </button>
     <div style="flex:1;min-width:0">
-      <p style="font-size:13px">${esc(p.name)}${(()=>{const b=(t)=>`<span style="font-size:10px;color:#4A7C59;border:1px solid #4A7C5955;border-radius:4px;padding:1px 5px;margin-left:5px;white-space:nowrap">${t}</span>`;let o="";if(p.sell_market!=null?p.sell_market:p.on_market)o+=b("🛒 Marché");if(p.sell_shipping)o+=b("📦 En ligne");if(p.sell_delivery)o+=b("🚲 Livraison");return o;})()}</p>
+      <p style="font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:0">${esc(p.name)}${(()=>{
+        const sm=(p.sell_market!=null?p.sell_market:!!p.on_market);
+        const chip=(on,label,field)=>`<button onclick="event.stopPropagation();toggleChannel('${p.id}','${field}')" title="${on?'Activé — cliquer pour retirer':'Cliquer pour activer'}" style="font-size:10px;border-radius:5px;padding:2px 8px;margin-left:5px;white-space:nowrap;cursor:pointer;border:1px solid ${on?'#4A7C59':'var(--bs)'};background:${on?'#4A7C5915':'transparent'};color:${on?'#4A7C59':'var(--is)'};font-weight:${on?600:400};opacity:${on?1:.6}">${on?'✓ ':''}${label}</button>`;
+        const b=(t)=>`<span style="font-size:10px;color:#4A7C59;border:1px solid #4A7C5955;border-radius:4px;padding:1px 5px;margin-left:5px;white-space:nowrap">${t}</span>`;
+        let o=chip(!!p.on_market,'📱 Caisse','on_market')+chip(!!sm,'🌐 En ligne','sell_market');
+        if(p.sell_shipping)o+=b('📦 Expédition');if(p.sell_delivery)o+=b('🚲 Livraison');
+        return o;
+      })()}</p>
       ${p.description?`<p style="font-size:11px;color:var(--is);margin-top:2px;white-space:pre-line;line-height:1.5">${esc(p.description)}</p>`:""}
       ${meta.length?`<p style="font-size:11px;color:var(--ru);margin-top:2px">${meta.join(" · ")}</p>`:""}
     </div>
@@ -1676,6 +1685,7 @@ async function saveProd(id){
   const wRaw=document.getElementById("eweight-"+id).value;
   const price_per_kg=pkgRaw===""?null:(parseFloat(pkgRaw)||null);
   const weight_g=wRaw===""?null:(parseFloat(wRaw)||null);
+  const on_market=!!document.getElementById("ecaisse-"+id)?.checked;
   const sell_market=!!document.getElementById("emarket-"+id)?.checked;
   const sell_shipping=!!document.getElementById("eship-"+id)?.checked;
   const sell_delivery=!!document.getElementById("edeliv-"+id)?.checked;
@@ -1683,8 +1693,8 @@ async function saveProd(id){
   const barcode=(document.getElementById("ebarcode-"+id)?.value||"").trim()||null;
   const costRaw=document.getElementById("ecost-"+id)?.value;
   const cost=(costRaw==null||costRaw==="")?null:(parseFloat(costRaw)||null);
-  // on_market reste synchronisé avec le canal Marché pour la caisse (compat)
-  const patch={name,price,description,price_per_kg,weight_g,on_market:sell_market,sell_market,sell_shipping,sell_delivery,sold_by_weight,barcode,cost};
+  // Tablette caisse (on_market) et site marché (sell_market) sont indépendants.
+  const patch={name,price,description,price_per_kg,weight_g,on_market,sell_market,sell_shipping,sell_delivery,sold_by_weight,barcode,cost};
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)});
   allProducts=allProducts.map(p=>p.id===id?{...p,...patch}:p);
   editingProdId=null;renderProducts();
@@ -1694,6 +1704,16 @@ async function toggleProd(id){
   await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({active:!p.active})});
   allProducts=allProducts.map(x=>x.id===id?{...x,active:!p.active}:x);
   renderProducts();
+}
+// Bascule rapide d'un canal (Marché = on_market / En ligne = sell_market) depuis la ligne produit.
+async function toggleChannel(id, field){
+  const p=allProducts.find(x=>x.id===id); if(!p) return;
+  const cur = field==="sell_market" ? (p.sell_market!=null?p.sell_market:!!p.on_market) : !!p[field];
+  const patch={}; patch[field]=!cur;
+  allProducts=allProducts.map(x=>x.id===id?{...x,...patch}:x); // maj optimiste
+  renderProducts();
+  try{ await sbFetch(`products?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(patch)}); }
+  catch(e){ patch[field]=cur; allProducts=allProducts.map(x=>x.id===id?{...x,...patch}:x); renderProducts(); alert("Échec de l'enregistrement, réessaie."); }
 }
 // Réordonner un produit dans sa catégorie (↑/↓) — échange de position avec le voisin.
 async function moveProduct(id, dir){
@@ -1752,7 +1772,7 @@ async function addProduct(){
   const on_market=!!document.getElementById("new-market")?.checked;
   const id="p"+Date.now().toString(36);
   const pos=Math.max(0,...allProducts.map(p=>p.position||0))+1;
-  const row={id,cat,name,price,active:true,position:pos,description,price_per_kg,weight_g,on_market};
+  const row={id,cat,name,price,active:true,position:pos,description,price_per_kg,weight_g,on_market,sell_market:on_market};
   try {
     const data=await sbFetch("products",{method:"POST",body:JSON.stringify(row)});
     if(!data||(!Array.isArray(data)&&!data.id)){

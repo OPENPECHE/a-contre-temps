@@ -204,7 +204,7 @@ function eurKg(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" 
 var catGroups={}, catOrder=[], activeCat=null, articlesById={};
 function loadCatalog(){
   Promise.all([
-    sb("products?on_market=eq.true&active=eq.true&select=id,name,price,cat,description,weight_g,price_per_kg,position&order=position.asc,name.asc").then(function(r){return r.json();}),
+    sb("products?sell_market=eq.true&active=eq.true&select=id,name,price,cat,description,weight_g,price_per_kg,position&order=position.asc,name.asc").then(function(r){return r.json();}),
     sb("products?id=in.(s1,s2,s4,s5)&active=eq.true&select=id,name,price,description&order=price.asc").then(function(r){return r.json();})
   ]).then(function(res){
     var d=Array.isArray(res[0])?res[0]:[];
