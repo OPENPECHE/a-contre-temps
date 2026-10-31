@@ -63,6 +63,12 @@
     footer{background:var(--pp);border-top:1px solid var(--bs);padding:34px 24px;text-align:center;color:var(--is);font-size:13px;line-height:1.9;}
     footer a{color:var(--b);text-decoration:none;}
     @media(max-width:560px){ .nav{padding:12px 14px;} .brand{font-size:18px;gap:7px;} .brand img{height:28px;} .nav a.cta{font-size:10px;padding:8px 13px;} .hero{padding:96px 20px 54px;} }
+  .mcta{display:none;}
+  @media(max-width:560px){
+    .mcta{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(251,248,244,.97);border-top:1px solid #e6dfd3;box-shadow:0 -6px 20px rgba(0,0,0,.08);}
+    .mcta a{flex:1;text-align:center;background:var(--bd);color:var(--cr);padding:13px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.03em;text-decoration:none;}
+    body{padding-bottom:74px;}
+  }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -135,5 +141,6 @@
     à contre-temps — Fournil vivant · Gerzat (63360) · <a href="mailto:acontretemps@fournilvivant.fr">acontretemps@fournilvivant.fr</a> · <a href="tel:+33601482890">06 01 48 28 90</a><br>
     Boulangerie artisanale au marché de Chamalières le mardi · <a href="/">Accueil</a> · <a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a>
   </footer>
+  <div class="mcta"><a href="/commander-marche">🥖 Réserver &amp; retirer au marché</a></div>
 </body>
 </html>
