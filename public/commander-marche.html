@@ -199,6 +199,9 @@ function upcomingDates(days){
   for(var i=0;i<70 && res.length<8;i++){ if(days.indexOf(d.getDay())>=0) res.push(new Date(d)); d.setDate(d.getDate()+1); }
   return res;
 }
+// Fermetures exceptionnelles d'un marché (one-off). Retirer l'entrée une fois la date passée.
+var MARKET_CLOSURES=[{match:/nnezat/i, iso:"2026-11-08", label:"dimanche 8 novembre"}];
+function marketClosures(name){ return MARKET_CLOSURES.filter(function(c){ return c.match.test(name||""); }); }
 function fmtWeight(g){ g=Number(g); return g>=1000 ? (g/1000).toString().replace(".",",")+" kg" : g+" g"; }
 function eurKg(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €/kg"; }
 var catGroups={}, catOrder=[], activeCat=null, articlesById={};
@@ -305,9 +308,12 @@ function openCheckout(){
 
   /* ── Étape 2 : quelle date ? ── */
   function stepDate(){
-    var dates=upcomingDates(state.days);
+    var isoOf=function(dt){ return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); };
+    var closures=marketClosures(state.market), closedIso=closures.map(function(c){return c.iso;});
+    var dates=upcomingDates(state.days).filter(function(dt){ return closedIso.indexOf(isoOf(dt))<0; });
+    var note=closures.map(function(c){ return '<div class="sub" style="background:#FCEEE3;border:1px solid #E8C9AE;border-radius:9px;padding:10px 12px;color:var(--ru);margin-bottom:12px;">📣 <b>Exceptionnellement</b>, pas de marché le <b>'+esc(c.label)+'</b> — choisissez une autre date.</div>'; }).join("");
     var btns = dates.length ? dates.map(function(dt){
-      var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+      var iso=isoOf(dt);
       var label=JOURS[dt.getDay()]+" "+dt.getDate()+" "+MOIS[dt.getMonth()];
       return '<button type="button" class="pick" data-iso="'+iso+'" data-label="'+esc(label)+'">🗓️ '+label+'</button>';
     }).join("") : '<div class="sub">Aucune date de marché disponible pour le moment.</div>';
@@ -315,6 +321,7 @@ function openCheckout(){
       +'<button class="lnk" id="bk">← Changer de marché</button>'
       +'<h2>Pour quelle date ?</h2>'
       +'<div class="sub">📍 Marché : <b style="color:var(--bd)">'+esc(state.market)+'</b>. Choisissez votre jour de retrait :</div>'
+      +note
       +'<div class="picks">'+btns+'</div>';
     sheet.querySelector("#bk").onclick=stepLieu;
     sheet.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){
