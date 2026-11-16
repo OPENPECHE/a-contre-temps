@@ -872,7 +872,8 @@ function renderInvoices(){
     +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
     +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?(invKind==="devis"?"✓ Accepté":"✓ Payée"):(invKind==="devis"?"En attente":"À encaisser"))+'</button>'
     +'<button class="btn bg bsm" style="padding:4px 9px" onclick="editInvoice(\''+f.id+'\')">✏ Modifier</button>'
-    +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="copyDevisLink(\''+f.id+'\')" title="Copier le lien de signature à envoyer au client">🔗 Lien</button>':'')
+    +(invKind==="devis"?'<button class="btn bp bsm" style="padding:4px 9px" onclick="sendDevisLink(\''+f.id+'\')" title="Envoyer le devis au client par e-mail (bouton de validation)">✉️ Envoyer</button>':'')
+    +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="copyDevisLink(\''+f.id+'\')" title="Copier le lien de signature à envoyer soi-même">🔗 Lien</button>':'')
     +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="convertToInvoice(\''+f.id+'\')" title="Créer une facture depuis ce devis">➡ Facturer</button>':'')
     +'<button class="btn bp bsm" style="padding:4px 9px" onclick="downloadPdfById(\''+f.id+'\')">📄 PDF</button>'
     +'<button class="btn bg bsm" style="padding:4px 7px" onclick="printInvoice(\''+f.id+'\')" title="Imprimer">🖨</button></div></div>').join("");
@@ -909,6 +910,18 @@ function copyDevisLink(id){
   var url=location.origin+"/devis?id="+id;
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ alert("Lien de signature copié — à envoyer au client :\n\n"+url); },function(){ prompt("Copiez le lien de signature :", url); }); }
   else { prompt("Copiez le lien de signature :", url); }
+}
+async function sendDevisLink(id){
+  var f=INVOICES.find(x=>x.id===id); if(!f) return;
+  if(!f.client_email){ alert("Ce devis n'a pas d'e-mail client.\nClique sur « Modifier » pour ajouter l'adresse, puis réessaie."); return; }
+  if(!confirm("Envoyer le devis "+f.number+" à "+f.client_email+" ?\n\nLe client recevra un e-mail à l'en-tête à contre-temps avec un bouton pour consulter et valider son devis.")) return;
+  var url=location.origin+"/devis?id="+id;
+  try{
+    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,url:url}})});
+    const j=await r.json().catch(function(){return {};});
+    if(r.ok && j.ok!==false){ alert("Devis envoyé à "+f.client_email+" ✓"); }
+    else { alert("L'envoi a échoué.\n"+(j.error?JSON.stringify(j.error):"Réessaie dans un instant.")); }
+  }catch(e){ alert("Échec de l'envoi : "+(e.message||e)); }
 }
 async function convertToInvoice(id){
   const d=INVOICES.find(x=>x.id===id); if(!d) return;

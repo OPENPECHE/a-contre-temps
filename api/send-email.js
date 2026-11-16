@@ -156,6 +156,33 @@ export default async function handler(req, res) {
     }
   }
 
+  // ───────────── ENVOI DU DEVIS AU CLIENT (lien de validation, joli bouton) ───
+  if (type === "devis_link") {
+    const d = req.body.devis || {};
+    if (!d.client_email) return res.status(400).json({ error: "E-mail client manquant" });
+    const url = String(d.url || "");
+    const money = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    let svc = "";
+    try { if (d.service_date) svc = new Date(String(d.service_date).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch { /* */ }
+    const body = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Votre devis est prêt 🥐</h1>
+      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Bonjour,<br>Voici votre devis <strong>${esc(d.number)}</strong>${svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : ""}, d'un montant de <strong>${money(d.total)}</strong>.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;"><tr><td bgcolor="#3E5A70" style="border-radius:999px;">
+        <a href="${esc(url)}" style="display:inline-block;padding:15px 30px;color:#F3E7DA;text-decoration:none;font-size:14px;letter-spacing:.04em;">Voir et valider mon devis &rarr;</a>
+      </td></tr></table>
+      <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
+      <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:14px 0 0;">Devis gratuit, valable 30 jours. Si le bouton ne s'affiche pas, copiez ce lien&nbsp;: <a href="${esc(url)}" style="color:#7C97AC;">${esc(url)}</a></p>`;
+    try {
+      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [d.client_email], reply_to: OWNER, subject: `Votre devis ${d.number || ""} — à contre-temps`, html: shell(body) });
+      if (!r.ok) console.error("Resend devis_link error:", r.status, r.data);
+      return res.status(200).json({ ok: r.ok, status: r.status, error: r.ok ? null : r.data });
+    } catch (e) {
+      console.error("Send devis_link error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ───────────────────────── E-MAIL DE BIENVENUE ─────────────────────────────
   if (type === "welcome") {
     const client = req.body.client || {};
