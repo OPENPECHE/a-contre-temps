@@ -172,7 +172,7 @@ export default async function handler(req, res) {
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 ${msgHtml ? "14px" : "18px"};">Bonjour,</p>
       ${msgHtml}
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Voici votre devis <strong>${esc(d.number)}</strong>${svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : ""}, d'un montant de <strong>${money(d.total)}</strong>.</p>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:6px auto 20px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:10px auto 34px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
         <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:10px;white-space:nowrap;"><span style="color:#FFFFFF;">Voir et valider mon devis &nbsp;&rarr;</span></a>
       </td></tr></table>
       <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;text-align:center;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
