@@ -894,7 +894,7 @@ function downloadInvoicePdf(f){
   document.body.appendChild(ifr);
   var inject='<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></scr'+'ipt>'
     +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){try{'
-    +'html2pdf().set({margin:0,filename:'+JSON.stringify(name)+',image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(document.body).save().then(function(){parent.postMessage("acp-pdf-done","*");}).catch(function(){parent.postMessage("acp-pdf-fail","*");});'
+    +'html2pdf().set({margin:0,filename:'+JSON.stringify(name)+',image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["avoid-all"]}}).from(document.body).save().then(function(){parent.postMessage("acp-pdf-done","*");}).catch(function(){parent.postMessage("acp-pdf-fail","*");});'
     +'}catch(e){parent.postMessage("acp-pdf-fail","*");}},500);});</scr'+'ipt>';
   var htmlDoc=invoiceHTML(f).replace("</body>", inject+"</body>");
   var doc=ifr.contentWindow.document; doc.open(); doc.write(htmlDoc); doc.close();
@@ -929,7 +929,7 @@ function invoiceHTML(f){
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'+(isDevis?"Devis":"Facture")+' '+escF(f.number)+' — à contre-temps</title><style>'
     +'@page{size:A4;margin:0;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;padding:15mm;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
     +'.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;} @media print{.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
-    +'.sheet{min-height:calc(297mm - 30mm);display:flex;flex-direction:column;} .bottom{margin-top:auto;padding-top:22px;}'
+    +'.sheet{min-height:calc(297mm - 42mm);display:flex;flex-direction:column;} .bottom{margin-top:auto;padding-top:22px;}'
     +'.band{background:#3E5A70;color:#F3E7DA;border-radius:10px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}'
     +'.band .bL{display:flex;align-items:center;gap:12px;} .band img{width:44px;height:auto;} .band .n{font-size:24px;font-style:italic;line-height:1;} .band .s{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,231,218,.8);margin-top:4px;}'
     +'.band .bR{text-align:right;} .band .ft{font-size:26px;font-style:italic;line-height:1;} .band .no{font-size:11px;letter-spacing:.04em;color:rgba(243,231,218,.85);margin-top:5px;}'
