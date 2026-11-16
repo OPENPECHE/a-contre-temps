@@ -30,25 +30,30 @@ function shell(bodyHtml) {
 <!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#EDF0F3;font-family:Georgia,serif;">
-  <div style="max-width:560px;margin:40px auto;background:#FBF8F4;border-radius:12px;overflow:hidden;">
-    <div style="background:#3E5A70;padding:2.1rem 2rem;text-align:center;">
-      <p style="font-size:27px;color:#F3E7DA;margin:0;font-style:italic;font-family:Georgia,'Times New Roman',serif;line-height:1;">à contre-temps</p>
-      <p style="font-size:10px;letter-spacing:.24em;color:rgba(243,231,218,.72);margin:.5rem 0 0;">FOURNIL VIVANT · CRÉATEUR D'INSTANTS</p>
-    </div>
-    <div style="padding:2rem;">
-      ${bodyHtml}
-    </div>
-    <div style="padding:1.25rem 2rem;border-top:1px solid #D6DFE5;text-align:center;">
-      <p style="font-size:11px;color:rgba(43,41,37,.5);line-height:1.7;">
-        <strong>à contre-temps — Fournil vivant</strong><br>
-        4 rue des Vignes Rousses, 63360 Gerzat · SIRET 108 719 105 00018<br>
-        TVA non applicable, art. 293 B du CGI<br>
-        <a href="https://fournilvivant.fr" style="color:#7C97AC;">fournilvivant.fr</a> · ${OWNER}<br>
-        <a href="https://www.fournilvivant.fr/mentions-legales" style="color:#7C97AC;">Mentions légales</a> · <a href="https://www.fournilvivant.fr/cgv" style="color:#7C97AC;">CGV</a>
-      </p>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background:#EDF0F3;font-family:Georgia,'Times New Roman',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EDF0F3;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;background:#FBF8F4;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:#3E5A70;padding:28px 24px;text-align:center;">
+          <div style="font-size:30px;color:#F3E7DA;line-height:1;margin-bottom:7px;">&#9825;</div>
+          <div style="font-size:26px;color:#F3E7DA;font-style:italic;line-height:1;">à contre-temps</div>
+          <div style="font-size:10px;letter-spacing:3px;color:#BBC9D4;margin-top:10px;">FOURNIL VIVANT &middot; CRÉATEUR D'INSTANTS</div>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          ${bodyHtml}
+        </td></tr>
+        <tr><td style="padding:18px 28px;border-top:1px solid #D6DFE5;text-align:center;">
+          <p style="font-size:11px;color:#8A857E;line-height:1.7;margin:0;">
+            <strong style="color:#3E5A70;">à contre-temps — Fournil vivant</strong><br>
+            4 rue des Vignes Rousses, 63360 Gerzat · SIRET 108 719 105 00018<br>
+            TVA non applicable, art. 293 B du CGI<br>
+            <a href="https://fournilvivant.fr" style="color:#7C97AC;">fournilvivant.fr</a> · ${OWNER}<br>
+            <a href="https://www.fournilvivant.fr/mentions-legales" style="color:#7C97AC;">Mentions légales</a> · <a href="https://www.fournilvivant.fr/cgv" style="color:#7C97AC;">CGV</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>`;
 }
