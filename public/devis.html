@@ -95,7 +95,7 @@ function render(){
     +itemsTable(f)
     +'<div class="tot"><span>Montant total</span><span>'+eur(f.total)+'</span></div>'
     +'<div class="muted" style="margin-top:8px">Conditions : '+esc(f.payment_terms||"À réception")+'. Devis valable 30 jours.</div>'
-    +'<button class="dlbtn noprint" onclick="window.print()">📄 Télécharger / imprimer mon devis</button></div>';
+    +'<div class="noprint" style="display:flex;gap:10px;margin-top:14px"><button class="dlbtn" style="margin-top:0;flex:1" onclick="downloadDevis()">⬇ Télécharger (PDF)</button><button class="dlbtn" style="margin-top:0;flex:1" onclick="window.print()">🖨 Imprimer</button></div></div>';
 
   var body;
   if(f.signed_at){
@@ -138,6 +138,29 @@ function doAccord(name){
       render(); window.scrollTo({top:0,behavior:"smooth"});
     })
     .catch(function(){ if(err){ err.textContent="Échec de l'enregistrement, réessayez."; err.style.display="block"; } if(b){ b.disabled=false; b.textContent="✓ Bon pour accord — j'accepte ce devis"; } });
+}
+var H2P_LOADED=false;
+function ensureHtml2pdf(cb){
+  if(window.html2pdf){ cb(); return; }
+  if(H2P_LOADED){ var t=setInterval(function(){ if(window.html2pdf){ clearInterval(t); cb(); } },150); return; }
+  H2P_LOADED=true;
+  var s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+  s.onload=function(){ cb(); }; s.onerror=function(){ alert("Téléchargement indisponible. Utilisez « Imprimer » puis « Enregistrer en PDF »."); };
+  document.head.appendChild(s);
+}
+function downloadDevis(){
+  ensureHtml2pdf(function(){
+    var band=document.querySelector(".band"), card=document.querySelector("#content .card");
+    if(!band||!card) return;
+    var wrap=document.createElement("div");
+    wrap.style.cssText="position:fixed;left:-10000px;top:0;width:620px;background:#fff;";
+    wrap.appendChild(band.cloneNode(true));
+    var cc=card.cloneNode(true); cc.querySelectorAll("button,.noprint").forEach(function(x){x.remove();}); cc.style.marginTop="14px"; cc.style.border="none"; cc.style.boxShadow="none";
+    wrap.appendChild(cc);
+    document.body.appendChild(wrap);
+    var name="Devis-"+String(DEVIS.number||"").replace(/[^\w-]/g,"")+".pdf";
+    window.html2pdf().set({margin:10,filename:name,image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["avoid-all"]}}).from(wrap).save().then(function(){ wrap.remove(); }).catch(function(){ wrap.remove(); alert("Échec du téléchargement. Utilisez « Imprimer » → « Enregistrer en PDF »."); });
+  });
 }
 load();
 </script>

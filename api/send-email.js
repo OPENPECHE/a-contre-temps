@@ -32,10 +32,9 @@ function shell(bodyHtml) {
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#EDF0F3;font-family:Georgia,serif;">
   <div style="max-width:560px;margin:40px auto;background:#FBF8F4;border-radius:12px;overflow:hidden;">
-    <div style="background:#3E5A70;padding:1.9rem 2rem;text-align:center;">
-      <img src="https://www.fournilvivant.fr/heart-cream.png" width="42" alt="" style="display:block;margin:0 auto .55rem;" />
-      <p style="font-size:26px;color:#F3E7DA;margin:0;font-style:italic;font-family:Georgia,'Times New Roman',serif;">à contre-temps</p>
-      <p style="font-size:10px;letter-spacing:.22em;color:rgba(243,231,218,.7);margin:.4rem 0 0;">FOURNIL VIVANT · CRÉATEUR D'INSTANTS</p>
+    <div style="background:#3E5A70;padding:2.1rem 2rem;text-align:center;">
+      <p style="font-size:27px;color:#F3E7DA;margin:0;font-style:italic;font-family:Georgia,'Times New Roman',serif;line-height:1;">à contre-temps</p>
+      <p style="font-size:10px;letter-spacing:.24em;color:rgba(243,231,218,.72);margin:.5rem 0 0;">FOURNIL VIVANT · CRÉATEUR D'INSTANTS</p>
     </div>
     <div style="padding:2rem;">
       ${bodyHtml}
