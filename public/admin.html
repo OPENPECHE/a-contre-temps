@@ -188,6 +188,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Date de prestation / vente<input class="fi" type="date" id="if-service"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Date d'émission<input class="fi" type="date" id="if-issue"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Conditions de règlement<input class="fi" id="if-terms" value="À réception"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;grid-column:1/3">Nom de la prestation (optionnel)<input class="fi" id="if-stitle" placeholder="Ex. Repas inventaire du 21 novembre 2026 — vide = seule la date s'affiche"></label>
         </div>
         <p class="fd" style="font-size:13px;margin:14px 0 6px">Prestations</p>
         <div id="if-lines"></div>
@@ -778,7 +779,7 @@ function calcInvTotal(){
   const el=document.getElementById("if-total"); if(el) el.textContent=eurF(t);
 }
 function resetInvForm(){
-  ["if-client","if-siret","if-adr","if-email","if-note"].forEach(id=>{const e=document.getElementById(id); if(e)e.value="";});
+  ["if-client","if-siret","if-adr","if-email","if-note","if-stitle"].forEach(id=>{const e=document.getElementById(id); if(e)e.value="";});
   const t=document.getElementById("if-terms"); if(t)t.value="À réception";
   const today=new Date().toISOString().slice(0,10);
   const is=document.getElementById("if-issue"); if(is)is.value=today;
@@ -798,6 +799,7 @@ function editInvoice(id){
   document.getElementById("if-adr").value=f.client_address||"";
   document.getElementById("if-email").value=f.client_email||"";
   document.getElementById("if-service").value=(f.service_date||"").slice(0,10);
+  var st=document.getElementById("if-stitle"); if(st)st.value=f.service_title||"";
   document.getElementById("if-issue").value=(f.issue_date||new Date().toISOString().slice(0,10)).slice(0,10);
   document.getElementById("if-terms").value=f.payment_terms||"À réception";
   document.getElementById("if-note").value=f.notes||"";
@@ -829,8 +831,9 @@ async function saveInvoice(){
   const email=(document.getElementById("if-email").value||"").trim()||null;
   const note=(document.getElementById("if-note").value||"").trim()||null;
   const terms=(document.getElementById("if-terms").value||"À réception").trim();
+  const stitle=((document.getElementById("if-stitle")||{}).value||"").trim()||null;
   if(editingInvId){
-    const patch={ issue_date:issue, service_date:svc, client_name:client, client_address:adr, client_siret:siret, client_email:email, items, total, notes:note, payment_terms:terms };
+    const patch={ issue_date:issue, service_date:svc, service_title:stitle, client_name:client, client_address:adr, client_siret:siret, client_email:email, items, total, notes:note, payment_terms:terms };
     const pid=editingInvId;
     try{ const data=await sbFetch("invoices?id=eq."+pid,{method:"PATCH",body:JSON.stringify(patch)});
       const upd=Array.isArray(data)?data[0]:data;
@@ -844,6 +847,7 @@ async function saveInvoice(){
   const number=(invKind==="devis"?"D-":"")+year+"-"+String(seq).padStart(3,"0");
   const row={ type:invKind, number, seq, year, issue_date:issue,
     service_date:document.getElementById("if-service").value||null,
+    service_title:stitle,
     client_name:client,
     client_address:(document.getElementById("if-adr").value||"").trim()||null,
     client_siret:(document.getElementById("if-siret").value||"").trim()||null,
@@ -919,7 +923,7 @@ async function sendDevisLink(id){
   if(msg===null) return;
   var url=location.origin+"/devis?id="+id;
   try{
-    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,url:url,message:msg}})});
+    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,service_title:f.service_title,url:url,message:msg}})});
     const j=await r.json().catch(function(){return {};});
     if(r.ok && j.ok!==false){ alert("Devis envoyé à "+f.client_email+" ✓"); }
     else { alert("L'envoi a échoué.\n"+(j.error?JSON.stringify(j.error):"Réessaie dans un instant.")); }
@@ -962,7 +966,7 @@ function invoiceHTML(f){
     +'</style></head><body><div class="sheet"><div class="top">'
     +'<div class="band"><div class="bL"><img src="https://www.fournilvivant.fr/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d\'instants</div></div></div>'
     +'<div class="bR"><div class="ft">'+(isDevis?"Devis":"Facture")+'</div><div class="no">N° '+escF(f.number)+'</div></div></div>'
-    +'<div class="subrow"><div class="em"><b>'+escF(EMETTEUR.nom)+'</b><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'<div class="dates">'+(isDevis?'Établi le ':'Émise le ')+fmtDateFR(f.issue_date)+(f.service_date?(' · Prestation '+(isDevis?'prévue le ':'du ')+fmtDateFR(f.service_date)):'')+'</div></div>'
+    +'<div class="subrow"><div class="em"><b>'+escF(EMETTEUR.nom)+'</b><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'<div class="dates">'+(isDevis?'Établi le ':'Émise le ')+fmtDateFR(f.issue_date)+(f.service_title?(' · Prestation : '+escF(f.service_title)):(f.service_date?(' · Prestation '+(isDevis?'prévue le ':'du ')+fmtDateFR(f.service_date)):''))+'</div></div>'
     +'<div class="box"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div></div>'
     +'<table><thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unitaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="tot"><div class="t">'+(dep>0?('<div class="r"><span>Total</span><span>'+eurF(f.total)+'</span></div><div class="r"><span>Acompte versé</span><span>− '+eurF(dep)+'</span></div>'):'')

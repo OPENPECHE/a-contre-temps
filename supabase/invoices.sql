@@ -24,6 +24,7 @@ create table if not exists invoices (
   year         int  not null,
   issue_date   date not null default current_date,
   service_date date,                          -- date de la prestation / vente
+  service_title  text,                        -- nom libre de la prestation (optionnel)
   client_name    text not null,
   client_address text,
   client_siret   text,
@@ -43,6 +44,8 @@ alter table invoices add column if not exists type text not null default 'factur
 alter table invoices add column if not exists signed_name text;
 alter table invoices add column if not exists signed_at   timestamptz;
 alter table invoices add column if not exists signature   text;   -- data URL PNG du tracé
+-- Nom libre de la prestation (optionnel, remplace la date affichée) :
+alter table invoices add column if not exists service_title text;
 
 create index if not exists invoices_year_seq_idx on invoices(type, year, seq desc);
 
