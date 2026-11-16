@@ -175,6 +175,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       <p class="sub">À l'en-tête à contre-temps · <b>micro-entreprise, sans TVA</b> (art. 293 B du CGI) · numérotation automatique.</p>
       <div class="card card0" style="padding:1rem 1.2rem;margin-bottom:1.2rem">
         <p class="fd" style="font-size:16px;margin-bottom:.7rem">Nouvelle facture</p>
+        <div id="if-editing" style="display:none;background:#FCEEE3;border:1px solid #E8C9AE;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--ru)"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Client (nom / société)<input class="fi" id="if-client" placeholder="Ex. Entreprise Durand SARL"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">SIRET client (si pro)<input class="fi" id="if-siret" placeholder="Optionnel"></label>
@@ -190,7 +191,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;margin-top:12px">Note (optionnel)<input class="fi" id="if-note" placeholder="Ex. Merci de votre confiance."></label>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px">
           <div style="font-size:18px;color:var(--bd)"><b>Total : <span id="if-total">0,00 €</span></b> <span style="font-size:11px;color:var(--is)">net, sans TVA</span></div>
-          <button class="btn bp" onclick="saveInvoice()">Créer &amp; imprimer</button>
+          <button class="btn bp" id="if-save" onclick="saveInvoice()">Créer &amp; imprimer</button>
         </div>
         <p id="if-err" style="color:var(--rd,#c0392b);font-size:12px;display:none;margin-top:8px"></p>
       </div>
@@ -725,6 +726,7 @@ function goTab(name,btn){
 const EMETTEUR = { nom:"à contre-temps — Fournil vivant", adr:"4 rue des Vignes Rousses, 63360 Gerzat",
   siret:"108 719 105 00018", tel:"06 01 48 28 90", email:"acontretemps@fournilvivant.fr", site:"fournilvivant.fr" };
 let INVOICES = [];
+let editingInvId = null;
 function escF(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function eurF(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €"; }
 function fmtDateFR(d){ if(!d) return ""; try{ return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"}); }catch(e){ return d; } }
@@ -759,7 +761,30 @@ function resetInvForm(){
   const box=document.getElementById("if-lines"); if(box){ box.innerHTML=""; addInvLine(); }
   calcInvTotal();
   const err=document.getElementById("if-err"); if(err)err.style.display="none";
+  editingInvId=null;
+  const hed=document.getElementById("if-editing"); if(hed)hed.style.display="none";
+  const sbtn=document.getElementById("if-save"); if(sbtn)sbtn.textContent="Créer & imprimer";
 }
+function editInvoice(id){
+  const f=INVOICES.find(x=>x.id===id); if(!f) return;
+  editingInvId=id;
+  document.getElementById("if-client").value=f.client_name||"";
+  document.getElementById("if-siret").value=f.client_siret||"";
+  document.getElementById("if-adr").value=f.client_address||"";
+  document.getElementById("if-email").value=f.client_email||"";
+  document.getElementById("if-service").value=(f.service_date||"").slice(0,10);
+  document.getElementById("if-issue").value=(f.issue_date||new Date().toISOString().slice(0,10)).slice(0,10);
+  document.getElementById("if-terms").value=f.payment_terms||"À réception";
+  document.getElementById("if-note").value=f.notes||"";
+  const box=document.getElementById("if-lines"); box.innerHTML="";
+  (Array.isArray(f.items)?f.items:[]).forEach(it=>addInvLine(it.label,it.qty,it.pu));
+  if(!box.children.length) addInvLine();
+  calcInvTotal();
+  const hed=document.getElementById("if-editing"); if(hed){ hed.style.display="block"; hed.innerHTML='✏ Modification de la facture <b>'+escF(f.number)+'</b> — <a href="#" style="color:var(--bd)" onclick="cancelEditInvoice();return false;">annuler</a>'; }
+  const sbtn=document.getElementById("if-save"); if(sbtn) sbtn.textContent="Enregistrer les modifications";
+  const pf=document.getElementById("page-factures"); if(pf) pf.scrollIntoView({behavior:"smooth"});
+}
+function cancelEditInvoice(){ resetInvForm(); }
 async function saveInvoice(){
   const err=document.getElementById("if-err"); err.style.display="none";
   const client=(document.getElementById("if-client").value||"").trim();
@@ -770,6 +795,21 @@ async function saveInvoice(){
   if(!client){ err.textContent="Indiquez le nom du client."; err.style.display="block"; return; }
   if(!items.length){ err.textContent="Ajoutez au moins une ligne (désignation + prix)."; err.style.display="block"; return; }
   const total=Math.round(invTotal(items)*100)/100;
+  const svc=document.getElementById("if-service").value||null;
+  const adr=(document.getElementById("if-adr").value||"").trim()||null;
+  const siret=(document.getElementById("if-siret").value||"").trim()||null;
+  const email=(document.getElementById("if-email").value||"").trim()||null;
+  const note=(document.getElementById("if-note").value||"").trim()||null;
+  const terms=(document.getElementById("if-terms").value||"À réception").trim();
+  if(editingInvId){
+    const patch={ issue_date:issue, service_date:svc, client_name:client, client_address:adr, client_siret:siret, client_email:email, items, total, notes:note, payment_terms:terms };
+    const pid=editingInvId;
+    try{ const data=await sbFetch("invoices?id=eq."+pid,{method:"PATCH",body:JSON.stringify(patch)});
+      const upd=Array.isArray(data)?data[0]:data;
+      resetInvForm(); await loadInvoices(); printInvoice((upd&&upd.id)||pid);
+    }catch(e){ err.textContent="Erreur : "+(e&&e.message?e.message:"modification impossible"); err.style.display="block"; }
+    return;
+  }
   const year=Number(issue.slice(0,4));
   let seq=1;
   try{ const rows=await sbFetch("invoices?year=eq."+year+"&select=seq&order=seq.desc&limit=1"); if(Array.isArray(rows)&&rows[0]) seq=Number(rows[0].seq)+1; }catch(e){}
@@ -803,6 +843,7 @@ function renderInvoices(){
     +'<p style="font-size:11px;color:var(--is)">Émise le '+fmtDateFR(f.issue_date)+' · <b style="color:var(--bd)">'+eurF(f.total)+'</b></p></div>'
     +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
     +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?"✓ Payée":"À encaisser")+'</button>'
+    +'<button class="btn bg bsm" style="padding:4px 9px" onclick="editInvoice(\''+f.id+'\')">✏ Modifier</button>'
     +'<button class="btn bg bsm" style="padding:4px 9px" onclick="printInvoice(\''+f.id+'\')">🖨 Imprimer</button></div></div>').join("");
 }
 function printInvoice(id){
@@ -817,19 +858,19 @@ function invoiceHTML(f){
   const dep=Number(f.deposit)||0, net=(Number(f.total)||0)-dep;
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture '+escF(f.number)+' — à contre-temps</title><style>'
     +'@page{size:A4;margin:16mm;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;}'
-    +'.head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #3E5A70;padding-bottom:16px;margin-bottom:20px;}'
-    +'.brand{display:flex;align-items:center;gap:10px;} .brand img{width:46px;height:auto;} .brand .n{font-size:24px;font-style:italic;color:#3E5A70;line-height:1;} .brand .s{font-size:9px;letter-spacing:.18em;color:#A6713F;text-transform:uppercase;margin-top:3px;}'
-    +'.em{font-size:11px;color:#555;text-align:right;line-height:1.6;} .ttl{font-size:30px;color:#3E5A70;font-style:italic;} .meta{color:#555;font-size:12px;margin-bottom:18px;}'
-    +'.box{background:#F3E7DA;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.6;max-width:300px;margin:6px 0 20px auto;} .box h4{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#A6713F;margin-bottom:4px;}'
+    +'.band{background:#3E5A70;color:#F3E7DA;border-radius:10px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}'
+    +'.band .bL{display:flex;align-items:center;gap:12px;} .band img{width:44px;height:auto;} .band .n{font-size:24px;font-style:italic;line-height:1;} .band .s{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,231,218,.8);margin-top:4px;}'
+    +'.band .bR{text-align:right;} .band .ft{font-size:26px;font-style:italic;line-height:1;} .band .no{font-size:11px;letter-spacing:.04em;color:rgba(243,231,218,.85);margin-top:5px;}'
+    +'.subrow{display:flex;justify-content:space-between;gap:24px;margin-bottom:18px;} .em{font-size:11px;color:#555;line-height:1.6;} .em b{color:#3E5A70;} .dates{font-size:12px;color:#555;margin-top:8px;}'
+    +'.box{background:#F3E7DA;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.6;max-width:300px;margin:0;} .box h4{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#A6713F;margin-bottom:4px;}'
     +'table{width:100%;border-collapse:collapse;margin:6px 0 8px;} th{background:#3E5A70;color:#F3E7DA;font-size:11px;text-align:left;padding:8px 10px;font-weight:normal;} td{padding:8px 10px;border-bottom:1px solid #E6DFD3;}'
     +'.tot{display:flex;justify-content:flex-end;} .tot .t{min-width:270px;} .tot .r{display:flex;justify-content:space-between;padding:4px 10px;} .tot .grand{background:#3E5A70;color:#F3E7DA;border-radius:6px;font-size:16px;padding:9px 10px;margin-top:3px;}'
     +'.legal{margin-top:24px;font-size:10.5px;color:#666;line-height:1.6;border-top:1px solid #E6DFD3;padding-top:12px;} .legal b{color:#3E5A70;} .foot{margin-top:16px;text-align:center;font-size:10px;color:#999;}'
     +'</style></head><body>'
-    +'<div class="head"><div class="brand"><img src="https://www.fournilvivant.fr/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d\'instants</div></div></div>'
-    +'<div class="em"><strong>'+escF(EMETTEUR.nom)+'</strong><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'</div></div>'
-    +'<div class="ttl">Facture</div>'
-    +'<div class="meta">N° <b>'+escF(f.number)+'</b> · Émise le '+fmtDateFR(f.issue_date)+(f.service_date?(' · Prestation du '+fmtDateFR(f.service_date)):'')+'</div>'
-    +'<div class="box"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div>'
+    +'<div class="band"><div class="bL"><img src="https://www.fournilvivant.fr/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d\'instants</div></div></div>'
+    +'<div class="bR"><div class="ft">Facture</div><div class="no">N° '+escF(f.number)+'</div></div></div>'
+    +'<div class="subrow"><div class="em"><b>'+escF(EMETTEUR.nom)+'</b><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'<div class="dates">Émise le '+fmtDateFR(f.issue_date)+(f.service_date?(' · Prestation du '+fmtDateFR(f.service_date)):'')+'</div></div>'
+    +'<div class="box"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div></div>'
     +'<table><thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unitaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="tot"><div class="t">'+(dep>0?('<div class="r"><span>Total</span><span>'+eurF(f.total)+'</span></div><div class="r"><span>Acompte versé</span><span>− '+eurF(dep)+'</span></div>'):'')
     +'<div class="r grand"><span>'+(dep>0?'Reste à payer':'Total à payer')+'</span><span>'+eurF(net)+'</span></div></div></div>'
