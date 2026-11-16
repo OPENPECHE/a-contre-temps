@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Votre devis — à contre-temps</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/heart-cream.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--cr:#F3E7DA;--pp:#FBF8F4;--ru:#A6713F;--ink:#2B2925;--is:rgba(43,41,37,.62);--gn:#4A7C59;--bs:#e5ddce;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;padding:16px;}
+  .wrap{max-width:620px;margin:0 auto;}
+  .band{background:var(--bd);color:var(--cr);border-radius:12px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;}
+  .band img{height:36px;}
+  .band .bL{display:flex;align-items:center;gap:10px;}
+  .band .n{font-family:var(--serif);font-style:italic;font-size:21px;line-height:1;}
+  .band .s{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(243,231,218,.75);margin-top:3px;}
+  .band .ft{font-family:var(--serif);font-style:italic;font-size:22px;}
+  .band .no{font-size:10px;color:rgba(243,231,218,.85);margin-top:3px;text-align:right;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:14px;padding:18px;margin-top:16px;}
+  .muted{color:var(--is);font-size:13px;}
+  h2{font-family:var(--serif);font-weight:500;color:var(--bd);font-size:18px;margin-bottom:8px;}
+  table{width:100%;border-collapse:collapse;margin:6px 0;}
+  th{text-align:left;font-size:11px;letter-spacing:.04em;color:var(--is);border-bottom:1px solid var(--bs);padding:6px 4px;font-weight:600;}
+  td{padding:9px 4px;border-bottom:1px solid #f1ead f;border-bottom:1px solid #f3ece0;font-size:13.5px;vertical-align:top;}
+  td .d{font-size:11.5px;color:var(--is);margin-top:3px;}
+  .tot{display:flex;justify-content:space-between;align-items:center;background:var(--bd);color:var(--cr);border-radius:8px;padding:11px 14px;margin-top:10px;font-family:var(--serif);font-size:17px;}
+  label{font-size:12px;color:var(--is);display:block;margin-bottom:4px;}
+  input[type=text]{width:100%;padding:11px 12px;border:1px solid var(--bs);border-radius:9px;font-size:15px;font-family:var(--sans);background:var(--pp);}
+  .pad{border:1px dashed var(--b);border-radius:10px;background:#fff;touch-action:none;width:100%;height:170px;display:block;}
+  .row{display:flex;align-items:center;gap:8px;margin-top:12px;}
+  .row input[type=checkbox]{width:18px;height:18px;}
+  .btn{display:block;width:100%;text-align:center;background:var(--bd);color:var(--cr);border:none;padding:14px;border-radius:999px;font-size:14px;letter-spacing:.04em;font-weight:600;cursor:pointer;margin-top:14px;font-family:var(--sans);}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;}
+  .lnk{background:none;border:none;color:var(--ru);font-size:12px;cursor:pointer;text-decoration:underline;}
+  .ok{background:#EAF3EC;border:1px solid #CBE3D3;color:#2f6b43;border-radius:10px;padding:14px;text-align:center;}
+  .foot{text-align:center;color:var(--is);font-size:11px;margin:20px 0 10px;line-height:1.7;}
+  .sigbox img{max-height:80px;}
+</style></head>
+<body><div class="wrap" id="wrap">
+  <div class="band"><div class="bL"><img src="/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d'instants</div></div></div>
+    <div><div class="ft">Devis</div><div class="no" id="d-no"></div></div></div>
+  <div id="content"><div class="card muted" style="text-align:center">Chargement du devis…</div></div>
+  <div class="foot">à contre-temps — Fournil vivant · 4 rue des Vignes Rousses, 63360 Gerzat · SIRET 108 719 105 00018<br>TVA non applicable, art. 293 B du CGI · Devis gratuit, valable 30 jours.</div>
+</div>
+
+<script>
+var SB="https://jxxgafyqfbnqieiqltcn.supabase.co", KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+function H(){return {"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"};}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function eur(n){return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €";}
+function dateFR(d){ if(!d) return ""; try{return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});}catch(e){return d;} }
+function dateHeureFR(d){ try{return new Date(d).toLocaleString("fr-FR",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch(e){return d;} }
+
+var id=new URLSearchParams(location.search).get("id");
+var DEVIS=null, hasDrawn=false, ctx=null;
+
+function load(){
+  if(!id){ fail("Lien invalide."); return; }
+  fetch(SB+"/rest/v1/invoices?id=eq."+encodeURIComponent(id)+"&type=eq.devis&select=*",{headers:H()})
+    .then(function(r){return r.json();})
+    .then(function(a){ if(!Array.isArray(a)||!a.length){ fail("Devis introuvable ou lien expiré."); return; } DEVIS=a[0]; render(); })
+    .catch(function(){ fail("Impossible de charger le devis. Vérifiez votre connexion."); });
+}
+function fail(msg){ document.getElementById("content").innerHTML='<div class="card" style="text-align:center;color:var(--ru)">'+esc(msg)+'</div>'; }
+
+function itemsTable(f){
+  var its=Array.isArray(f.items)?f.items:[];
+  var rows=its.map(function(it){ return '<tr><td>'+esc(it.label)+(it.desc?'<div class="d">'+esc(it.desc).replace(/\n/g,"<br>")+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right;white-space:nowrap">'+eur((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>'; }).join("");
+  return '<table><thead><tr><th>Prestation</th><th style="text-align:center">Qté</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function render(){
+  var f=DEVIS;
+  document.getElementById("d-no").textContent="N° "+f.number;
+  var head='<div class="card"><div class="muted">Établi le '+dateFR(f.issue_date)+(f.service_date?(' · Prestation prévue le '+dateFR(f.service_date)):'')+'</div>'
+    +'<h2 style="margin-top:6px">Devis pour '+esc(f.client_name)+'</h2>'
+    +itemsTable(f)
+    +'<div class="tot"><span>Montant total</span><span>'+eur(f.total)+'</span></div>'
+    +'<div class="muted" style="margin-top:8px">Conditions : '+esc(f.payment_terms||"À réception")+'. Devis valable 30 jours.</div></div>';
+
+  var body;
+  if(f.signed_at){
+    body='<div class="card"><div class="ok">✓ Devis accepté le '+dateHeureFR(f.signed_at)+(f.signed_name?' par <b>'+esc(f.signed_name)+'</b>':'')+'</div>'
+      +'<p class="muted" style="text-align:center;margin-top:14px">Votre accord a bien été <b>transmis à à contre-temps</b>. Merci&nbsp;! Nous revenons vers vous pour la suite. 🥐</p></div>';
+  } else {
+    body='<div class="card"><h2>Valider ce devis</h2>'
+      +'<p class="muted" style="margin-bottom:14px">Vérifiez le devis ci-dessus. Pour l\'accepter, indiquez votre nom puis cliquez sur «&nbsp;Bon pour accord&nbsp;». Votre acceptation nous sera transmise immédiatement.</p>'
+      +'<label>Votre nom et prénom</label><input type="text" id="sig-name" value="'+esc(f.client_name||"")+'" autocomplete="name">'
+      +'<button class="btn" id="sig-btn" onclick="submitAccord()" style="margin-top:16px">✓ Bon pour accord — j\'accepte ce devis</button>'
+      +'<p class="muted" style="text-align:center;margin-top:10px;font-size:11px">En cliquant, vous acceptez ce devis (valeur d\'accord en ligne, horodaté).</p>'
+      +'<p id="sig-err" class="muted" style="color:var(--ru);display:none;margin-top:8px"></p></div>';
+  }
+  document.getElementById("content").innerHTML=head+body;
+}
+
+function submitAccord(){
+  var err=document.getElementById("sig-err"); err.style.display="none";
+  var name=(document.getElementById("sig-name").value||"").trim();
+  if(!name){ err.textContent="Merci d'indiquer votre nom."; err.style.display="block"; return; }
+  var b=document.getElementById("sig-btn"); b.disabled=true; b.textContent="Validation…";
+  var patch={ signed_name:name, signed_at:new Date().toISOString(), signature:"accord-en-ligne", status:"paid" };
+  fetch(SB+"/rest/v1/invoices?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:Object.assign(H(),{"Prefer":"return=representation"}),body:JSON.stringify(patch)})
+    .then(function(r){ return r.json(); })
+    .then(function(a){ var row=Array.isArray(a)?a[0]:a; DEVIS=row||Object.assign(DEVIS,patch); render(); window.scrollTo({top:0,behavior:"smooth"}); })
+    .catch(function(){ err.textContent="Échec de l'enregistrement, réessayez."; err.style.display="block"; b.disabled=false; b.textContent="✓ Bon pour accord — j'accepte ce devis"; });
+}
+load();
+</script>
+</body></html>

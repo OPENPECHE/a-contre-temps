@@ -868,10 +868,11 @@ function renderInvoices(){
   if(!INVOICES.length){ box.innerHTML='<div class="sub" style="padding:1rem">Aucune facture pour le moment.</div>'; return; }
   box.innerHTML=INVOICES.map(f=>'<div class="prow">'
     +'<div style="flex:1;min-width:0"><p style="font-size:13px"><b>'+escF(f.number)+'</b> · '+escF(f.client_name)+'</p>'
-    +'<p style="font-size:11px;color:var(--is)">Émise le '+fmtDateFR(f.issue_date)+' · <b style="color:var(--bd)">'+eurF(f.total)+'</b></p></div>'
+    +'<p style="font-size:11px;color:var(--is)">Émise le '+fmtDateFR(f.issue_date)+' · <b style="color:var(--bd)">'+eurF(f.total)+'</b>'+(f.signed_name?' · <span style="color:#4A7C59">✓ accepté par '+escF(f.signed_name)+'</span>':'')+'</p></div>'
     +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
     +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?(invKind==="devis"?"✓ Accepté":"✓ Payée"):(invKind==="devis"?"En attente":"À encaisser"))+'</button>'
     +'<button class="btn bg bsm" style="padding:4px 9px" onclick="editInvoice(\''+f.id+'\')">✏ Modifier</button>'
+    +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="copyDevisLink(\''+f.id+'\')" title="Copier le lien de signature à envoyer au client">🔗 Lien</button>':'')
     +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="convertToInvoice(\''+f.id+'\')" title="Créer une facture depuis ce devis">➡ Facturer</button>':'')
     +'<button class="btn bp bsm" style="padding:4px 9px" onclick="downloadPdfById(\''+f.id+'\')">📄 PDF</button>'
     +'<button class="btn bg bsm" style="padding:4px 7px" onclick="printInvoice(\''+f.id+'\')" title="Imprimer">🖨</button></div></div>').join("");
@@ -904,6 +905,11 @@ function downloadInvoicePdf(f){
   setTimeout(function(){ if(!done){ window.removeEventListener("message",onMsg); try{ifr.remove();}catch(_){} } }, 20000);
 }
 function downloadPdfById(id){ var f=INVOICES.find(function(x){return x.id===id;}); if(f) downloadInvoicePdf(f); }
+function copyDevisLink(id){
+  var url=location.origin+"/devis?id="+id;
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ alert("Lien de signature copié — à envoyer au client :\n\n"+url); },function(){ prompt("Copiez le lien de signature :", url); }); }
+  else { prompt("Copiez le lien de signature :", url); }
+}
 async function convertToInvoice(id){
   const d=INVOICES.find(x=>x.id===id); if(!d) return;
   if(!confirm("Créer une facture à partir du devis "+d.number+" ?")) return;
@@ -949,7 +955,7 @@ function invoiceHTML(f){
     +'<div style="font-size:12px;color:#555;margin-top:18px">Conditions de règlement : '+escF(f.payment_terms||"À réception")+'.'+(f.notes?(' '+escF(f.notes)):'')+'</div>'
     +'</div><div class="bottom">'
     +(isDevis
-      ? '<div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>Devis gratuit, valable 30 jours à compter de la date d\'émission.</div><div class="accord"><b>Bon pour accord</b> — à nous retourner daté et signé.<br><br>Date : …………………………&nbsp;&nbsp;&nbsp;&nbsp;Signature (précédée de la mention « Bon pour accord ») :</div>'
+      ? '<div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>Devis gratuit, valable 30 jours à compter de la date d\'émission.</div>'+(f.signed_at?('<div class="accord" style="border-color:#CBE3D3;background:#EAF3EC"><b>✓ Devis accepté en ligne</b> le '+fmtDateFR(f.signed_at)+(f.signed_name?' par '+escF(f.signed_name):'')+' — bon pour accord confirmé par le client.</div>'):'<div class="accord"><b>Bon pour accord</b> — à nous retourner daté et signé.<br><br>Date : …………………………&nbsp;&nbsp;&nbsp;&nbsp;Signature (précédée de la mention « Bon pour accord ») :</div>')
       : '<div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>En cas de retard de paiement : pénalités au taux de 3 fois l\'intérêt légal, exigibles sans rappel, et indemnité forfaitaire pour frais de recouvrement de 40 € (art. L441-10 et D441-5 du Code de commerce). Pas d\'escompte pour paiement anticipé.</div>')
     +'<div class="foot">'+escF(EMETTEUR.nom)+' · '+escF(EMETTEUR.adr)+' · SIRET '+escF(EMETTEUR.siret)+' · '+escF(EMETTEUR.site)+'</div>'
     +'</div></div></body></html>';

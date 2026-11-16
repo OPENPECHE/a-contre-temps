@@ -39,6 +39,10 @@ create table if not exists invoices (
 
 -- Pour une table invoices déjà créée sans la colonne type :
 alter table invoices add column if not exists type text not null default 'facture';
+-- Signature électronique des devis (acceptation en ligne) :
+alter table invoices add column if not exists signed_name text;
+alter table invoices add column if not exists signed_at   timestamptz;
+alter table invoices add column if not exists signature   text;   -- data URL PNG du tracé
 
 create index if not exists invoices_year_seq_idx on invoices(type, year, seq desc);
 
