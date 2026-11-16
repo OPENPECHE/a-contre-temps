@@ -10,7 +10,24 @@
 const OWNER = "acontretemps@fournilvivant.fr";
 const FROM = "à contre-temps <acontretemps@fournilvivant.fr>";
 
+// Le cœur de marque, embarqué en pièce jointe "inline" (cid:heartlogo) pour qu'il
+// s'affiche TOUJOURS, même quand la messagerie bloque les images distantes.
+let HEART_CACHE = null;
+async function heartAttachment() {
+  if (HEART_CACHE !== null) return HEART_CACHE;
+  try {
+    const r = await fetch("https://www.fournilvivant.fr/heart-cream.png");
+    const buf = Buffer.from(await r.arrayBuffer());
+    HEART_CACHE = { filename: "coeur.png", content: buf.toString("base64"), content_id: "heartlogo" };
+  } catch { HEART_CACHE = false; }
+  return HEART_CACHE;
+}
+
 async function sendEmail(apiKey, payload) {
+  if (!payload.attachments) {
+    const h = await heartAttachment();
+    if (h) payload = { ...payload, attachments: [h] };
+  }
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -35,7 +52,7 @@ function shell(bodyHtml) {
     <tr><td align="center" style="padding:24px 12px;">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;background:#FBF8F4;border-radius:12px;overflow:hidden;">
         <tr><td style="background:#3E5A70;padding:28px 24px;text-align:center;">
-          <div style="font-size:30px;color:#F3E7DA;line-height:1;margin-bottom:7px;">&#9825;</div>
+          <img src="cid:heartlogo" width="40" alt="" style="display:block;margin:0 auto 9px;border:0;outline:none;" />
           <div style="font-size:26px;color:#F3E7DA;font-style:italic;line-height:1;">à contre-temps</div>
           <div style="font-size:10px;letter-spacing:3px;color:#BBC9D4;margin-top:10px;">FOURNIL VIVANT &middot; CRÉATEUR D'INSTANTS</div>
         </td></tr>

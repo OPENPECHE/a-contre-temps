@@ -139,28 +139,24 @@ function doAccord(name){
     })
     .catch(function(){ if(err){ err.textContent="Échec de l'enregistrement, réessayez."; err.style.display="block"; } if(b){ b.disabled=false; b.textContent="✓ Bon pour accord — j'accepte ce devis"; } });
 }
-var H2P_LOADED=false;
-function ensureHtml2pdf(cb){
-  if(window.html2pdf){ cb(); return; }
-  if(H2P_LOADED){ var t=setInterval(function(){ if(window.html2pdf){ clearInterval(t); cb(); } },150); return; }
-  H2P_LOADED=true;
-  var s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-  s.onload=function(){ cb(); }; s.onerror=function(){ alert("Téléchargement indisponible. Utilisez « Imprimer » puis « Enregistrer en PDF »."); };
-  document.head.appendChild(s);
-}
 function downloadDevis(){
-  ensureHtml2pdf(function(){
-    var band=document.querySelector(".band"), card=document.querySelector("#content .card");
-    if(!band||!card) return;
-    var wrap=document.createElement("div");
-    wrap.style.cssText="position:fixed;left:-10000px;top:0;width:620px;background:#fff;";
-    wrap.appendChild(band.cloneNode(true));
-    var cc=card.cloneNode(true); cc.querySelectorAll("button,.noprint").forEach(function(x){x.remove();}); cc.style.marginTop="14px"; cc.style.border="none"; cc.style.boxShadow="none";
-    wrap.appendChild(cc);
-    document.body.appendChild(wrap);
-    var name="Devis-"+String(DEVIS.number||"").replace(/[^\w-]/g,"")+".pdf";
-    window.html2pdf().set({margin:10,filename:name,image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["avoid-all"]}}).from(wrap).save().then(function(){ wrap.remove(); }).catch(function(){ wrap.remove(); alert("Échec du téléchargement. Utilisez « Imprimer » → « Enregistrer en PDF »."); });
-  });
+  if(!DEVIS) return;
+  var name="Devis-"+String(DEVIS.number||"").replace(/[^\w-]/g,"")+".pdf";
+  // on clone la page rendue, on retire le formulaire / boutons / scripts
+  var docClone=document.documentElement.cloneNode(true);
+  docClone.querySelectorAll(".noprint, script").forEach(function(x){ x.remove(); });
+  var html="<!DOCTYPE html>"+docClone.outerHTML;
+  var inject='<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></scr'+'ipt>'
+    +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){try{'
+    +'html2pdf().set({margin:8,filename:'+JSON.stringify(name)+',image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["avoid-all"]}}).from(document.body).save().then(function(){parent.postMessage("acp-pdf-done","*");}).catch(function(){parent.postMessage("acp-pdf-fail","*");});'
+    +'}catch(e){parent.postMessage("acp-pdf-fail","*");}},600);});</scr'+'ipt>';
+  html=html.replace("</body>", inject+"</body>");
+  var ifr=document.createElement("iframe"); ifr.style.cssText="position:fixed;left:-10000px;top:0;width:794px;height:1300px;border:0;";
+  document.body.appendChild(ifr);
+  var d=ifr.contentWindow.document; d.open(); d.write(html); d.close();
+  var onMsg=function(e){ if(e.data==="acp-pdf-done"||e.data==="acp-pdf-fail"){ window.removeEventListener("message",onMsg); if(e.data==="acp-pdf-fail") alert("Échec du téléchargement. Utilisez « Imprimer » → « Enregistrer en PDF »."); setTimeout(function(){ try{ifr.remove();}catch(_){} },700); } };
+  window.addEventListener("message",onMsg);
+  setTimeout(function(){ window.removeEventListener("message",onMsg); try{ifr.remove();}catch(_){} }, 20000);
 }
 load();
 </script>
