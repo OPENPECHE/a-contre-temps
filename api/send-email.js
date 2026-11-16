@@ -166,7 +166,7 @@ export default async function handler(req, res) {
     let svc = "";
     try { if (d.service_date) svc = new Date(String(d.service_date).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch { /* */ }
     const stitle = String(d.service_title == null ? "" : d.service_title).trim();
-    const presTxt = stitle ? ` pour <strong>${esc(stitle)}</strong>` : (svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : "");
+    const presTxt = stitle ? ` pour <strong>${esc(stitle)}${svc ? ` du ${esc(svc)}` : ""}</strong>` : (svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : "");
     const msg = String(d.message == null ? "" : d.message).trim();
     const msgHtml = msg ? `<p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;white-space:pre-line;">${esc(msg)}</p>` : "";
     const body = `
@@ -177,6 +177,7 @@ export default async function handler(req, res) {
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:10px auto 34px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
         <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:10px;white-space:nowrap;"><span style="color:#FFFFFF;">Voir et valider mon devis &nbsp;&rarr;</span></a>
       </td></tr></table>
+      <div style="line-height:24px;font-size:24px;height:24px;">&nbsp;</div>
       <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;text-align:center;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
       <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:16px 0 0;text-align:center;">Devis gratuit, valable 30 jours.<br>Si le bouton ne s'affiche pas, copiez ce lien&nbsp;:<br><a href="${esc(url)}" style="text-decoration:underline;word-break:break-all;"><span style="color:#8A857E;">${esc(url)}</span></a></p>`;
     try {

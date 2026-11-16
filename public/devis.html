@@ -90,7 +90,7 @@ function itemsTable(f){
 function render(){
   var f=DEVIS;
   document.getElementById("d-no").textContent="N° "+f.number;
-  var head='<div class="card"><div class="muted">Établi le '+dateFR(f.issue_date)+(f.service_title?(' · Prestation : '+esc(f.service_title)):(f.service_date?(' · Prestation prévue le '+dateFR(f.service_date)):''))+'</div>'
+  var head='<div class="card"><div class="muted">Établi le '+dateFR(f.issue_date)+(f.service_title?(' · Prestation : '+esc(f.service_title)+(f.service_date?(' du '+dateFR(f.service_date)):'')):(f.service_date?(' · Prestation prévue le '+dateFR(f.service_date)):''))+'</div>'
     +'<h2 style="margin-top:6px">Devis pour '+esc(f.client_name)+'</h2>'
     +itemsTable(f)
     +'<div class="tot"><span>Montant total</span><span>'+eur(f.total)+'</span></div>'
