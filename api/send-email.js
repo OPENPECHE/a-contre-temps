@@ -134,10 +134,22 @@ export default async function handler(req, res) {
       <table style="width:100%;border-collapse:collapse;border-top:1px solid #E6DFD3;border-bottom:1px solid #E6DFD3;margin-bottom:.6rem">${rows}</table>
       <p style="font-size:16px;font-weight:600;color:#3E5A70;text-align:right;margin:0 0 1rem">Total : ${money(d.total)}</p>
       <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7">Tu peux le convertir en facture dans le back-office : <strong>Devis → ➡ Facturer</strong>.</p>`;
+    let svc = "";
+    try { if (d.service_date) svc = new Date(String(d.service_date).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch { /* */ }
+    const clientBody = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Merci pour votre validation 🙏</h1>
+      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 16px;">Bonjour,<br>Nous avons bien reçu votre <strong>accord</strong> pour le devis <strong>${esc(d.number)}</strong> d'un montant de <strong>${money(d.total)}</strong>. Merci de votre confiance&nbsp;!</p>
+      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 16px;">Nous revenons <strong>rapidement vers vous</strong> pour organiser la planification de votre prestation${svc ? ` (prévue le ${esc(svc)})` : ""}.</p>
+      <p style="font-size:13px;color:#555;line-height:1.7;margin:0;">À très bientôt,<br>Mylène — à contre-temps, Fournil vivant</p>`;
     try {
-      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [OWNER], reply_to: d.client_email || OWNER, subject: `✓ Devis ${d.number || ""} accepté par ${d.client_name || "un client"}`, html: shell(body) });
-      if (!r.ok) console.error("Resend devis_accepted error:", r.status, r.data);
-      return res.status(200).json({ ok: r.ok, status: r.status, error: r.ok ? null : r.data });
+      const owner = await sendEmail(RESEND_API_KEY, { from: FROM, to: [OWNER], reply_to: d.client_email || OWNER, subject: `✓ Devis ${d.number || ""} accepté par ${d.client_name || "un client"}`, html: shell(body) });
+      let client = { ok: true };
+      if (d.client_email) {
+        client = await sendEmail(RESEND_API_KEY, { from: FROM, to: [d.client_email], reply_to: OWNER, subject: `Votre devis ${d.number || ""} est bien validé — merci !`, html: shell(clientBody) });
+      }
+      if (!owner.ok) console.error("Resend devis_accepted (fournil) error:", owner.status, owner.data);
+      if (client && client.ok === false) console.error("Resend devis_accepted (client) error:", client.status, client.data);
+      return res.status(200).json({ owner: { ok: owner.ok }, client: { ok: client.ok } });
     } catch (e) {
       console.error("Send devis_accepted error:", e);
       return res.status(500).json({ error: e.message });
