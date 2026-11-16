@@ -18,7 +18,8 @@ end $$;
 
 create table if not exists invoices (
   id           uuid primary key default gen_random_uuid(),
-  number       text unique not null,          -- ex. 2026-001
+  type         text not null default 'facture', -- 'facture' | 'devis'
+  number       text unique not null,          -- ex. 2026-001 (facture) / D-2026-001 (devis)
   seq          int  not null,                 -- séquence dans l'année
   year         int  not null,
   issue_date   date not null default current_date,
@@ -36,7 +37,10 @@ create table if not exists invoices (
   created_at timestamptz not null default now()
 );
 
-create index if not exists invoices_year_seq_idx on invoices(year, seq desc);
+-- Pour une table invoices déjà créée sans la colonne type :
+alter table invoices add column if not exists type text not null default 'facture';
+
+create index if not exists invoices_year_seq_idx on invoices(type, year, seq desc);
 
 -- Accès via la clé publique (back-office protégé par code côté client), comme products.
 alter table invoices enable row level security;

@@ -125,9 +125,13 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         Commandes
       </button>
-      <button class="nb" onclick="goTab('factures',this)">
+      <button class="nb" onclick="goDocs('facture',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
         Factures
+      </button>
+      <button class="nb" onclick="goDocs('devis',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+        Devis
       </button>
       <button class="nb" onclick="goTab('clients',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -171,10 +175,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
   <main>
     <!-- FACTURES -->
     <div id="page-factures" class="page">
-      <h1>Factures</h1>
-      <p class="sub">À l'en-tête à contre-temps · <b>micro-entreprise, sans TVA</b> (art. 293 B du CGI) · numérotation automatique.</p>
+      <h1 id="doc-h1">Factures</h1>
+      <p class="sub" id="doc-sub">À l'en-tête à contre-temps · <b>micro-entreprise, sans TVA</b> (art. 293 B du CGI) · numérotation automatique.</p>
       <div class="card card0" style="padding:1rem 1.2rem;margin-bottom:1.2rem">
-        <p class="fd" style="font-size:16px;margin-bottom:.7rem">Nouvelle facture</p>
+        <p class="fd" style="font-size:16px;margin-bottom:.7rem" id="doc-formtitle">Nouvelle facture</p>
         <div id="if-editing" style="display:none;background:#FCEEE3;border:1px solid #E8C9AE;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--ru)"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Client (nom / société)<input class="fi" id="if-client" placeholder="Ex. Entreprise Durand SARL"></label>
@@ -195,7 +199,7 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         </div>
         <p id="if-err" style="color:var(--rd,#c0392b);font-size:12px;display:none;margin-top:8px"></p>
       </div>
-      <p class="fd" style="font-size:16px;margin-bottom:.5rem">Mes factures</p>
+      <p class="fd" style="font-size:16px;margin-bottom:.5rem" id="doc-listtitle">Mes factures</p>
       <div class="card card0" id="inv-list"></div>
     </div>
 
@@ -727,6 +731,25 @@ const EMETTEUR = { nom:"à contre-temps — Fournil vivant", adr:"4 rue des Vign
   siret:"108 719 105 00018", tel:"06 01 48 28 90", email:"acontretemps@fournilvivant.fr", site:"fournilvivant.fr" };
 let INVOICES = [];
 let editingInvId = null;
+let invKind = 'facture';
+function goDocs(kind, btn){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
+  document.querySelectorAll(".nb").forEach(b=>b.classList.remove("on"));
+  document.getElementById("page-factures").classList.add("on");
+  if(btn) btn.classList.add("on");
+  invKind=kind; resetInvForm(); applyDocKind(); loadInvoices();
+}
+function applyDocKind(){
+  const isD=invKind==="devis";
+  const set=(id,txt)=>{const e=document.getElementById(id); if(e)e.textContent=txt;};
+  set("doc-h1", isD?"Devis":"Factures");
+  set("doc-formtitle", isD?"Nouveau devis":"Nouvelle facture");
+  set("doc-listtitle", isD?"Mes devis":"Mes factures");
+  const sub=document.getElementById("doc-sub"); if(sub) sub.innerHTML = isD
+    ? "À l'en-tête à contre-temps · <b>devis gratuit</b> sans TVA (art. 293 B) · valable 30 jours · numérotation automatique."
+    : "À l'en-tête à contre-temps · <b>micro-entreprise, sans TVA</b> (art. 293 B du CGI) · numérotation automatique.";
+  const save=document.getElementById("if-save"); if(save&&!editingInvId) save.textContent= isD?"Créer le devis & imprimer":"Créer & imprimer";
+}
 function escF(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function eurF(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €"; }
 function fmtDateFR(d){ if(!d) return ""; try{ return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"}); }catch(e){ return d; } }
@@ -734,7 +757,7 @@ function invTotal(items){ return (items||[]).reduce((s,it)=>s+(Number(it.qty)||0
 let invFormReady=false;
 async function loadInvoices(){
   if(!invFormReady){ resetInvForm(); invFormReady=true; }
-  try{ INVOICES = await sbFetch("invoices?select=*&order=year.desc,seq.desc"); }catch(e){ INVOICES=[]; }
+  try{ INVOICES = await sbFetch("invoices?type=eq."+invKind+"&select=*&order=year.desc,seq.desc"); }catch(e){ INVOICES=[]; }
   if(!Array.isArray(INVOICES)) INVOICES=[];
   renderInvoices();
 }
@@ -763,7 +786,7 @@ function resetInvForm(){
   const err=document.getElementById("if-err"); if(err)err.style.display="none";
   editingInvId=null;
   const hed=document.getElementById("if-editing"); if(hed)hed.style.display="none";
-  const sbtn=document.getElementById("if-save"); if(sbtn)sbtn.textContent="Créer & imprimer";
+  const sbtn=document.getElementById("if-save"); if(sbtn)sbtn.textContent=(invKind==="devis"?"Créer le devis & imprimer":"Créer & imprimer");
 }
 function editInvoice(id){
   const f=INVOICES.find(x=>x.id===id); if(!f) return;
@@ -812,9 +835,9 @@ async function saveInvoice(){
   }
   const year=Number(issue.slice(0,4));
   let seq=1;
-  try{ const rows=await sbFetch("invoices?year=eq."+year+"&select=seq&order=seq.desc&limit=1"); if(Array.isArray(rows)&&rows[0]) seq=Number(rows[0].seq)+1; }catch(e){}
-  const number=year+"-"+String(seq).padStart(3,"0");
-  const row={ number, seq, year, issue_date:issue,
+  try{ const rows=await sbFetch("invoices?type=eq."+invKind+"&year=eq."+year+"&select=seq&order=seq.desc&limit=1"); if(Array.isArray(rows)&&rows[0]) seq=Number(rows[0].seq)+1; }catch(e){}
+  const number=(invKind==="devis"?"D-":"")+year+"-"+String(seq).padStart(3,"0");
+  const row={ type:invKind, number, seq, year, issue_date:issue,
     service_date:document.getElementById("if-service").value||null,
     client_name:client,
     client_address:(document.getElementById("if-adr").value||"").trim()||null,
@@ -842,21 +865,43 @@ function renderInvoices(){
     +'<div style="flex:1;min-width:0"><p style="font-size:13px"><b>'+escF(f.number)+'</b> · '+escF(f.client_name)+'</p>'
     +'<p style="font-size:11px;color:var(--is)">Émise le '+fmtDateFR(f.issue_date)+' · <b style="color:var(--bd)">'+eurF(f.total)+'</b></p></div>'
     +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
-    +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?"✓ Payée":"À encaisser")+'</button>'
+    +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?(invKind==="devis"?"✓ Accepté":"✓ Payée"):(invKind==="devis"?"En attente":"À encaisser"))+'</button>'
     +'<button class="btn bg bsm" style="padding:4px 9px" onclick="editInvoice(\''+f.id+'\')">✏ Modifier</button>'
+    +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="convertToInvoice(\''+f.id+'\')" title="Créer une facture depuis ce devis">➡ Facturer</button>':'')
     +'<button class="btn bg bsm" style="padding:4px 9px" onclick="printInvoice(\''+f.id+'\')">🖨 Imprimer</button></div></div>').join("");
 }
 function printInvoice(id){
-  const f=INVOICES.find(x=>x.id===id); if(!f){ alert("Facture introuvable."); return; }
+  const f=INVOICES.find(x=>x.id===id); if(!f){ alert("Document introuvable."); return; }
+  printInvoiceDoc(f);
+}
+function printInvoiceDoc(f){
   const w=window.open("","_blank"); if(!w){ alert("Autorisez les fenêtres pop-up pour imprimer."); return; }
   w.document.write(invoiceHTML(f)); w.document.close();
   setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 450);
 }
+async function convertToInvoice(id){
+  const d=INVOICES.find(x=>x.id===id); if(!d) return;
+  if(!confirm("Créer une facture à partir du devis "+d.number+" ?")) return;
+  const issue=new Date().toISOString().slice(0,10); const year=Number(issue.slice(0,4));
+  let seq=1;
+  try{ const rows=await sbFetch("invoices?type=eq.facture&year=eq."+year+"&select=seq&order=seq.desc&limit=1"); if(Array.isArray(rows)&&rows[0]) seq=Number(rows[0].seq)+1; }catch(e){}
+  const number=year+"-"+String(seq).padStart(3,"0");
+  const row={ type:"facture", number, seq, year, issue_date:issue, service_date:d.service_date||null,
+    client_name:d.client_name, client_address:d.client_address, client_siret:d.client_siret, client_email:d.client_email,
+    items:d.items, total:d.total, deposit:0, notes:d.notes, payment_terms:d.payment_terms||"À réception", status:"unpaid" };
+  try{
+    const data=await sbFetch("invoices",{method:"POST",body:JSON.stringify(row)});
+    const created=Array.isArray(data)?data[0]:data;
+    try{ await sbFetch("invoices?id=eq."+id,{method:"PATCH",body:JSON.stringify({status:"paid"})}); }catch(e){}
+    await loadInvoices();
+    if(created&&created.id){ printInvoiceDoc(created); alert("Facture "+number+" créée depuis le devis "+d.number+"."); }
+  }catch(e){ alert("Erreur : "+(e&&e.message?e.message:"création impossible")); }
+}
 function invoiceHTML(f){
   const items=Array.isArray(f.items)?f.items:[];
   const rows=items.map(it=>'<tr><td>'+escF(it.label)+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right">'+eurF(it.pu)+'</td><td style="text-align:right">'+eurF((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>').join("");
-  const dep=Number(f.deposit)||0, net=(Number(f.total)||0)-dep;
-  return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture '+escF(f.number)+' — à contre-temps</title><style>'
+  const dep=Number(f.deposit)||0, net=(Number(f.total)||0)-dep, isDevis=f.type==="devis";
+  return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'+(isDevis?"Devis":"Facture")+' '+escF(f.number)+' — à contre-temps</title><style>'
     +'@page{size:A4;margin:16mm;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
     +'.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;} @media print{.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
     +'.sheet{min-height:calc(297mm - 32mm);display:flex;flex-direction:column;} .bottom{margin-top:auto;padding-top:22px;}'
@@ -867,18 +912,20 @@ function invoiceHTML(f){
     +'.box{background:#F3E7DA;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.6;max-width:300px;margin:0;} .box h4{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#A6713F;margin-bottom:4px;}'
     +'table{width:100%;border-collapse:collapse;margin:26px 0 16px;} th{background:#3E5A70;color:#F3E7DA;font-size:11px;text-align:left;padding:11px 12px;font-weight:normal;} td{padding:13px 12px;border-bottom:1px solid #E6DFD3;}'
     +'.tot{display:flex;justify-content:flex-end;} .tot .t{min-width:270px;} .tot .r{display:flex;justify-content:space-between;padding:4px 10px;} .tot .grand{background:#3E5A70;color:#F3E7DA;border-radius:6px;font-size:16px;padding:9px 10px;margin-top:3px;}'
-    +'.legal{margin-top:24px;font-size:10.5px;color:#666;line-height:1.6;border-top:1px solid #E6DFD3;padding-top:12px;} .legal b{color:#3E5A70;} .foot{margin-top:16px;text-align:center;font-size:10px;color:#999;}'
+    +'.legal{margin-top:24px;font-size:10.5px;color:#666;line-height:1.6;border-top:1px solid #E6DFD3;padding-top:12px;} .legal b{color:#3E5A70;} .foot{margin-top:16px;text-align:center;font-size:10px;color:#999;} .accord{margin-top:14px;border:1px solid #D6DFE5;border-radius:8px;padding:14px 16px;font-size:11.5px;color:#444;line-height:2;}'
     +'</style></head><body><div class="sheet"><div class="top">'
     +'<div class="band"><div class="bL"><img src="https://www.fournilvivant.fr/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d\'instants</div></div></div>'
-    +'<div class="bR"><div class="ft">Facture</div><div class="no">N° '+escF(f.number)+'</div></div></div>'
-    +'<div class="subrow"><div class="em"><b>'+escF(EMETTEUR.nom)+'</b><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'<div class="dates">Émise le '+fmtDateFR(f.issue_date)+(f.service_date?(' · Prestation du '+fmtDateFR(f.service_date)):'')+'</div></div>'
+    +'<div class="bR"><div class="ft">'+(isDevis?"Devis":"Facture")+'</div><div class="no">N° '+escF(f.number)+'</div></div></div>'
+    +'<div class="subrow"><div class="em"><b>'+escF(EMETTEUR.nom)+'</b><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'<div class="dates">'+(isDevis?'Établi le ':'Émise le ')+fmtDateFR(f.issue_date)+(f.service_date?(' · Prestation '+(isDevis?'prévue le ':'du ')+fmtDateFR(f.service_date)):'')+'</div></div>'
     +'<div class="box"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div></div>'
     +'<table><thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unitaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="tot"><div class="t">'+(dep>0?('<div class="r"><span>Total</span><span>'+eurF(f.total)+'</span></div><div class="r"><span>Acompte versé</span><span>− '+eurF(dep)+'</span></div>'):'')
-    +'<div class="r grand"><span>'+(dep>0?'Reste à payer':'Total à payer')+'</span><span>'+eurF(net)+'</span></div></div></div>'
+    +'<div class="r grand"><span>'+(isDevis?'Montant total':(dep>0?'Reste à payer':'Total à payer'))+'</span><span>'+eurF(net)+'</span></div></div></div>'
     +'<div style="font-size:12px;color:#555;margin-top:18px">Conditions de règlement : '+escF(f.payment_terms||"À réception")+'.'+(f.notes?(' '+escF(f.notes)):'')+'</div>'
-    +'</div><div class="bottom"><div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>'
-    +'En cas de retard de paiement : pénalités au taux de 3 fois l\'intérêt légal, exigibles sans rappel, et indemnité forfaitaire pour frais de recouvrement de 40 € (art. L441-10 et D441-5 du Code de commerce). Pas d\'escompte pour paiement anticipé.</div>'
+    +'</div><div class="bottom">'
+    +(isDevis
+      ? '<div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>Devis gratuit, valable 30 jours à compter de la date d\'émission.</div><div class="accord"><b>Bon pour accord</b> — à nous retourner daté et signé.<br><br>Date : …………………………&nbsp;&nbsp;&nbsp;&nbsp;Signature (précédée de la mention « Bon pour accord ») :</div>'
+      : '<div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>En cas de retard de paiement : pénalités au taux de 3 fois l\'intérêt légal, exigibles sans rappel, et indemnité forfaitaire pour frais de recouvrement de 40 € (art. L441-10 et D441-5 du Code de commerce). Pas d\'escompte pour paiement anticipé.</div>')
     +'<div class="foot">'+escF(EMETTEUR.nom)+' · '+escF(EMETTEUR.adr)+' · SIRET '+escF(EMETTEUR.siret)+' · '+escF(EMETTEUR.site)+'</div>'
     +'</div></div></body></html>';
 }
