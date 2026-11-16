@@ -173,10 +173,10 @@ export default async function handler(req, res) {
       ${msgHtml}
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Voici votre devis <strong>${esc(d.number)}</strong>${svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : ""}, d'un montant de <strong>${money(d.total)}</strong>.</p>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:6px auto 20px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
-        <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#FFFFFF !important;text-decoration:none;border-radius:10px;white-space:nowrap;">Voir et valider mon devis &nbsp;&rarr;</a>
+        <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:10px;white-space:nowrap;"><span style="color:#FFFFFF;">Voir et valider mon devis &nbsp;&rarr;</span></a>
       </td></tr></table>
       <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;text-align:center;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
-      <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:16px 0 0;text-align:center;">Devis gratuit, valable 30 jours.<br>Si le bouton ne s'affiche pas, copiez ce lien&nbsp;:<br><a href="${esc(url)}" style="color:#8A857E !important;text-decoration:underline;word-break:break-all;">${esc(url)}</a></p>`;
+      <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:16px 0 0;text-align:center;">Devis gratuit, valable 30 jours.<br>Si le bouton ne s'affiche pas, copiez ce lien&nbsp;:<br><a href="${esc(url)}" style="text-decoration:underline;word-break:break-all;"><span style="color:#8A857E;">${esc(url)}</span></a></p>`;
     try {
       const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [d.client_email], reply_to: OWNER, subject: `Votre devis ${d.number || ""} — à contre-temps`, html: shell(body) });
       if (!r.ok) console.error("Resend devis_link error:", r.status, r.data);
