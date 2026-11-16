@@ -857,7 +857,8 @@ function invoiceHTML(f){
   const rows=items.map(it=>'<tr><td>'+escF(it.label)+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right">'+eurF(it.pu)+'</td><td style="text-align:right">'+eurF((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>').join("");
   const dep=Number(f.deposit)||0, net=(Number(f.total)||0)-dep;
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture '+escF(f.number)+' — à contre-temps</title><style>'
-    +'@page{size:A4;margin:16mm;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;}'
+    +'@page{size:A4;margin:16mm;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+    +'.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;} @media print{.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
     +'.band{background:#3E5A70;color:#F3E7DA;border-radius:10px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}'
     +'.band .bL{display:flex;align-items:center;gap:12px;} .band img{width:44px;height:auto;} .band .n{font-size:24px;font-style:italic;line-height:1;} .band .s{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,231,218,.8);margin-top:4px;}'
     +'.band .bR{text-align:right;} .band .ft{font-size:26px;font-style:italic;line-height:1;} .band .no{font-size:11px;letter-spacing:.04em;color:rgba(243,231,218,.85);margin-top:5px;}'
