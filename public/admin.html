@@ -748,7 +748,7 @@ function applyDocKind(){
   const sub=document.getElementById("doc-sub"); if(sub) sub.innerHTML = isD
     ? "À l'en-tête à contre-temps · <b>devis gratuit</b> sans TVA (art. 293 B) · valable 30 jours · numérotation automatique."
     : "À l'en-tête à contre-temps · <b>micro-entreprise, sans TVA</b> (art. 293 B du CGI) · numérotation automatique.";
-  const save=document.getElementById("if-save"); if(save&&!editingInvId) save.textContent= isD?"Créer le devis & imprimer":"Créer & imprimer";
+  const save=document.getElementById("if-save"); if(save&&!editingInvId) save.textContent= isD?"Créer le devis (PDF)":"Créer & télécharger (PDF)";
 }
 function escF(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function eurF(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €"; }
@@ -788,7 +788,7 @@ function resetInvForm(){
   const err=document.getElementById("if-err"); if(err)err.style.display="none";
   editingInvId=null;
   const hed=document.getElementById("if-editing"); if(hed)hed.style.display="none";
-  const sbtn=document.getElementById("if-save"); if(sbtn)sbtn.textContent=(invKind==="devis"?"Créer le devis & imprimer":"Créer & imprimer");
+  const sbtn=document.getElementById("if-save"); if(sbtn)sbtn.textContent=(invKind==="devis"?"Créer le devis (PDF)":"Créer & télécharger (PDF)");
 }
 function editInvoice(id){
   const f=INVOICES.find(x=>x.id===id); if(!f) return;
@@ -834,7 +834,7 @@ async function saveInvoice(){
     const pid=editingInvId;
     try{ const data=await sbFetch("invoices?id=eq."+pid,{method:"PATCH",body:JSON.stringify(patch)});
       const upd=Array.isArray(data)?data[0]:data;
-      resetInvForm(); await loadInvoices(); printInvoice((upd&&upd.id)||pid);
+      resetInvForm(); await loadInvoices(); downloadInvoicePdf(upd&&upd.id?upd:(INVOICES.find(function(x){return x.id===pid;})||null));
     }catch(e){ err.textContent="Erreur : "+(e&&e.message?e.message:"modification impossible"); err.style.display="block"; }
     return;
   }
@@ -855,7 +855,7 @@ async function saveInvoice(){
     const data=await sbFetch("invoices",{method:"POST",body:JSON.stringify(row)});
     const created=Array.isArray(data)?data[0]:data;
     if(!created||!created.id){ err.textContent="Erreur d'enregistrement — exécute supabase/invoices.sql."; err.style.display="block"; return; }
-    resetInvForm(); await loadInvoices(); printInvoice(created.id);
+    resetInvForm(); await loadInvoices(); downloadInvoicePdf(created);
   }catch(e){ err.textContent="Erreur : "+(e&&e.message?e.message:"enregistrement impossible (table invoices ?)"); err.style.display="block"; }
 }
 async function toggleInvPaid(id){
@@ -873,7 +873,8 @@ function renderInvoices(){
     +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?(invKind==="devis"?"✓ Accepté":"✓ Payée"):(invKind==="devis"?"En attente":"À encaisser"))+'</button>'
     +'<button class="btn bg bsm" style="padding:4px 9px" onclick="editInvoice(\''+f.id+'\')">✏ Modifier</button>'
     +(invKind==="devis"?'<button class="btn bg bsm" style="padding:4px 9px" onclick="convertToInvoice(\''+f.id+'\')" title="Créer une facture depuis ce devis">➡ Facturer</button>':'')
-    +'<button class="btn bg bsm" style="padding:4px 9px" onclick="printInvoice(\''+f.id+'\')">🖨 Imprimer</button></div></div>').join("");
+    +'<button class="btn bp bsm" style="padding:4px 9px" onclick="downloadPdfById(\''+f.id+'\')">📄 PDF</button>'
+    +'<button class="btn bg bsm" style="padding:4px 7px" onclick="printInvoice(\''+f.id+'\')" title="Imprimer">🖨</button></div></div>').join("");
 }
 function printInvoice(id){
   const f=INVOICES.find(x=>x.id===id); if(!f){ alert("Document introuvable."); return; }
@@ -884,6 +885,25 @@ function printInvoiceDoc(f){
   w.document.write(invoiceHTML(f)); w.document.close();
   setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 450);
 }
+// Génère et télécharge directement un PDF prêt à partager (html2pdf chargé dans une iframe isolée).
+function downloadInvoicePdf(f){
+  if(!f) return;
+  var name=(f.type==="devis"?"Devis-":"Facture-")+String(f.number||"doc").replace(/[^\w-]/g,"")+".pdf";
+  var ifr=document.createElement("iframe");
+  ifr.style.cssText="position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;";
+  document.body.appendChild(ifr);
+  var inject='<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></scr'+'ipt>'
+    +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){try{'
+    +'html2pdf().set({margin:0,filename:'+JSON.stringify(name)+',image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(document.body).save().then(function(){parent.postMessage("acp-pdf-done","*");}).catch(function(){parent.postMessage("acp-pdf-fail","*");});'
+    +'}catch(e){parent.postMessage("acp-pdf-fail","*");}},500);});</scr'+'ipt>';
+  var htmlDoc=invoiceHTML(f).replace("</body>", inject+"</body>");
+  var doc=ifr.contentWindow.document; doc.open(); doc.write(htmlDoc); doc.close();
+  var done=false;
+  var onMsg=function(e){ if(e.data==="acp-pdf-done"||e.data==="acp-pdf-fail"){ done=true; window.removeEventListener("message",onMsg); if(e.data==="acp-pdf-fail"){ try{printInvoiceDoc(f);}catch(_){} } setTimeout(function(){ try{ifr.remove();}catch(_){} },800); } };
+  window.addEventListener("message",onMsg);
+  setTimeout(function(){ if(!done){ window.removeEventListener("message",onMsg); try{ifr.remove();}catch(_){} } }, 20000);
+}
+function downloadPdfById(id){ var f=INVOICES.find(function(x){return x.id===id;}); if(f) downloadInvoicePdf(f); }
 async function convertToInvoice(id){
   const d=INVOICES.find(x=>x.id===id); if(!d) return;
   if(!confirm("Créer une facture à partir du devis "+d.number+" ?")) return;
@@ -899,7 +919,7 @@ async function convertToInvoice(id){
     const created=Array.isArray(data)?data[0]:data;
     try{ await sbFetch("invoices?id=eq."+id,{method:"PATCH",body:JSON.stringify({status:"paid"})}); }catch(e){}
     await loadInvoices();
-    if(created&&created.id){ printInvoiceDoc(created); alert("Facture "+number+" créée depuis le devis "+d.number+"."); }
+    if(created&&created.id){ alert("Facture "+number+" créée depuis le devis "+d.number+"."); downloadInvoicePdf(created); }
   }catch(e){ alert("Erreur : "+(e&&e.message?e.message:"création impossible")); }
 }
 function invoiceHTML(f){
