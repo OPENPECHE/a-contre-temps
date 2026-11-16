@@ -3,6 +3,16 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Votre devis — à contre-temps</title>
 <meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Votre devis — à contre-temps">
+<meta property="og:description" content="Consultez votre devis gourmand et validez-le en ligne en un clic — à contre-temps, Fournil vivant.">
+<meta property="og:image" content="https://www.fournilvivant.fr/og-image.png?v=3">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Votre devis — à contre-temps">
+<meta name="twitter:description" content="Consultez et validez votre devis en ligne.">
+<meta name="twitter:image" content="https://www.fournilvivant.fr/og-image.png?v=3">
 <link rel="icon" href="/heart-cream.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -37,6 +47,12 @@
   .ok{background:#EAF3EC;border:1px solid #CBE3D3;color:#2f6b43;border-radius:10px;padding:14px;text-align:center;}
   .foot{text-align:center;color:var(--is);font-size:11px;margin:20px 0 10px;line-height:1.7;}
   .sigbox img{max-height:80px;}
+  .modal-ov{position:fixed;inset:0;background:rgba(43,41,37,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50;}
+  .modal{background:#fff;border-radius:14px;padding:22px;max-width:390px;width:100%;box-shadow:0 24px 60px -24px rgba(0,0,0,.55);}
+  .modal h3{font-family:var(--serif);color:var(--bd);font-size:20px;margin-bottom:10px;}
+  .modal p{font-size:13.5px;color:var(--ink);line-height:1.65;}
+  .dlbtn{display:block;width:100%;text-align:center;background:var(--cr);color:var(--bd);border:1px solid var(--bs);padding:11px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;margin-top:14px;font-family:var(--sans);}
+  @media print{ .noprint{display:none!important;} body{padding:8mm;background:#fff;} .card{border:none;box-shadow:none;padding:0;margin-top:14px;} .band{border-radius:0;} .foot{margin-top:28px;} .tot{-webkit-print-color-adjust:exact;print-color-adjust:exact;} .band{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }
 </style></head>
 <body><div class="wrap" id="wrap">
   <div class="band"><div class="bL"><img src="/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d'instants</div></div></div>
@@ -78,33 +94,50 @@ function render(){
     +'<h2 style="margin-top:6px">Devis pour '+esc(f.client_name)+'</h2>'
     +itemsTable(f)
     +'<div class="tot"><span>Montant total</span><span>'+eur(f.total)+'</span></div>'
-    +'<div class="muted" style="margin-top:8px">Conditions : '+esc(f.payment_terms||"À réception")+'. Devis valable 30 jours.</div></div>';
+    +'<div class="muted" style="margin-top:8px">Conditions : '+esc(f.payment_terms||"À réception")+'. Devis valable 30 jours.</div>'
+    +'<button class="dlbtn noprint" onclick="window.print()">📄 Télécharger / imprimer mon devis</button></div>';
 
   var body;
   if(f.signed_at){
     body='<div class="card"><div class="ok">✓ Devis accepté le '+dateHeureFR(f.signed_at)+(f.signed_name?' par <b>'+esc(f.signed_name)+'</b>':'')+'</div>'
       +'<p class="muted" style="text-align:center;margin-top:14px">Votre accord a bien été <b>transmis à à contre-temps</b>. Merci&nbsp;! Nous revenons vers vous pour la suite. 🥐</p></div>';
   } else {
-    body='<div class="card"><h2>Valider ce devis</h2>'
+    body='<div class="card noprint"><h2>Valider ce devis</h2>'
       +'<p class="muted" style="margin-bottom:14px">Vérifiez le devis ci-dessus. Pour l\'accepter, indiquez votre nom puis cliquez sur «&nbsp;Bon pour accord&nbsp;». Votre acceptation nous sera transmise immédiatement.</p>'
       +'<label>Votre nom et prénom</label><input type="text" id="sig-name" value="'+esc(f.client_name||"")+'" autocomplete="name">'
-      +'<button class="btn" id="sig-btn" onclick="submitAccord()" style="margin-top:16px">✓ Bon pour accord — j\'accepte ce devis</button>'
+      +'<button class="btn" id="sig-btn" onclick="askConfirm()" style="margin-top:16px">✓ Bon pour accord — j\'accepte ce devis</button>'
       +'<p class="muted" style="text-align:center;margin-top:10px;font-size:11px">En cliquant, vous acceptez ce devis (valeur d\'accord en ligne, horodaté).</p>'
       +'<p id="sig-err" class="muted" style="color:var(--ru);display:none;margin-top:8px"></p></div>';
   }
   document.getElementById("content").innerHTML=head+body;
 }
 
-function submitAccord(){
+function askConfirm(){
   var err=document.getElementById("sig-err"); err.style.display="none";
   var name=(document.getElementById("sig-name").value||"").trim();
   if(!name){ err.textContent="Merci d'indiquer votre nom."; err.style.display="block"; return; }
-  var b=document.getElementById("sig-btn"); b.disabled=true; b.textContent="Validation…";
+  var ov=document.createElement("div"); ov.className="modal-ov";
+  ov.innerHTML='<div class="modal"><h3>Confirmer l\'acceptation</h3>'
+    +'<p>Vous êtes sur le point d\'accepter le <b>devis N° '+esc(DEVIS.number)+'</b> d\'un montant de <b>'+eur(DEVIS.total)+'</b>.</p>'
+    +'<p style="margin-top:8px">En confirmant votre <b>«&nbsp;bon pour accord&nbsp;»</b>, vous validez votre commande auprès de à contre-temps — cet accord vous engage.</p>'
+    +'<button class="btn" id="mc-yes" style="margin-top:16px">✓ Oui, j\'accepte le devis</button>'
+    +'<button class="lnk" id="mc-no" style="display:block;margin:12px auto 0">Annuler</button></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener("click",function(e){ if(e.target===ov) ov.remove(); });
+  document.getElementById("mc-no").onclick=function(){ ov.remove(); };
+  document.getElementById("mc-yes").onclick=function(){ ov.remove(); doAccord(name); };
+}
+function doAccord(name){
+  var err=document.getElementById("sig-err"); if(err) err.style.display="none";
+  var b=document.getElementById("sig-btn"); if(b){ b.disabled=true; b.textContent="Validation…"; }
   var patch={ signed_name:name, signed_at:new Date().toISOString(), signature:"accord-en-ligne", status:"paid" };
   fetch(SB+"/rest/v1/invoices?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:Object.assign(H(),{"Prefer":"return=representation"}),body:JSON.stringify(patch)})
     .then(function(r){ return r.json(); })
-    .then(function(a){ var row=Array.isArray(a)?a[0]:a; DEVIS=row||Object.assign(DEVIS,patch); render(); window.scrollTo({top:0,behavior:"smooth"}); })
-    .catch(function(){ err.textContent="Échec de l'enregistrement, réessayez."; err.style.display="block"; b.disabled=false; b.textContent="✓ Bon pour accord — j'accepte ce devis"; });
+    .then(function(a){ var row=Array.isArray(a)?a[0]:a; DEVIS=row||Object.assign(DEVIS,patch);
+      try{ fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_accepted",devis:{number:DEVIS.number,client_name:DEVIS.client_name,client_email:DEVIS.client_email,total:DEVIS.total,service_date:DEVIS.service_date,signed_name:name,signed_at:patch.signed_at,items:DEVIS.items}})}).catch(function(){}); }catch(e){}
+      render(); window.scrollTo({top:0,behavior:"smooth"});
+    })
+    .catch(function(){ if(err){ err.textContent="Échec de l'enregistrement, réessayez."; err.style.display="block"; } if(b){ b.disabled=false; b.textContent="✓ Bon pour accord — j'accepte ce devis"; } });
 }
 load();
 </script>

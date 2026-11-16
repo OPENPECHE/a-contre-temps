@@ -92,6 +92,37 @@ export default async function handler(req, res) {
 
   const type = (req.body && req.body.type) || "received";
 
+  // ───────────── NOTIFICATION FOURNIL : un devis a été accepté en ligne ───────
+  if (type === "devis_accepted") {
+    const d = req.body.devis || {};
+    const money = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
+    let when = "";
+    try { when = new Date(d.signed_at || Date.now()).toLocaleString("fr-FR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch { /* */ }
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    const items = Array.isArray(d.items) ? d.items : [];
+    const rows = items.map((it) => `<tr><td style="padding:4px 0;font-size:13px;color:#2B2925">${esc(it.label)}${it.qty ? (" × " + (Number(it.qty) || 0)) : ""}</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#2B2925">${money((Number(it.qty) || 0) * (Number(it.pu) || 0))}</td></tr>`).join("");
+    const body = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">✓ Devis accepté 🎉</h1>
+      <p style="font-size:14px;color:rgba(43,41,37,.78);line-height:1.8;margin:0 0 1rem;"><strong>${esc(d.client_name)}</strong> vient d'accepter le devis <strong>${esc(d.number)}</strong> en ligne.</p>
+      <div style="background:#F3E7DA;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px;color:rgba(43,41,37,.8);line-height:1.9">
+        <div>Devis : <strong>${esc(d.number)}</strong></div>
+        <div>Client : <strong>${esc(d.client_name)}</strong>${d.client_email ? (" · " + esc(d.client_email)) : ""}</div>
+        <div>Accepté par : <strong>${esc(d.signed_name)}</strong> le ${esc(when)}</div>
+        ${d.service_date ? `<div>Prestation prévue : ${esc(d.service_date)}</div>` : ""}
+      </div>
+      <table style="width:100%;border-collapse:collapse;border-top:1px solid #E6DFD3;border-bottom:1px solid #E6DFD3;margin-bottom:.6rem">${rows}</table>
+      <p style="font-size:16px;font-weight:600;color:#3E5A70;text-align:right;margin:0 0 1rem">Total : ${money(d.total)}</p>
+      <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7">Tu peux le convertir en facture dans le back-office : <strong>Devis → ➡ Facturer</strong>.</p>`;
+    try {
+      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [OWNER], reply_to: d.client_email || OWNER, subject: `✓ Devis ${d.number || ""} accepté par ${d.client_name || "un client"}`, html: shell(body) });
+      if (!r.ok) console.error("Resend devis_accepted error:", r.status, r.data);
+      return res.status(200).json({ ok: r.ok, status: r.status, error: r.ok ? null : r.data });
+    } catch (e) {
+      console.error("Send devis_accepted error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ───────────────────────── E-MAIL DE BIENVENUE ─────────────────────────────
   if (type === "welcome") {
     const client = req.body.client || {};
