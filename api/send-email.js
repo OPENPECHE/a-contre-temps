@@ -165,14 +165,18 @@ export default async function handler(req, res) {
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
     let svc = "";
     try { if (d.service_date) svc = new Date(String(d.service_date).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch { /* */ }
+    const msg = String(d.message == null ? "" : d.message).trim();
+    const msgHtml = msg ? `<p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;white-space:pre-line;">${esc(msg)}</p>` : "";
     const body = `
       <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Votre devis est prêt 🥐</h1>
-      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Bonjour,<br>Voici votre devis <strong>${esc(d.number)}</strong>${svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : ""}, d'un montant de <strong>${money(d.total)}</strong>.</p>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;"><tr><td bgcolor="#3E5A70" style="border-radius:999px;">
-        <a href="${esc(url)}" style="display:inline-block;padding:15px 30px;color:#F3E7DA;text-decoration:none;font-size:14px;letter-spacing:.04em;">Voir et valider mon devis &rarr;</a>
+      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 ${msgHtml ? "14px" : "18px"};">Bonjour,</p>
+      ${msgHtml}
+      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Voici votre devis <strong>${esc(d.number)}</strong>${svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : ""}, d'un montant de <strong>${money(d.total)}</strong>.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:6px auto 20px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
+        <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#FFFFFF !important;text-decoration:none;border-radius:10px;white-space:nowrap;">Voir et valider mon devis &nbsp;&rarr;</a>
       </td></tr></table>
-      <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
-      <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:14px 0 0;">Devis gratuit, valable 30 jours. Si le bouton ne s'affiche pas, copiez ce lien&nbsp;: <a href="${esc(url)}" style="color:#7C97AC;">${esc(url)}</a></p>`;
+      <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;text-align:center;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
+      <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:16px 0 0;text-align:center;">Devis gratuit, valable 30 jours.<br>Si le bouton ne s'affiche pas, copiez ce lien&nbsp;:<br><a href="${esc(url)}" style="color:#8A857E !important;text-decoration:underline;word-break:break-all;">${esc(url)}</a></p>`;
     try {
       const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [d.client_email], reply_to: OWNER, subject: `Votre devis ${d.number || ""} — à contre-temps`, html: shell(body) });
       if (!r.ok) console.error("Resend devis_link error:", r.status, r.data);

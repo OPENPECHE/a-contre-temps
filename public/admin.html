@@ -915,9 +915,11 @@ async function sendDevisLink(id){
   var f=INVOICES.find(x=>x.id===id); if(!f) return;
   if(!f.client_email){ alert("Ce devis n'a pas d'e-mail client.\nClique sur « Modifier » pour ajouter l'adresse, puis réessaie."); return; }
   if(!confirm("Envoyer le devis "+f.number+" à "+f.client_email+" ?\n\nLe client recevra un e-mail à l'en-tête à contre-temps avec un bouton pour consulter et valider son devis.")) return;
+  var msg=prompt("Message personnalisé (optionnel) — il s'affichera en haut de l'e-mail, juste après « Bonjour, ».\n\nLaisse vide pour aucun message. (Annuler = ne pas envoyer)", "");
+  if(msg===null) return;
   var url=location.origin+"/devis?id="+id;
   try{
-    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,url:url}})});
+    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,url:url,message:msg}})});
     const j=await r.json().catch(function(){return {};});
     if(r.ok && j.ok!==false){ alert("Devis envoyé à "+f.client_email+" ✓"); }
     else { alert("L'envoi a échoué.\n"+(j.error?JSON.stringify(j.error):"Réessaie dans un instant.")); }
