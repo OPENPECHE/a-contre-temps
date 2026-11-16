@@ -125,6 +125,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         Commandes
       </button>
+      <button class="nb" onclick="goTab('factures',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        Factures
+      </button>
       <button class="nb" onclick="goTab('clients',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         Clients
@@ -165,6 +169,35 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
   </aside>
 
   <main>
+    <!-- FACTURES -->
+    <div id="page-factures" class="page">
+      <h1>Factures</h1>
+      <p class="sub">À l'en-tête à contre-temps · <b>micro-entreprise, sans TVA</b> (art. 293 B du CGI) · numérotation automatique.</p>
+      <div class="card card0" style="padding:1rem 1.2rem;margin-bottom:1.2rem">
+        <p class="fd" style="font-size:16px;margin-bottom:.7rem">Nouvelle facture</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Client (nom / société)<input class="fi" id="if-client" placeholder="Ex. Entreprise Durand SARL"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">SIRET client (si pro)<input class="fi" id="if-siret" placeholder="Optionnel"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;grid-column:1/3">Adresse client<input class="fi" id="if-adr" placeholder="Rue, code postal, ville"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">E-mail client<input class="fi" id="if-email" placeholder="Optionnel"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Date de prestation / vente<input class="fi" type="date" id="if-service"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Date d'émission<input class="fi" type="date" id="if-issue"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Conditions de règlement<input class="fi" id="if-terms" value="À réception"></label>
+        </div>
+        <p class="fd" style="font-size:13px;margin:14px 0 6px">Prestations</p>
+        <div id="if-lines"></div>
+        <button class="btn bg bsm" style="margin-top:4px" onclick="addInvLine()">+ Ajouter une ligne</button>
+        <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;margin-top:12px">Note (optionnel)<input class="fi" id="if-note" placeholder="Ex. Merci de votre confiance."></label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px">
+          <div style="font-size:18px;color:var(--bd)"><b>Total : <span id="if-total">0,00 €</span></b> <span style="font-size:11px;color:var(--is)">net, sans TVA</span></div>
+          <button class="btn bp" onclick="saveInvoice()">Créer &amp; imprimer</button>
+        </div>
+        <p id="if-err" style="color:var(--rd,#c0392b);font-size:12px;display:none;margin-top:8px"></p>
+      </div>
+      <p class="fd" style="font-size:16px;margin-bottom:.5rem">Mes factures</p>
+      <div class="card card0" id="inv-list"></div>
+    </div>
+
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page on">
       <h1>Tableau de bord</h1>
@@ -685,6 +718,126 @@ function goTab(name,btn){
   if(name==="delivery") loadDelivery();
   if(name==="settings") loadSettings();
   if(name==="annonces") loadAnnonces();
+  if(name==="factures") loadInvoices();
+}
+
+// ── Factures (micro-entreprise, franchise TVA art. 293 B) ──────────────────────
+const EMETTEUR = { nom:"à contre-temps — Fournil vivant", adr:"4 rue des Vignes Rousses, 63360 Gerzat",
+  siret:"108 719 105 00018", tel:"06 01 48 28 90", email:"acontretemps@fournilvivant.fr", site:"fournilvivant.fr" };
+let INVOICES = [];
+function escF(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function eurF(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €"; }
+function fmtDateFR(d){ if(!d) return ""; try{ return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"}); }catch(e){ return d; } }
+function invTotal(items){ return (items||[]).reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.pu)||0),0); }
+let invFormReady=false;
+async function loadInvoices(){
+  if(!invFormReady){ resetInvForm(); invFormReady=true; }
+  try{ INVOICES = await sbFetch("invoices?select=*&order=year.desc,seq.desc"); }catch(e){ INVOICES=[]; }
+  if(!Array.isArray(INVOICES)) INVOICES=[];
+  renderInvoices();
+}
+function addInvLine(label,qty,pu){
+  const box=document.getElementById("if-lines"); if(!box) return;
+  const row=document.createElement("div"); row.className="invline";
+  row.style.cssText="display:flex;gap:6px;align-items:center;margin-bottom:6px";
+  row.innerHTML='<input class="fi" style="flex:1;min-width:120px" placeholder="Désignation (ex. Prestation traiteur — brunch entreprise)" value="'+escF(label||"")+'" oninput="calcInvTotal()">'
+    +'<input class="fi" type="number" step="1" min="0" style="width:60px;text-align:center" value="'+(qty!=null?qty:1)+'" oninput="calcInvTotal()" title="Quantité">'
+    +'<input class="fi" type="number" step="0.01" min="0" style="width:92px;text-align:right" placeholder="PU €" value="'+(pu!=null?pu:"")+'" oninput="calcInvTotal()" title="Prix unitaire net">'
+    +'<button class="btn bg bsm" style="padding:4px 8px" onclick="this.parentNode.remove();calcInvTotal()">✕</button>';
+  box.appendChild(row);
+}
+function calcInvTotal(){
+  let t=0; document.querySelectorAll("#if-lines .invline").forEach(r=>{ const i=r.querySelectorAll("input"); t+=(parseFloat(i[1].value)||0)*(parseFloat(i[2].value)||0); });
+  const el=document.getElementById("if-total"); if(el) el.textContent=eurF(t);
+}
+function resetInvForm(){
+  ["if-client","if-siret","if-adr","if-email","if-note"].forEach(id=>{const e=document.getElementById(id); if(e)e.value="";});
+  const t=document.getElementById("if-terms"); if(t)t.value="À réception";
+  const today=new Date().toISOString().slice(0,10);
+  const is=document.getElementById("if-issue"); if(is)is.value=today;
+  const sv=document.getElementById("if-service"); if(sv)sv.value=today;
+  const box=document.getElementById("if-lines"); if(box){ box.innerHTML=""; addInvLine(); }
+  calcInvTotal();
+  const err=document.getElementById("if-err"); if(err)err.style.display="none";
+}
+async function saveInvoice(){
+  const err=document.getElementById("if-err"); err.style.display="none";
+  const client=(document.getElementById("if-client").value||"").trim();
+  const issue=document.getElementById("if-issue").value||new Date().toISOString().slice(0,10);
+  const items=[]; document.querySelectorAll("#if-lines .invline").forEach(r=>{ const i=r.querySelectorAll("input");
+    const label=(i[0].value||"").trim(), qty=parseFloat(i[1].value)||0, pu=parseFloat(i[2].value)||0;
+    if(label && pu>0) items.push({label, qty:qty||1, pu:Math.round(pu*100)/100}); });
+  if(!client){ err.textContent="Indiquez le nom du client."; err.style.display="block"; return; }
+  if(!items.length){ err.textContent="Ajoutez au moins une ligne (désignation + prix)."; err.style.display="block"; return; }
+  const total=Math.round(invTotal(items)*100)/100;
+  const year=Number(issue.slice(0,4));
+  let seq=1;
+  try{ const rows=await sbFetch("invoices?year=eq."+year+"&select=seq&order=seq.desc&limit=1"); if(Array.isArray(rows)&&rows[0]) seq=Number(rows[0].seq)+1; }catch(e){}
+  const number=year+"-"+String(seq).padStart(3,"0");
+  const row={ number, seq, year, issue_date:issue,
+    service_date:document.getElementById("if-service").value||null,
+    client_name:client,
+    client_address:(document.getElementById("if-adr").value||"").trim()||null,
+    client_siret:(document.getElementById("if-siret").value||"").trim()||null,
+    client_email:(document.getElementById("if-email").value||"").trim()||null,
+    items, total, deposit:0,
+    notes:(document.getElementById("if-note").value||"").trim()||null,
+    payment_terms:(document.getElementById("if-terms").value||"À réception").trim(), status:"unpaid" };
+  try{
+    const data=await sbFetch("invoices",{method:"POST",body:JSON.stringify(row)});
+    const created=Array.isArray(data)?data[0]:data;
+    if(!created||!created.id){ err.textContent="Erreur d'enregistrement — exécute supabase/invoices.sql."; err.style.display="block"; return; }
+    resetInvForm(); await loadInvoices(); printInvoice(created.id);
+  }catch(e){ err.textContent="Erreur : "+(e&&e.message?e.message:"enregistrement impossible (table invoices ?)"); err.style.display="block"; }
+}
+async function toggleInvPaid(id){
+  const f=INVOICES.find(x=>x.id===id); if(!f) return;
+  const ns=f.status==="paid"?"unpaid":"paid";
+  try{ await sbFetch("invoices?id=eq."+id,{method:"PATCH",body:JSON.stringify({status:ns})}); f.status=ns; renderInvoices(); }catch(e){}
+}
+function renderInvoices(){
+  const box=document.getElementById("inv-list"); if(!box) return;
+  if(!INVOICES.length){ box.innerHTML='<div class="sub" style="padding:1rem">Aucune facture pour le moment.</div>'; return; }
+  box.innerHTML=INVOICES.map(f=>'<div class="prow">'
+    +'<div style="flex:1;min-width:0"><p style="font-size:13px"><b>'+escF(f.number)+'</b> · '+escF(f.client_name)+'</p>'
+    +'<p style="font-size:11px;color:var(--is)">Émise le '+fmtDateFR(f.issue_date)+' · <b style="color:var(--bd)">'+eurF(f.total)+'</b></p></div>'
+    +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
+    +'<button class="btn '+(f.status==="paid"?"bp":"bg")+' bsm" style="padding:4px 9px;font-size:11px" onclick="toggleInvPaid(\''+f.id+'\')">'+(f.status==="paid"?"✓ Payée":"À encaisser")+'</button>'
+    +'<button class="btn bg bsm" style="padding:4px 9px" onclick="printInvoice(\''+f.id+'\')">🖨 Imprimer</button></div></div>').join("");
+}
+function printInvoice(id){
+  const f=INVOICES.find(x=>x.id===id); if(!f){ alert("Facture introuvable."); return; }
+  const w=window.open("","_blank"); if(!w){ alert("Autorisez les fenêtres pop-up pour imprimer."); return; }
+  w.document.write(invoiceHTML(f)); w.document.close();
+  setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 450);
+}
+function invoiceHTML(f){
+  const items=Array.isArray(f.items)?f.items:[];
+  const rows=items.map(it=>'<tr><td>'+escF(it.label)+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right">'+eurF(it.pu)+'</td><td style="text-align:right">'+eurF((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>').join("");
+  const dep=Number(f.deposit)||0, net=(Number(f.total)||0)-dep;
+  return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture '+escF(f.number)+' — à contre-temps</title><style>'
+    +'@page{size:A4;margin:16mm;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;}'
+    +'.head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #3E5A70;padding-bottom:16px;margin-bottom:20px;}'
+    +'.brand{display:flex;align-items:center;gap:10px;} .brand img{width:46px;height:auto;} .brand .n{font-size:24px;font-style:italic;color:#3E5A70;line-height:1;} .brand .s{font-size:9px;letter-spacing:.18em;color:#A6713F;text-transform:uppercase;margin-top:3px;}'
+    +'.em{font-size:11px;color:#555;text-align:right;line-height:1.6;} .ttl{font-size:30px;color:#3E5A70;font-style:italic;} .meta{color:#555;font-size:12px;margin-bottom:18px;}'
+    +'.box{background:#F3E7DA;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.6;max-width:300px;margin:6px 0 20px auto;} .box h4{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#A6713F;margin-bottom:4px;}'
+    +'table{width:100%;border-collapse:collapse;margin:6px 0 8px;} th{background:#3E5A70;color:#F3E7DA;font-size:11px;text-align:left;padding:8px 10px;font-weight:normal;} td{padding:8px 10px;border-bottom:1px solid #E6DFD3;}'
+    +'.tot{display:flex;justify-content:flex-end;} .tot .t{min-width:270px;} .tot .r{display:flex;justify-content:space-between;padding:4px 10px;} .tot .grand{background:#3E5A70;color:#F3E7DA;border-radius:6px;font-size:16px;padding:9px 10px;margin-top:3px;}'
+    +'.legal{margin-top:24px;font-size:10.5px;color:#666;line-height:1.6;border-top:1px solid #E6DFD3;padding-top:12px;} .legal b{color:#3E5A70;} .foot{margin-top:16px;text-align:center;font-size:10px;color:#999;}'
+    +'</style></head><body>'
+    +'<div class="head"><div class="brand"><img src="https://www.fournilvivant.fr/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d\'instants</div></div></div>'
+    +'<div class="em"><strong>'+escF(EMETTEUR.nom)+'</strong><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'</div></div>'
+    +'<div class="ttl">Facture</div>'
+    +'<div class="meta">N° <b>'+escF(f.number)+'</b> · Émise le '+fmtDateFR(f.issue_date)+(f.service_date?(' · Prestation du '+fmtDateFR(f.service_date)):'')+'</div>'
+    +'<div class="box"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div>'
+    +'<table><thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unitaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="tot"><div class="t">'+(dep>0?('<div class="r"><span>Total</span><span>'+eurF(f.total)+'</span></div><div class="r"><span>Acompte versé</span><span>− '+eurF(dep)+'</span></div>'):'')
+    +'<div class="r grand"><span>'+(dep>0?'Reste à payer':'Total à payer')+'</span><span>'+eurF(net)+'</span></div></div></div>'
+    +'<div style="font-size:11px;color:#555;margin-top:8px">Conditions de règlement : '+escF(f.payment_terms||"À réception")+'.'+(f.notes?(' '+escF(f.notes)):'')+'</div>'
+    +'<div class="legal"><b>TVA non applicable, art. 293 B du CGI</b> (micro-entreprise, franchise en base de TVA).<br>'
+    +'En cas de retard de paiement : pénalités au taux de 3 fois l\'intérêt légal, exigibles sans rappel, et indemnité forfaitaire pour frais de recouvrement de 40 € (art. L441-10 et D441-5 du Code de commerce). Pas d\'escompte pour paiement anticipé.</div>'
+    +'<div class="foot">'+escF(EMETTEUR.nom)+' · '+escF(EMETTEUR.adr)+' · SIRET '+escF(EMETTEUR.siret)+' · '+escF(EMETTEUR.site)+'</div>'
+    +'</body></html>';
 }
 
 // ── Annonces / Newsletter ──────────────────────────────────────────────────────
