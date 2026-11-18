@@ -280,7 +280,7 @@ function colorFor(cat){
 }
 function mapProducts(d){
   return (Array.isArray(d)?d:[]).map(function(p){
-    return { id:p.id, name:p.name, price:Number(p.price)||0, cost:Number(p.cost)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0, barcode:(p.barcode||"").trim(), sold_by_weight:!!p.sold_by_weight, price_per_kg:Number(p.price_per_kg)||0 };
+    return { id:p.id, name:p.name, price:Number(p.price)||0, cost:Number(p.cost)||0, category:p.cat||"Articles", color:colorFor(p.cat), position:p.position||0, barcode:(p.barcode||"").trim(), sold_by_weight:!!p.sold_by_weight, price_per_kg:Number(p.price_per_kg)||0, preset_weights:(p.preset_weights||"") };
   });
 }
 var INSTANTS_LABEL = "NOS INSTANTS";   // libellé du rayon « instants » dans la caisse
@@ -382,6 +382,8 @@ function removeLine(id){ ticket = ticket.filter(function(x){ return x.id!==id; }
 
 /* Vente au poids : on pèse, on saisit les grammes, le prix se calcule (prix/kg × poids). */
 var lineSeq = 0;
+var PRESET_WEIGHTS_DEFAULT = [300, 400, 520];   // formats rapides par défaut (modifiable par produit via preset_weights, ex. "300,400,520")
+function parsePresetWeights(s){ return String(s||"").split(/[^\d]+/).map(function(x){ return parseInt(x,10); }).filter(function(n){ return n>0 && n<100000; }); }
 function weightPrompt(a){
   var ov=document.createElement("div"); ov.className="ov";
   function price(g){ return Math.round(a.price_per_kg*g/1000*100)/100; }
@@ -390,13 +392,22 @@ function weightPrompt(a){
   var wFmt = wg>=1000 ? (String(wg/1000).replace(".",",")+" kg") : (wg+" g");
   // Si le pain a un poids de référence, on propose de l'ajouter entier d'un seul geste.
   var wholeBtn = (wg>0) ?
-      '<button class="big ok" id="wWhole" style="margin-top:14px;font-size:17px;">Pain entier · '+wFmt+' · '+eur(wholePrice)+'</button>'
-     +'<div class="sub" style="text-align:center;margin:12px 0 0;opacity:.75;">— ou pesée à la coupe —</div>' : '';
+      '<button class="big ok" id="wWhole" style="margin-top:14px;font-size:17px;">Pain entier · '+wFmt+' · '+eur(wholePrice)+'</button>' : '';
+  // Formats rapides prédéfinis (1 clic = ajout direct au poids indiqué)
+  var presets = parsePresetWeights(a.preset_weights); if(!presets.length) presets = PRESET_WEIGHTS_DEFAULT;
+  var chipsHtml = '<div class="sub" style="text-align:center;margin:14px 0 0;">Formats rapides · 1 clic</div>'
+    + '<div style="display:grid;grid-template-columns:repeat('+Math.min(presets.length,3)+',1fr);gap:8px;margin-top:8px;">'
+    + presets.map(function(w){ var fmt = w>=1000 ? (String(w/1000).replace(".",",")+" kg") : (w+" g");
+        return '<button class="big ok wchip" data-w="'+w+'" style="margin:0;padding:12px 6px;font-size:17px;flex-direction:column;line-height:1.15;">'+fmt
+          +'<small style="display:block;font-weight:400;font-size:12.5px;opacity:.92;margin-top:2px;">'+eur(price(w))+'</small></button>'; }).join("")
+    + '</div>';
   ov.innerHTML='<div class="card">'
     +'<h3 style="text-align:center;">⚖️ '+esc(a.name)+'</h3>'
     +'<div class="sub" style="text-align:center;margin-top:2px;">Vendu au poids · <b style="color:var(--bd)">'+eur(a.price_per_kg)+' / kg</b></div>'
     + wholeBtn
-    +'<label style="font-size:12px;color:var(--is);margin-top:14px;display:block;text-align:center;">Poids pesé (en grammes)</label>'
+    + chipsHtml
+    +'<div class="sub" style="text-align:center;margin:14px 0 0;opacity:.75;">— ou pesée libre —</div>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:8px;display:block;text-align:center;">Poids pesé (en grammes)</label>'
     +'<input class="fi" id="wG" inputmode="numeric" placeholder="0" style="font-size:34px;text-align:center;margin-top:6px;" />'
     +'<div id="wCalc" style="text-align:center;margin-top:16px;min-height:34px;"></div>'
     +'<button class="big ok" id="wGo" style="margin-top:8px;" disabled>Ajouter</button>'
@@ -411,13 +422,15 @@ function weightPrompt(a){
     if(g>0){ c.innerHTML=g+' g × '+eur(a.price_per_kg)+'/kg = <b style="color:var(--bd);font-size:26px;display:block;margin-top:2px;">'+eur(price(g))+'</b>'; go.disabled=false; }
     else { c.innerHTML='<span style="color:var(--is);font-size:13px;">Saisissez le poids pesé.</span>'; go.disabled=true; }
   }
+  function pushWeight(g){ if(g<=0) return; ov.remove();
+    ticket.push({ id:"w"+(++lineSeq)+"_"+a.id, name:a.name+" · "+g+" g", price:price(g), cost:0, qty:1, by_weight:true, weight_g:g, price_per_kg:a.price_per_kg });
+    renderTicket();
+  }
   inp.addEventListener("input", paint);
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter" && grams()>0){ go.click(); } });
   ov.querySelector("#wCancel").onclick=function(){ ov.remove(); };
-  go.onclick=function(){ var g=grams(); if(g<=0) return; ov.remove();
-    ticket.push({ id:"w"+(++lineSeq)+"_"+a.id, name:a.name+" · "+g+" g", price:price(g), cost:0, qty:1, by_weight:true, weight_g:g, price_per_kg:a.price_per_kg });
-    renderTicket();
-  };
+  ov.querySelectorAll(".wchip").forEach(function(b){ b.onclick=function(){ pushWeight(parseInt(b.getAttribute("data-w"),10)||0); }; });
+  go.onclick=function(){ pushWeight(grams()); };
   paint();
   setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
 }
