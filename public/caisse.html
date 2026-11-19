@@ -382,8 +382,20 @@ function removeLine(id){ ticket = ticket.filter(function(x){ return x.id!==id; }
 
 /* Vente au poids : on pèse, on saisit les grammes, le prix se calcule (prix/kg × poids). */
 var lineSeq = 0;
-var PRESET_WEIGHTS_DEFAULT = [300, 400, 520];   // formats rapides par défaut (modifiable par produit via preset_weights, ex. "300,400,520")
+var PRESET_WEIGHTS_DEFAULT = [300, 400, 520];   // formats rapides par défaut (si rien de défini)
 function parsePresetWeights(s){ return String(s||"").split(/[^\d]+/).map(function(x){ return parseInt(x,10); }).filter(function(n){ return n>0 && n<100000; }); }
+// Poids rapides par pain (en grammes), d'après le nom du produit
+function presetsFor(name){
+  var n = String(name||"").toLowerCase();
+  if(/tradition/.test(n))     return /miche/.test(n) ? [1000] : [500];   // boule 500 g · miche 1 kg
+  if(/classique/.test(n))     return /miche/.test(n) ? [1000] : [500];   // levain : boule 500 g · miche 1 kg
+  if(/fruit/.test(n))         return [300];
+  if(/graines/.test(n))       return [400];
+  if(/int[ée]gral/.test(n))   return [500, 1000];                        // moulé 500 g / 1 kg
+  if(/engrain/.test(n))       return [500, 1000];                        // moulé 500 g / 1 kg
+  if(/diamant/.test(n))       return [180];
+  return PRESET_WEIGHTS_DEFAULT;
+}
 function weightPrompt(a){
   var ov=document.createElement("div"); ov.className="ov";
   function price(g){ return Math.round(a.price_per_kg*g/1000*100)/100; }
@@ -394,7 +406,7 @@ function weightPrompt(a){
   var wholeBtn = (wg>0) ?
       '<button class="big ok" id="wWhole" style="margin-top:14px;font-size:17px;">Pain entier · '+wFmt+' · '+eur(wholePrice)+'</button>' : '';
   // Formats rapides prédéfinis (1 clic = ajout direct au poids indiqué)
-  var presets = parsePresetWeights(a.preset_weights); if(!presets.length) presets = PRESET_WEIGHTS_DEFAULT;
+  var presets = parsePresetWeights(a.preset_weights); if(!presets.length) presets = presetsFor(a.name);
   var chipsHtml = '<div class="sub" style="text-align:center;margin:14px 0 0;">Formats rapides · 1 clic</div>'
     + '<div style="display:grid;grid-template-columns:repeat('+Math.min(presets.length,3)+',1fr);gap:8px;margin-top:8px;">'
     + presets.map(function(w){ var fmt = w>=1000 ? (String(w/1000).replace(".",",")+" kg") : (w+" g");
