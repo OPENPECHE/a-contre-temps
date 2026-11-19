@@ -56,6 +56,15 @@
     .final p{opacity:.9;margin:16px auto 0;max-width:560px;}
     .final .btn{display:inline-block;margin-top:28px;background:var(--cr);color:var(--bd);padding:14px 30px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;}
     footer{background:var(--pp);border-top:1px solid var(--bs);padding:34px 24px;text-align:center;color:var(--is);font-size:13px;}footer a{color:var(--b);text-decoration:none;}
+    .evform{max-width:600px;margin:30px auto 0;text-align:left;background:var(--pp);border-radius:16px;padding:26px 24px;color:var(--ink);box-shadow:0 12px 34px rgba(0,0,0,.2);}
+    .evform .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .evform label{display:block;font-size:12px;color:var(--bd);font-weight:600;margin-bottom:13px;}
+    .evform input,.evform select,.evform textarea{width:100%;margin-top:5px;padding:11px 12px;border:1px solid var(--bs);border-radius:9px;font-family:var(--sans);font-size:14px;font-weight:400;color:var(--ink);background:#fff;}
+    .evform textarea{resize:vertical;}
+    .evform button{width:100%;margin-top:6px;border:none;cursor:pointer;background:var(--bd);color:var(--cr);padding:14px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;font-family:var(--sans);}
+    .evform button:disabled{opacity:.6;cursor:default;}
+    .evmsg{margin-top:14px;font-size:14px;text-align:center;font-weight:500;line-height:1.5;}
+    @media(max-width:560px){.evform .row2{grid-template-columns:1fr;}}
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -105,7 +114,7 @@
       <div class="card"><div class="k">Animation</div><h3>Bar à pains</h3><p>Un bar à pains au levain et petites fournées à composer, pour animer vos cocktails, vins d'honneur et séminaires d'une touche artisanale.</p></div>
       <div class="card"><div class="k">Attentions</div><h3>Coffrets invités &amp; petit-déjeuner signature</h3><p>Coffrets de biscuits faits maison pour vos invités, ou petit-déjeuner signature livré chaque matin pour vos chambres d'hôtes et vos séjours de réception.</p></div>
     </div>
-    <div style="text-align:center;margin-top:30px"><a href="/contact" class="btn" style="display:inline-block;background:var(--bd);color:var(--cr);padding:14px 30px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Devenir partenaire</a></div>
+    <div style="text-align:center;margin-top:30px"><a href="#contact" class="btn" style="display:inline-block;background:var(--bd);color:var(--cr);padding:14px 30px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Devenir partenaire</a></div>
   </div></section>
   <section><div class="wrap">
     <div class="center"><span class="eyebrow">Bon à savoir</span><h2>Questions fréquentes</h2></div>
@@ -118,11 +127,60 @@
     <div class="center"><span class="eyebrow">À découvrir aussi</span><h2>Nos autres instants</h2></div>
     <div class="links"><a href="/boulangerie-clermont-ferrand">Traiteur</a><a href="/brunch-clermont-ferrand">Brunch</a><a href="/brunch-mariage-clermont-ferrand">Brunch mariage</a><a href="/plateau-aperitif-clermont-ferrand">Apéritif</a><a href="/lunch-clermont-ferrand">Lunch</a><a href="/pain-au-levain-clermont-ferrand">Pain au levain</a><a href="/biscuiterie-clermont-ferrand">Biscuiterie</a></div>
   </div></section>
-  <section class="final"><div class="wrap">
-    <h2>Parlons-en</h2>
-    <p>Un événement à organiser dans le Puy-de-Dôme ou l'Allier ? Mariage, anniversaire, goûter, baptême, séminaire, réception… Particuliers et professionnels de l'événement, écrivez-nous pour toute demande.</p>
-    <a href="/contact" class="btn">Nous contacter</a>
+  <section class="final" id="contact"><div class="wrap">
+    <h2>Parlons de votre événement</h2>
+    <p>Un événement à organiser dans le Puy-de-Dôme ou l'Allier ? Mariage, anniversaire, goûter, baptême, séminaire, réception… Décrivez-nous votre projet : nous revenons vers vous rapidement avec une proposition sur mesure.</p>
+    <form id="evForm" class="evform" novalidate>
+      <div class="row2">
+        <label>Nom &amp; prénom<input name="name" required></label>
+        <label>E-mail<input name="email" type="email" required></label>
+      </div>
+      <div class="row2">
+        <label>Téléphone<input name="phone" type="tel"></label>
+        <label>Type d'événement
+          <select name="eventtype">
+            <option value="">— choisir —</option>
+            <option>Mariage</option>
+            <option>Baptême / Communion</option>
+            <option>Anniversaire</option>
+            <option>Goûter d'enfants</option>
+            <option>Baby shower / Gender reveal</option>
+            <option>EVJF / EVG / Crémaillère</option>
+            <option>Entreprise / Séminaire</option>
+            <option>Réception de famille</option>
+            <option>Autre</option>
+          </select>
+        </label>
+      </div>
+      <div class="row2">
+        <label>Date (si connue)<input name="date" type="date"></label>
+        <label>Nombre d'invités<input name="guests" type="number" min="1" inputmode="numeric"></label>
+      </div>
+      <label>Votre message<textarea name="message" rows="4" placeholder="Parlez-nous de votre projet : lieu, moment de la journée, envies…"></textarea></label>
+      <button type="submit" id="evSubmit">Envoyer ma demande</button>
+      <p id="evMsg" class="evmsg" hidden></p>
+    </form>
   </div></section>
+  <script>
+  (function(){
+    var f=document.getElementById("evForm"); if(!f) return;
+    var btn=document.getElementById("evSubmit"), msg=document.getElementById("evMsg");
+    function show(t,err){ msg.hidden=false; msg.textContent=t; msg.style.color=err?"#F0C4B4":"#D6E5CF"; }
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      var d={}; new FormData(f).forEach(function(v,k){ d[k]=(""+v).trim(); });
+      if(!d.name || !d.email){ show("Merci d'indiquer au moins votre nom et votre e-mail.", true); return; }
+      var old=btn.textContent; btn.disabled=true; btn.textContent="Envoi…";
+      fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"evenement_contact",contact:d})})
+        .then(function(r){ return r.json().catch(function(){return {};}); })
+        .then(function(j){
+          if(j && j.ok!==false){ f.reset(); btn.style.display="none"; show("Merci ! Votre demande est bien partie — nous revenons vers vous très vite. 🥐", false); }
+          else { btn.disabled=false; btn.textContent=old; show("L'envoi a échoué. Réessayez, ou écrivez-nous à acontretemps@fournilvivant.fr", true); }
+        })
+        .catch(function(){ btn.disabled=false; btn.textContent=old; show("L'envoi a échoué. Réessayez, ou écrivez-nous à acontretemps@fournilvivant.fr", true); });
+    });
+  })();
+  </script>
   <footer>à contre-temps — Fournil vivant · Gerzat (63360) · <a href="mailto:acontretemps@fournilvivant.fr">acontretemps@fournilvivant.fr</a> · 06 01 48 28 90<br>Artisan boulanger &amp; traiteur à Clermont-Ferrand<br><a href="/mentions-legales">Mentions légales</a> · <a href="/cgv">CGV</a></footer>
 </body>
 </html>

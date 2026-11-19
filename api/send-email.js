@@ -190,6 +190,27 @@ export default async function handler(req, res) {
     }
   }
 
+  // ───────────── DEMANDE DE CONTACT ÉVÉNEMENTIEL (page Événementiel) ──────────
+  if (type === "evenement_contact") {
+    const c = req.body.contact || {};
+    if (!c.email) return res.status(400).json({ error: "E-mail manquant" });
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
+    const row = (k, v) => v ? `<tr><td style="padding:4px 12px 4px 0;color:#8A857E;font-size:13px;white-space:nowrap;vertical-align:top;">${k}</td><td style="padding:4px 0;color:#2B2925;font-size:13px;"><strong>${esc(v)}</strong></td></tr>` : "";
+    const body = `
+      <h1 style="font-size:20px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Nouvelle demande événementielle 🎉</h1>
+      <p style="font-size:14px;color:#4A443E;margin:0 0 16px;">Reçue via la page « Événementiel » du site.</p>
+      <table style="border-collapse:collapse;margin:0 0 16px;">${row("Nom", c.name)}${row("E-mail", c.email)}${row("Téléphone", c.phone)}${row("Type d'événement", c.eventtype)}${row("Date", c.date)}${row("Nombre d'invités", c.guests)}</table>
+      ${c.message ? `<p style="font-size:14px;color:#4A443E;line-height:1.7;margin:0;"><strong>Message :</strong><br>${esc(c.message).replace(/\n/g, "<br>")}</p>` : ""}`;
+    try {
+      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [OWNER], reply_to: c.email, subject: `Demande événementiel — ${c.name || "sans nom"}${c.eventtype ? " (" + c.eventtype + ")" : ""}`, html: shell(body) });
+      if (!r.ok) console.error("Resend evenement_contact error:", r.status, r.data);
+      return res.status(200).json({ ok: r.ok, status: r.status, error: r.ok ? null : r.data });
+    } catch (e) {
+      console.error("Send evenement_contact error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ───────────────────────── E-MAIL DE BIENVENUE ─────────────────────────────
   if (type === "welcome") {
     const client = req.body.client || {};
