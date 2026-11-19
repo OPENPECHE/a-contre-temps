@@ -65,6 +65,19 @@
     .evform button:disabled{opacity:.6;cursor:default;}
     .evmsg{margin-top:14px;font-size:14px;text-align:center;font-weight:500;line-height:1.5;}
     @media(max-width:560px){.evform .row2{grid-template-columns:1fr;}}
+    /* Cartes cliquables */
+    #offres .card, .band .card{cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
+    #offres .card:hover, .band .card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(62,90,112,.16);border-color:var(--b);}
+    #offres .card:focus-visible, .band .card:focus-visible{outline:2px solid var(--bd);outline-offset:3px;}
+    .card-cta{margin-top:13px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ru);}
+    /* Fenêtre de contact (modale) */
+    .ev-overlay{position:fixed;inset:0;z-index:100;background:rgba(43,41,37,.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;}
+    .ev-overlay[hidden]{display:none;}
+    .ev-modal{background:var(--pp);border-radius:18px;max-width:600px;width:100%;padding:30px 26px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.32);margin:auto;}
+    .ev-close{position:absolute;top:10px;right:14px;background:none;border:none;font-size:30px;line-height:1;color:var(--is);cursor:pointer;padding:4px 8px;}
+    .ev-title{font-family:var(--serif);font-weight:400;font-size:clamp(22px,4vw,28px);color:var(--bd);}
+    .ev-sub{color:var(--is);font-size:14px;margin:8px 0 2px;}
+    .ev-modal .evform{background:none;box-shadow:none;padding:0;margin:18px 0 0;}
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -114,7 +127,7 @@
       <div class="card"><div class="k">Animation</div><h3>Bar à pains</h3><p>Un bar à pains au levain et petites fournées à composer, pour animer vos cocktails, vins d'honneur et séminaires d'une touche artisanale.</p></div>
       <div class="card"><div class="k">Attentions</div><h3>Coffrets invités &amp; petit-déjeuner signature</h3><p>Coffrets de biscuits faits maison pour vos invités, ou petit-déjeuner signature livré chaque matin pour vos chambres d'hôtes et vos séjours de réception.</p></div>
     </div>
-    <div style="text-align:center;margin-top:30px"><a href="#contact" class="btn" style="display:inline-block;background:var(--bd);color:var(--cr);padding:14px 30px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Devenir partenaire</a></div>
+    <div style="text-align:center;margin-top:30px"><a href="#" data-ev-open class="btn" style="display:inline-block;background:var(--bd);color:var(--cr);padding:14px 30px;border-radius:999px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Devenir partenaire</a></div>
   </div></section>
   <section><div class="wrap">
     <div class="center"><span class="eyebrow">Bon à savoir</span><h2>Questions fréquentes</h2></div>
@@ -129,43 +142,79 @@
   </div></section>
   <section class="final" id="contact"><div class="wrap">
     <h2>Parlons de votre événement</h2>
-    <p>Un événement à organiser dans le Puy-de-Dôme ou l'Allier ? Mariage, anniversaire, goûter, baptême, séminaire, réception… Décrivez-nous votre projet : nous revenons vers vous rapidement avec une proposition sur mesure.</p>
-    <form id="evForm" class="evform" novalidate>
-      <div class="row2">
-        <label>Nom &amp; prénom<input name="name" required></label>
-        <label>E-mail<input name="email" type="email" required></label>
-      </div>
-      <div class="row2">
-        <label>Téléphone<input name="phone" type="tel"></label>
-        <label>Type d'événement
-          <select name="eventtype">
-            <option value="">— choisir —</option>
-            <option>Mariage</option>
-            <option>Baptême / Communion</option>
-            <option>Anniversaire</option>
-            <option>Goûter d'enfants</option>
-            <option>Baby shower / Gender reveal</option>
-            <option>EVJF / EVG / Crémaillère</option>
-            <option>Entreprise / Séminaire</option>
-            <option>Réception de famille</option>
-            <option>Autre</option>
-          </select>
-        </label>
-      </div>
-      <div class="row2">
-        <label>Date (si connue)<input name="date" type="date"></label>
-        <label>Nombre d'invités<input name="guests" type="number" min="1" inputmode="numeric"></label>
-      </div>
-      <label>Votre message<textarea name="message" rows="4" placeholder="Parlez-nous de votre projet : lieu, moment de la journée, envies…"></textarea></label>
-      <button type="submit" id="evSubmit">Envoyer ma demande</button>
-      <p id="evMsg" class="evmsg" hidden></p>
-    </form>
+    <p>Un événement à organiser dans le Puy-de-Dôme ou l'Allier ? Mariage, anniversaire, goûter, baptême, séminaire, réception… Cliquez ci-dessous ou sur l'occasion qui vous intéresse : on revient vers vous rapidement avec une proposition sur mesure.</p>
+    <a href="#" class="btn" data-ev-open>Demander un devis</a>
   </div></section>
+
+  <!-- Fenêtre de contact (ouverte au clic sur une occasion ou sur « Demander un devis ») -->
+  <div id="evOverlay" class="ev-overlay" hidden>
+    <div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="evTitle">
+      <button class="ev-close" id="evClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 class="ev-title" id="evTitle">Votre demande</h3>
+      <p class="ev-sub">Décrivez votre projet, nous revenons vers vous rapidement avec une proposition sur mesure.</p>
+      <form id="evForm" class="evform" novalidate>
+        <div class="row2">
+          <label>Nom &amp; prénom<input name="name" required></label>
+          <label>E-mail<input name="email" type="email" required></label>
+        </div>
+        <div class="row2">
+          <label>Téléphone<input name="phone" type="tel"></label>
+          <label>Type d'événement
+            <select name="eventtype">
+              <option value="">— choisir —</option>
+              <option>Mariage</option>
+              <option>Baptême / Communion</option>
+              <option>Anniversaire</option>
+              <option>Goûter d'enfants</option>
+              <option>Baby shower / Gender reveal</option>
+              <option>EVJF / EVG / Crémaillère</option>
+              <option>Entreprise / Séminaire</option>
+              <option>Réception de famille</option>
+              <option>Autre</option>
+            </select>
+          </label>
+        </div>
+        <div class="row2">
+          <label>Date (si connue)<input name="date" type="date"></label>
+          <label>Nombre d'invités<input name="guests" type="number" min="1" inputmode="numeric"></label>
+        </div>
+        <label>Votre message<textarea name="message" rows="4" placeholder="Parlez-nous de votre projet : lieu, moment de la journée, envies…"></textarea></label>
+        <button type="submit" id="evSubmit">Envoyer ma demande</button>
+        <p id="evMsg" class="evmsg" hidden></p>
+      </form>
+    </div>
+  </div>
+
   <script>
   (function(){
-    var f=document.getElementById("evForm"); if(!f) return;
+    var overlay=document.getElementById("evOverlay"), f=document.getElementById("evForm");
+    if(!overlay || !f) return;
     var btn=document.getElementById("evSubmit"), msg=document.getElementById("evMsg");
-    function show(t,err){ msg.hidden=false; msg.textContent=t; msg.style.color=err?"#F0C4B4":"#D6E5CF"; }
+    var sel=f.querySelector('select[name="eventtype"]'), title=document.getElementById("evTitle");
+    var MAP={ "mariage":"Mariage", "baptême & communion":"Baptême / Communion", "anniversaire":"Anniversaire", "goûter d'anniversaire":"Goûter d'enfants", "baby shower & gender reveal":"Baby shower / Gender reveal", "evjf, evg & crémaillère":"EVJF / EVG / Crémaillère", "entreprise & séminaire":"Entreprise / Séminaire", "repas de famille & réceptions":"Réception de famille" };
+    function openModal(ev){
+      if(msg){ msg.hidden=true; } if(btn){ btn.style.display=""; btn.disabled=false; btn.textContent="Envoyer ma demande"; }
+      if(sel){ sel.selectedIndex=0; if(ev){ for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===ev||sel.options[i].text===ev){ sel.selectedIndex=i; break; } } } }
+      title.textContent = ev ? (ev + " — votre demande") : "Votre demande";
+      overlay.hidden=false; document.body.style.overflow="hidden";
+      setTimeout(function(){ var n=f.querySelector('input[name="name"]'); if(n) n.focus(); }, 60);
+    }
+    function closeModal(){ overlay.hidden=true; document.body.style.overflow=""; }
+    document.getElementById("evClose").onclick=closeModal;
+    overlay.addEventListener("click", function(e){ if(e.target===overlay) closeModal(); });
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !overlay.hidden) closeModal(); });
+    // Rendre les cartes d'occasion (et partenaires) cliquables
+    document.querySelectorAll("#offres .card, .band .card").forEach(function(c){
+      var h=c.querySelector("h3"); var ev=h ? (MAP[h.textContent.trim().toLowerCase()] || "") : "";
+      if(!c.querySelector(".card-cta")){ var cta=document.createElement("div"); cta.className="card-cta"; cta.textContent="Demander un devis →"; c.appendChild(cta); }
+      c.setAttribute("role","button"); c.setAttribute("tabindex","0");
+      c.addEventListener("click", function(){ openModal(ev); });
+      c.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openModal(ev); } });
+    });
+    // Boutons « Demander un devis » / « Devenir partenaire »
+    document.querySelectorAll("[data-ev-open]").forEach(function(b){ b.addEventListener("click", function(e){ e.preventDefault(); openModal(""); }); });
+    // Soumission
+    function show(t,err){ msg.hidden=false; msg.textContent=t; msg.style.color=err?"#C0392B":"var(--gn)"; }
     f.addEventListener("submit", function(e){
       e.preventDefault();
       var d={}; new FormData(f).forEach(function(v,k){ d[k]=(""+v).trim(); });
