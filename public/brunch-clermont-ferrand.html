@@ -108,6 +108,7 @@
           <span style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.9;">par personne</span>
         </div>
       </div>
+      <div id="brDeadline" style="display:none;background:#F3E7DA;border:1px solid #E7D3BC;border-radius:12px;padding:12px 18px;font-size:14px;color:var(--bd);max-width:540px;margin:0 auto 26px;text-align:center;line-height:1.55;"></div>
       <div class="card" id="brCompo" style="max-width:620px;margin:0 auto;">
         <p style="font-family:var(--serif);font-size:19px;color:var(--bd);text-align:center;margin-bottom:4px;">Votre brunch comprend, pour chaque personne :</p>
         <p style="text-align:center;color:var(--is);font-size:13.5px;margin-bottom:20px;">Tout est inclus — le salé, le sucré <em>et</em> les accompagnements.</p>
@@ -267,6 +268,28 @@
   }
   fetch(SB_URL+"/rest/v1/products?id=eq.s1&select=price,description",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}})
     .then(function(r){return r.ok?r.json():null;}).then(function(d){ if(Array.isArray(d)&&d[0]) render(d[0]); }).catch(function(){});
+})();
+</script>
+<script>
+/* Date limite de commande pour le prochain brunch (lue des règles de livraison). */
+(function(){
+  var U="https://jxxgafyqfbnqieiqltcn.supabase.co", K="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+  var J=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+  var M=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+  var START=9; // heure de début du créneau brunch
+  function fh(d){ var h=d.getHours(), m=d.getMinutes(); return h+"h"+(m?String(m).padStart(2,"0"):""); }
+  function render(days, adv){
+    var el=document.getElementById("brDeadline"); if(!el) return;
+    var now=new Date(), minMs=now.getTime()+adv*3600*1000, next=null;
+    for(var i=0;i<30 && !next;i++){ var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i, START,0,0,0); if(days.indexOf(d.getDay())>=0 && d.getTime()>=minMs) next=d; }
+    if(!next) return;
+    var dl=new Date(next.getTime()-adv*3600*1000);
+    el.innerHTML="🗓️ Prochain brunch livrable&nbsp;: <b>"+J[next.getDay()]+" "+next.getDate()+" "+M[next.getMonth()]+"</b><br>Commandez avant <b>"+J[dl.getDay()]+" "+dl.getDate()+" "+M[dl.getMonth()]+" à "+fh(dl)+"</b>.";
+    el.style.display="";
+  }
+  fetch(U+"/rest/v1/delivery_rules?category=eq.Brunch%20week-end&select=available_days,advance_hours&limit=1",{headers:{apikey:K,Authorization:"Bearer "+K}})
+    .then(function(r){return r.ok?r.json():[];}).then(function(d){ var rr=(d&&d[0])||{}; var days=(rr.available_days&&rr.available_days.length)?rr.available_days:[0,6]; var adv=(rr.advance_hours!=null)?Number(rr.advance_hours):24; render(days, adv); })
+    .catch(function(){ render([0,6],24); });
 })();
 </script>
 </body>
