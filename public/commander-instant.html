@@ -369,8 +369,9 @@ function upcomingDates(days, advanceH, startHour){
   }
   return out;
 }
+function slotStartHour(){ var s=(typeof SLOTS!=="undefined"&&SLOTS[0])||""; var m=s.match(/^(\d{1,2})h(\d{2})?/); return m?(Number(m[1])+(m[2]?Number(m[2])/60:0)):9; }
 function buildCreneau(){
-  var dates=upcomingDates(state.days, state.advance);
+  var dates=upcomingDates(state.days, state.advance, slotStartHour());
   var dp=document.getElementById("dayPicks");
   dp.innerHTML = dates.length ? dates.map(function(dt){
     var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");

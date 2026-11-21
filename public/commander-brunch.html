@@ -251,16 +251,19 @@ document.getElementById("bk2").onclick=function(){ show(1); };
 document.getElementById("go2").onclick=function(){ buildCreneau(); show(3); };
 
 /* ---- Étape 3 : créneau ---- */
-function upcomingDates(days, advanceH){
-  var out=[], now=new Date(), min=new Date(now.getTime()+(advanceH||24)*3600*1000);
+function upcomingDates(days, advanceH, startHour){
+  var out=[], now=new Date(), minMs=now.getTime()+(advanceH||24)*3600*1000, useH=(startHour!=null);
+  var mm=new Date(minMs), minMid=new Date(mm.getFullYear(),mm.getMonth(),mm.getDate());
   for(var i=0;i<30 && out.length<8;i++){
-    var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
-    if(days.indexOf(d.getDay())>=0 && d>= new Date(min.getFullYear(),min.getMonth(),min.getDate())) out.push(d);
+    var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i, useH?startHour:0,0,0,0);
+    var ok=useH ? (d.getTime()>=minMs) : (d>=minMid);
+    if(days.indexOf(d.getDay())>=0 && ok) out.push(d);
   }
   return out;
 }
+function slotStartHour(){ var s=(typeof SLOTS!=="undefined"&&SLOTS[0])||""; var m=s.match(/^(\d{1,2})h(\d{2})?/); return m?(Number(m[1])+(m[2]?Number(m[2])/60:0)):9; }
 function buildCreneau(){
-  var dates=upcomingDates(state.days, state.advance);
+  var dates=upcomingDates(state.days, state.advance, slotStartHour());
   var dp=document.getElementById("dayPicks");
   dp.innerHTML = dates.length ? dates.map(function(dt){
     var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
