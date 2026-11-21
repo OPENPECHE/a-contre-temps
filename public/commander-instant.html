@@ -102,6 +102,18 @@
         <span><b id="addonName" style="color:var(--bd);font-size:15px;"></b> <span id="addonPpp" style="color:var(--ru);font-size:13px;white-space:nowrap;"></span><br><span style="font-size:12.5px;color:var(--is);" id="addonDesc"></span></span>
       </label>
     </div>
+    <div class="card" id="occCard">
+      <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin:0;">
+        <input type="checkbox" id="occChk" style="width:20px;height:20px;margin-top:3px;flex-shrink:0;accent-color:var(--bd);" />
+        <span><b style="color:var(--bd);font-size:15px;">🎉 C'est pour une occasion&nbsp;?</b><br><span style="font-size:12.5px;color:var(--is);">Anniversaire, baby shower… ajoutez une touche festive à votre planche.</span></span>
+      </label>
+      <div id="occOpts" style="display:none;margin-top:12px;">
+        <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:10px 0 0;font-size:14px;color:var(--ink);"><input type="checkbox" id="occCard2" style="width:19px;height:19px;flex-shrink:0;accent-color:var(--bd);" /><span>✍️ Carte avec petit mot manuscrit <b style="color:var(--gn);">offerte</b></span></label>
+        <textarea class="fi" id="occMsg" rows="3" maxlength="200" placeholder="Votre petit mot (ex. Joyeux anniversaire Camille&nbsp;!)" style="display:none;margin-top:8px;"></textarea>
+        <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:10px 0 0;font-size:14px;color:var(--ink);"><input type="checkbox" id="occCandle" style="width:19px;height:19px;flex-shrink:0;accent-color:var(--bd);" /><span>🎂 Bougies d'anniversaire <b style="color:var(--ru);">+2&nbsp;€</b></span></label>
+        <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:10px 0 0;font-size:14px;color:var(--ink);"><input type="checkbox" id="occFestive" style="width:19px;height:19px;flex-shrink:0;accent-color:var(--bd);" /><span>🎀 Présentation festive <b style="color:var(--ru);">+3&nbsp;€</b></span></label>
+      </div>
+    </div>
     <div class="totline" style="padding:2px 4px 0;"><span>Total</span><span id="pTotal">—</span></div>
     <button class="btn" id="go1">Continuer</button>
     <p style="text-align:center;margin-top:12px;"><a id="backLink" href="/" style="font-size:13px;color:var(--bd);">← Voir le détail</a></p>
@@ -201,13 +213,15 @@ var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 var SLOTS=["9h00 – 10h30","10h30 – 12h00"];
 var state={ qty:2, mode:"domicile", addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24, addon:false,
+            occ:false, occCard:false, occCandle:false, occFestive:false, occMsg:"",
             market:null, marketId:null, marketDays:[], marketDate:null, marketDateLabel:"" };
 var currentUser=null, zone=null;
 var markets=[], marketDays={};
 var ADDONS={ s2:{ id:"s4" } };   // l'apéro peut ajouter le café gourmand (s4)
 var ADDON=null;                   // {id, name, fullName, price}
 function addonTotal(){ return (ADDON && state.addon) ? ADDON.price*state.qty : 0; }
-function grandTotal(){ return UNIT*state.qty + addonTotal(); }
+function occasionTotal(){ return state.occ ? ((state.occCandle?2:0)+(state.occFestive?3:0)) : 0; }
+function grandTotal(){ return UNIT*state.qty + addonTotal() + occasionTotal(); }
 
 /* page de détail par produit (pour le lien « voir le détail ») */
 var DETAIL={ s1:"/brunch-clermont-ferrand", s2:"/plateau-aperitif-clermont-ferrand", s4:"/cafe-gourmand-clermont-ferrand", s5:"/planche-de-saison-clermont-ferrand" };
@@ -298,6 +312,19 @@ function paintQty(){
 }
 document.getElementById("pMinus").onclick=function(){ if(state.qty>1){ state.qty--; paintQty(); } };
 document.getElementById("pPlus").onclick=function(){ if(state.qty<40){ state.qty++; paintQty(); } };
+(function(){
+  var chk=document.getElementById("occChk"), opts=document.getElementById("occOpts"),
+      card=document.getElementById("occCard2"), msg=document.getElementById("occMsg"),
+      candle=document.getElementById("occCandle"), fest=document.getElementById("occFestive");
+  if(!chk) return;
+  chk.onchange=function(){ state.occ=this.checked; opts.style.display=this.checked?"":"none";
+    if(!this.checked){ state.occCard=state.occCandle=state.occFestive=false; state.occMsg="";
+      card.checked=candle.checked=fest.checked=false; msg.value=""; msg.style.display="none"; } paintQty(); };
+  card.onchange=function(){ state.occCard=this.checked; msg.style.display=this.checked?"":"none"; if(!this.checked){ msg.value=""; state.occMsg=""; } };
+  msg.oninput=function(){ state.occMsg=this.value.slice(0,200); };
+  candle.onchange=function(){ state.occCandle=this.checked; paintQty(); };
+  fest.onchange=function(){ state.occFestive=this.checked; paintQty(); };
+})();
 document.getElementById("go1").onclick=function(){ showPanel("pMode",2); };
 
 /* ---- Mode de récupération ---- */
@@ -401,12 +428,21 @@ document.getElementById("goMk").onclick=function(){ paintRecap(); renderLogin();
 /* ---- Coordonnées + connexion + paiement ---- */
 function paintRecap(){
   var addonLine = (ADDON && state.addon) ? '➕ <b>'+state.qty+' × '+esc(ADDON.name)+'</b> · '+eur(ADDON.price*state.qty)+'<br>' : '';
+  var occLine='';
+  if(state.occ){
+    var bits=[];
+    if(state.occCard) bits.push('carte'+(state.occMsg?' + mot':''));
+    if(state.occCandle) bits.push('bougies (+2 €)');
+    if(state.occFestive) bits.push('présentation festive (+3 €)');
+    if(bits.length) occLine='🎉 <b>Occasion</b> · '+bits.join(', ')+'<br>';
+    if(state.occCard && state.occMsg) occLine+='✍️ « '+esc(state.occMsg)+' »<br>';
+  }
   var fulfil = (state.mode==="marche")
     ? '🥖 Retrait marché : <b>'+esc(state.market)+'</b><br>🗓️ '+esc(state.marketDateLabel)
     : '📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot);
   document.getElementById("recap").innerHTML=
     '🧺 <b>'+state.qty+' × '+esc(TITLE)+'</b> · '+eur(UNIT*state.qty)+'<br>'
-    +addonLine + fulfil
+    +addonLine + occLine + fulfil
     +'<br><span style="font-weight:600;color:var(--bd);">Total : '+eur(grandTotal())+'</span>';
   document.getElementById("go4").textContent="Payer "+eur(grandTotal());
 }
@@ -473,14 +509,22 @@ function finishOrder(info, payMethod, status, paid){
   var total=grandTotal();
   var items=[{name:FORMULE, price:UNIT, qty:state.qty}];
   if(ADDON && state.addon) items.push({name:ADDON.fullName, price:ADDON.price, qty:state.qty});
+  if(state.occ){
+    if(state.occCard) items.push({name:"✍️ Carte + petit mot manuscrit", price:0, qty:1});
+    if(state.occCandle) items.push({name:"🎂 Bougies d'anniversaire", price:2, qty:1});
+    if(state.occFestive) items.push({name:"🎀 Présentation festive", price:3, qty:1});
+  }
   var shipping, pdate, locNote;
   if(state.mode==="marche"){ shipping="Retrait marché — "+state.market; pdate=state.marketDate; locNote="Retrait "+state.market+" le "+state.marketDateLabel; }
   else { var adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":""); shipping="Livraison — "+adr; pdate=state.date; locNote=state.dateLabel+" "+state.slot+" · "+adr; }
+  var occNote="";
+  if(state.occ){ var ob=[]; if(state.occCard)ob.push("carte"); if(state.occCandle)ob.push("bougies"); if(state.occFestive)ob.push("présentation festive");
+    if(ob.length) occNote=" · 🎉 "+ob.join(", "); if(state.occCard&&state.occMsg) occNote+=' — Mot : "'+state.occMsg+'"'; }
   var order={ name:info.name, email:info.mail, phone:info.phone,
     items:items,
     total:total, status:status, shipping:shipping, pickup_date:pdate,
     payment_method:payMethod, paid:!!paid,
-    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+locNote+(paid?" — PAYÉ EN LIGNE":"") };
+    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+locNote+occNote+(paid?" — PAYÉ EN LIGNE":"") };
   return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); showSuccess(info, paid); });
 }
