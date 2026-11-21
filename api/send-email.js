@@ -355,6 +355,14 @@ export default async function handler(req, res) {
     `à contre-temps — Fournil vivant\nhttps://fournilvivant.fr`;
 
   // ── Email FOURNIL : notification de nouvelle commande ──────────────────────
+  const escO = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const fmtO = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
+  const itemRowsO = items.map((it) => `
+        <tr>
+          <td style="text-align:center;padding:10px 8px;font-size:18px;font-weight:bold;color:#3E5A70;border-bottom:1px solid #eee;white-space:nowrap;">${Number(it.qty) || 1}&nbsp;×</td>
+          <td style="text-align:left;padding:10px 8px;font-size:14px;color:#2B2925;border-bottom:1px solid #eee;">${escO(it.name)}</td>
+          <td style="text-align:right;padding:10px 8px;font-size:13px;color:#555;border-bottom:1px solid #eee;white-space:nowrap;">${fmtO((Number(it.price) || 0) * (Number(it.qty) || 0))}</td>
+        </tr>`).join("");
   const ownerHtml = `
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"></head>
@@ -373,10 +381,18 @@ export default async function handler(req, res) {
         <tr><td style="color:#888;padding:4px 0;">Date souhaitée</td><td style="text-align:right;">${order.pickup_date || "—"}</td></tr>
         <tr><td style="color:#888;padding:4px 0;">Paiement</td><td style="text-align:right;">${order.payment_method || "—"}</td></tr>
       </table>
-      <div style="border-top:1px solid #eee;margin-top:1rem;padding-top:1rem;">
-        ${items.map(it => `<div style="display:flex;justify-content:space-between;font-size:14px;padding:3px 0;"><span>${it.name} × ${it.qty}</span><span>${(it.price * it.qty).toFixed(2)} €</span></div>`).join("")}
-        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:bold;padding-top:8px;margin-top:4px;border-top:1px solid #ddd;"><span>Total</span><span>${total} €</span></div>
-      </div>
+      <table style="width:100%;border-collapse:collapse;margin-top:1.2rem;">
+        <tr style="background:#F3E7DA;">
+          <th style="text-align:center;padding:7px 8px;font-size:11px;letter-spacing:.06em;color:#8A6A48;text-transform:uppercase;">Qté</th>
+          <th style="text-align:left;padding:7px 8px;font-size:11px;letter-spacing:.06em;color:#8A6A48;text-transform:uppercase;">Produit</th>
+          <th style="text-align:right;padding:7px 8px;font-size:11px;letter-spacing:.06em;color:#8A6A48;text-transform:uppercase;">Montant</th>
+        </tr>${itemRowsO}
+        <tr>
+          <td></td>
+          <td style="text-align:right;padding:11px 8px;font-weight:bold;font-size:15px;color:#2B2925;">Total</td>
+          <td style="text-align:right;padding:11px 8px;font-weight:bold;font-size:16px;color:#3E5A70;white-space:nowrap;">${fmtO(order.total)}</td>
+        </tr>
+      </table>
       ${order.note ? `<p style="font-size:13px;color:#555;margin-top:1rem;padding:.75rem;background:#F3E7DA;border-radius:6px;"><strong>Note :</strong> ${order.note}</p>` : ""}
     </div>
   </div>
