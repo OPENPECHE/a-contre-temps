@@ -359,11 +359,13 @@ document.getElementById("bk2").onclick=function(){ showPanel("pMode",2); };
 document.getElementById("go2").onclick=function(){ buildCreneau(); showPanel("p3",3); };
 
 /* ---- Créneau ---- */
-function upcomingDates(days, advanceH){
-  var out=[], now=new Date(), min=new Date(now.getTime()+(advanceH||24)*3600*1000);
+function upcomingDates(days, advanceH, startHour){
+  var out=[], now=new Date(), minMs=now.getTime()+(advanceH||24)*3600*1000, useH=(startHour!=null);
+  var mm=new Date(minMs), minMid=new Date(mm.getFullYear(),mm.getMonth(),mm.getDate());
   for(var i=0;i<30 && out.length<8;i++){
-    var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
-    if(days.indexOf(dt.getDay())>=0 && dt>= new Date(min.getFullYear(),min.getMonth(),min.getDate())) out.push(dt);
+    var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i, useH?startHour:0,0,0,0);
+    var ok=useH ? (dt.getTime()>=minMs) : (dt>=minMid);   // marché : coupure à startHour − advance ; livraison : au jour
+    if(days.indexOf(dt.getDay())>=0 && ok) out.push(dt);
   }
   return out;
 }
@@ -409,7 +411,7 @@ function buildMarkets(){
 }
 function buildMarketDates(){
   document.getElementById("mkDateTitle").style.display="";
-  var dates=upcomingDates(state.marketDays, 24);
+  var dates=upcomingDates(state.marketDays, 24, 8);   // marché : commande jusqu'à 24 h avant 8 h (heure de début par défaut)
   var dp=document.getElementById("mkDatePicks");
   dp.innerHTML = dates.length ? dates.map(function(dt){
     var iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
