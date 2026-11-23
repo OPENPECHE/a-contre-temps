@@ -219,6 +219,7 @@ var state={ qty:2, mode:"domicile", addr:null, date:null, dateLabel:"", slot:nul
             occ:false, occCard:false, occCandle:false, occFestive:false, occMsg:"",
             market:null, marketId:null, marketDays:[], marketDate:null, marketDateLabel:"" };
 var currentUser=null, zone=null;
+function trk(n){ try{ if(window.va) window.va("event",{name:n}); }catch(e){} }
 var markets=[], marketDays={};
 var ADDONS={ s2:{ id:"s4" } };   // l'apéro peut ajouter le café gourmand (s4)
 var ADDON=null;                   // {id, name, fullName, price}
@@ -272,6 +273,7 @@ function loadProduct(){
     document.getElementById("pUnit").textContent=UNITLABELP;
     document.getElementById("backLink").href=BACKPAGE;
     document.title="Commander "+TITLE+" — à contre-temps";
+    trk("1_tunnel_ouvert");
     loadAddon();
     return loadRule(p.cat);
   });
@@ -328,12 +330,12 @@ document.getElementById("pPlus").onclick=function(){ if(state.qty<40){ state.qty
   candle.onchange=function(){ state.occCandle=this.checked; paintQty(); };
   fest.onchange=function(){ state.occFestive=this.checked; paintQty(); };
 })();
-document.getElementById("go1").onclick=function(){ showPanel("pMode",2); };
+document.getElementById("go1").onclick=function(){ trk("2_quantite"); showPanel("pMode",2); };
 
 /* ---- Mode de récupération ---- */
 document.getElementById("bkMode").onclick=function(){ showPanel("p1",1); };
-document.getElementById("modeDom").onclick=function(){ state.mode="domicile"; showPanel("p2",3); };
-document.getElementById("modeMk").onclick=function(){ state.mode="marche"; buildMarkets(); showPanel("pMarket",3); };
+document.getElementById("modeDom").onclick=function(){ state.mode="domicile"; trk("3_mode_livraison"); showPanel("p2",3); };
+document.getElementById("modeMk").onclick=function(){ state.mode="marche"; trk("3_mode_marche"); buildMarkets(); showPanel("pMarket",3); };
 
 /* ---- Adresse + zone ---- */
 function distKm(la1,lo1,la2,lo2){ var R=6371, p=Math.PI/180; var dLa=(la2-la1)*p, dLo=(lo2-lo1)*p;
@@ -350,10 +352,11 @@ document.getElementById("aCheck").onclick=function(){
     if(!f){ err.textContent="Adresse introuvable. Vérifiez l'orthographe."; document.getElementById("go2").disabled=true; return; }
     var lat=f.geometry.coordinates[1], lng=f.geometry.coordinates[0];
     var d = zone ? distKm(zone.center_lat, zone.center_lng, lat, lng) : 0;
-    if(zone && zone.enabled===false){ err.textContent=(zone.message||"Livraison indisponible pour le moment."); document.getElementById("go2").disabled=true; return; }
-    if(zone && d>Number(zone.radius_km)){ err.textContent=(zone.message||"Nous ne livrons pas encore dans votre zone.")+" (≈ "+Math.round(d)+" km)"; document.getElementById("go2").disabled=true; return; }
+    if(zone && zone.enabled===false){ err.textContent=(zone.message||"Livraison indisponible pour le moment."); document.getElementById("go2").disabled=true; trk("x_hors_zone"); return; }
+    if(zone && d>Number(zone.radius_km)){ err.textContent=(zone.message||"Nous ne livrons pas encore dans votre zone.")+" (≈ "+Math.round(d)+" km)"; document.getElementById("go2").disabled=true; trk("x_hors_zone"); return; }
     state.addr={ street:street, cp:cp, city:city, extra:document.getElementById("aExtra").value.trim(), label:f.properties.label, lat:lat, lng:lng };
     ok.textContent="✓ Adresse dans la zone de livraison ("+f.properties.label+")";
+    trk("4_adresse_ok");
     document.getElementById("go2").disabled=false;
   }).catch(function(){ btn.disabled=false; btn.textContent="Vérifier l'adresse"; err.textContent="Vérification impossible, réessayez."; });
 };
@@ -384,7 +387,7 @@ function buildCreneau(){
   var sp=document.getElementById("slotPicks");
   sp.innerHTML = SLOTS.map(function(s){ return '<button type="button" class="pick" data-slot="'+esc(s)+'">⏰ '+s+'</button>'; }).join("");
   dp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ state.date=b.getAttribute("data-iso"); state.dateLabel=b.getAttribute("data-label"); showSlotPhase(); }; });
-  sp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ state.slot=b.getAttribute("data-slot"); paintRecap(); renderLogin(); prefill(); showPanel("p4",4); }; });
+  sp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ state.slot=b.getAttribute("data-slot"); trk("5_creneau"); paintRecap(); renderLogin(); prefill(); showPanel("p4",4); }; });
   showDayPhase();
 }
 function showDayPhase(){ document.getElementById("p3day").style.display=""; document.getElementById("p3slot").style.display="none"; var t=document.getElementById("p3title"); if(t)t.textContent="Quel jour ?"; var s=document.getElementById("p3sub"); if(s)s.textContent="Choisissez votre jour de livraison."; window.scrollTo(0,0); }
@@ -431,7 +434,7 @@ function buildMarketDates(){
 }
 function checkMarket(){ document.getElementById("goMk").disabled=!(state.market && state.marketDate); }
 document.getElementById("bkMk").onclick=function(){ showPanel("pMode",2); };
-document.getElementById("goMk").onclick=function(){ paintRecap(); renderLogin(); prefill(); showPanel("p4",4); };
+document.getElementById("goMk").onclick=function(){ trk("5_creneau"); paintRecap(); renderLogin(); prefill(); showPanel("p4",4); };
 
 /* ---- Coordonnées + connexion + paiement ---- */
 function paintRecap(){
@@ -534,7 +537,7 @@ function finishOrder(info, payMethod, status, paid){
     payment_method:payMethod, paid:!!paid,
     note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+locNote+occNote+(paid?" — PAYÉ EN LIGNE":"") };
   return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); showSuccess(info, paid); });
+    .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); trk("7_commande"); showSuccess(info, paid); });
 }
 function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
 function startOnline(info){
@@ -543,7 +546,7 @@ function startOnline(info){
   fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:total, description:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" "+state.qty+" "+UNITLABELP})})
     .then(function(r){return r.json();}).then(function(j){
       if(!j.ok || !j.checkout_id){ err.textContent="Paiement en ligne indisponible"+(j.error?" : "+j.error:"")+". Réessayez ou contactez-nous."; go.disabled=false; go.textContent="Payer "+eur(total); return; }
-      var mount=document.getElementById("sumupMount"); go.style.display="none";
+      var mount=document.getElementById("sumupMount"); go.style.display="none"; trk("6_paiement");
       mount.innerHTML='<h2 style="margin-top:18px;">Paiement par carte</h2><div class="sub">Montant : <strong>'+eur(total)+'</strong></div><div id="sumup-card" style="margin-top:12px;"></div><div class="err" id="wErr"></div><button class="btn ghost" id="wCancel">Annuler</button>';
       mount.querySelector("#wCancel").onclick=function(){ mount.innerHTML=""; go.style.display=""; go.disabled=false; go.textContent="Payer "+eur(total); };
       loadSumUpSDK(function(){
