@@ -211,6 +211,36 @@ export default async function handler(req, res) {
     }
   }
 
+  // ───────────── BON CADEAU « OFFRIR UN BRUNCH » ─────────────────────────────
+  if (type === "gift_voucher") {
+    const v = req.body.voucher || {};
+    if (!v.code) return res.status(400).json({ error: "Code manquant" });
+    const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    const money = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
+    const codeBox = `<div style="text-align:center;margin:8px auto 18px;"><div style="display:inline-block;background:#3E5A70;color:#F3E7DA;border-radius:12px;padding:16px 28px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;letter-spacing:.08em;">${esc(v.code)}</div></div>`;
+    const valueLine = `<p style="font-size:14px;color:#4A443E;text-align:center;margin:0 0 6px;">Valeur&nbsp;: <strong>${money(v.amount)}</strong>${v.persons ? ` · brunch pour <strong>${esc(String(v.persons))} personne${Number(v.persons) > 1 ? "s" : ""}</strong>` : ""}</p>`;
+    const how = `<p style="font-size:13px;color:#555;line-height:1.7;text-align:center;margin:12px 0 0;">À utiliser sur <a href="https://www.fournilvivant.fr/commander-instant?p=s1" style="color:#7C97AC;">fournilvivant.fr</a> : saisissez le code au moment du paiement. Valable sur toute commande.</p>`;
+    const msgLine = v.message ? `<p style="font-size:13px;color:#4A443E;font-style:italic;text-align:center;margin:0 0 6px;">« ${esc(v.message)} »</p>` : "";
+    const emails = [];
+    const buyerBody = `
+      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;text-align:center;">Votre bon cadeau est prêt 🎁</h1>
+      <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 14px;text-align:center;">Merci ${esc(v.buyer_name || "")}&nbsp;! Voici votre bon cadeau${v.recipient_name ? ` pour <strong>${esc(v.recipient_name)}</strong>` : ""}.</p>
+      ${valueLine}${codeBox}${msgLine}${how}`;
+    emails.push(sendEmail(RESEND_API_KEY, { from: FROM, to: [v.buyer_email], reply_to: OWNER, subject: `Votre bon cadeau ${v.code} — à contre-temps`, html: shell(buyerBody) }));
+    if (v.recipient_email) {
+      const recBody = `
+        <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;text-align:center;">Vous avez reçu un bon cadeau 🎁</h1>
+        <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 14px;text-align:center;">${esc(v.buyer_name || "Quelqu'un")} vous offre un brunch à contre-temps&nbsp;!</p>
+        ${valueLine}${codeBox}${msgLine}${how}`;
+      emails.push(sendEmail(RESEND_API_KEY, { from: FROM, to: [v.recipient_email], reply_to: v.buyer_email || OWNER, subject: `${v.buyer_name || "Quelqu'un"} vous offre un brunch 🎁`, html: shell(recBody) }));
+    }
+    emails.push(sendEmail(RESEND_API_KEY, { from: FROM, to: [OWNER], reply_to: v.buyer_email || OWNER, subject: `Bon cadeau vendu — ${money(v.amount)} (${v.code})`, html: shell(`<p style="font-size:14px;color:#2B2925;line-height:1.8;">Bon cadeau <strong>${esc(v.code)}</strong> · ${money(v.amount)}${v.persons ? ` · ${esc(String(v.persons))} pers` : ""}<br>Acheteur&nbsp;: ${esc(v.buyer_name || "")} (${esc(v.buyer_email || "")})${v.recipient_name ? `<br>Pour&nbsp;: ${esc(v.recipient_name)}` : ""}${v.recipient_email ? ` (${esc(v.recipient_email)})` : ""}${v.message ? `<br>Mot&nbsp;: « ${esc(v.message)} »` : ""}</p>`) }));
+    try {
+      const results = await Promise.all(emails);
+      return res.status(200).json({ ok: results.every((r) => r.ok) });
+    } catch (e) { console.error("Send gift_voucher error:", e); return res.status(500).json({ error: e.message }); }
+  }
+
   // ───────────────────────── E-MAIL DE BIENVENUE ─────────────────────────────
   if (type === "welcome") {
     const client = req.body.client || {};

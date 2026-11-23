@@ -18,6 +18,7 @@
     { "source": "/avis", "destination": "/avis.html" },
     { "source": "/commander-marche", "destination": "/commander-marche.html" },
     { "source": "/devis", "destination": "/devis.html" },
+    { "source": "/offrir", "destination": "/offrir.html" },
     { "source": "/commander-brunch", "destination": "/commander-brunch.html" },
     { "source": "/commander-instant", "destination": "/commander-instant.html" },
     { "source": "/cafe-gourmand-clermont-ferrand", "destination": "/cafe-gourmand-clermont-ferrand.html" },

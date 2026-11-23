@@ -190,6 +190,12 @@
     <label>Votre nom</label><input class="fi" id="coName" placeholder="Nom et prénom" />
     <label>Téléphone</label><input class="fi" id="coPhone" type="tel" placeholder="06 …" />
     <label>E‑mail</label><input class="fi" id="coMail" type="email" placeholder="votre@email.fr" />
+    <label>Bon cadeau — code (facultatif)</label>
+    <div style="display:flex;gap:8px;align-items:stretch;">
+      <input class="fi" id="vCode" placeholder="OFFRE-XXXX-XXXX" autocomplete="off" style="flex:1;text-transform:uppercase;margin-top:5px;" />
+      <button type="button" id="vApply" style="margin-top:5px;border:1px solid var(--bs);background:var(--pp);color:var(--bd);border-radius:10px;padding:0 16px;font-weight:600;cursor:pointer;white-space:nowrap;">Appliquer</button>
+    </div>
+    <div id="vMsg" style="font-size:13px;margin-top:6px;min-height:1px;"></div>
     <label>Paiement</label>
     <div class="note">💳 Paiement en ligne sécurisé par carte. Votre commande est confirmée dès le paiement.</div>
     <div class="err" id="coErr"></div>
@@ -216,7 +222,7 @@ var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 var SLOTS=["9h00 – 10h30","10h30 – 12h00"];
 var state={ qty:2, mode:"domicile", addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24, addon:false,
-            occ:false, occCard:false, occCandle:false, occFestive:false, occMsg:"",
+            occ:false, occCard:false, occCandle:false, occFestive:false, occMsg:"", voucher:null,
             market:null, marketId:null, marketDays:[], marketDate:null, marketDateLabel:"" };
 var currentUser=null, zone=null;
 function trk(n){ try{ if(window.va) window.va("event",{name:n}); }catch(e){} }
@@ -226,6 +232,8 @@ var ADDON=null;                   // {id, name, fullName, price}
 function addonTotal(){ return (ADDON && state.addon) ? ADDON.price*state.qty : 0; }
 function occasionTotal(){ return state.occ ? ((state.occCandle?2:0)+(state.occFestive?3:0)) : 0; }
 function grandTotal(){ return UNIT*state.qty + addonTotal() + occasionTotal(); }
+function voucherAmount(){ return state.voucher ? Math.min(Number(state.voucher.amount)||0, grandTotal()) : 0; }
+function payable(){ return Math.max(0, Math.round((grandTotal()-voucherAmount())*100)/100); }
 
 /* page de détail par produit (pour le lien « voir le détail ») */
 var DETAIL={ s1:"/brunch-clermont-ferrand", s2:"/plateau-aperitif-clermont-ferrand", s4:"/cafe-gourmand-clermont-ferrand", s5:"/planche-de-saison-clermont-ferrand" };
@@ -451,11 +459,15 @@ function paintRecap(){
   var fulfil = (state.mode==="marche")
     ? '🥖 Retrait marché : <b>'+esc(state.market)+'</b><br>🗓️ '+esc(state.marketDateLabel)
     : '📍 '+esc(state.addr.label)+(state.addr.extra?' · '+esc(state.addr.extra):'')+'<br>🗓️ '+esc(state.dateLabel)+' · '+esc(state.slot);
+  var totalBlock = state.voucher
+    ? '<br><span style="color:var(--is);">Total : '+eur(grandTotal())+'</span>'
+      +'<br>🎁 <b>Bon cadeau</b> '+esc(state.voucher.code)+' · −'+eur(voucherAmount())
+      +'<br><span style="font-weight:600;color:var(--bd);">À payer : '+eur(payable())+'</span>'
+    : '<br><span style="font-weight:600;color:var(--bd);">Total : '+eur(grandTotal())+'</span>';
   document.getElementById("recap").innerHTML=
     '🧺 <b>'+state.qty+' × '+esc(TITLE)+'</b> · '+eur(UNIT*state.qty)+'<br>'
-    +addonLine + occLine + fulfil
-    +'<br><span style="font-weight:600;color:var(--bd);">Total : '+eur(grandTotal())+'</span>';
-  document.getElementById("go4").textContent="Payer "+eur(grandTotal());
+    +addonLine + occLine + fulfil + totalBlock;
+  document.getElementById("go4").textContent = payable()>0 ? ("Payer "+eur(payable())) : "Valider ma commande (payé par le bon)";
 }
 function renderLogin(){
   var slot=document.getElementById("loginSlot"), me=document.getElementById("meState");
@@ -513,11 +525,28 @@ function collect(){
   if(!phone){ err.textContent="Indiquez un téléphone."; return null; }
   return { name:name, phone:phone, mail:mail };
 }
-document.getElementById("go4").onclick=function(){ var info=collect(); if(!info) return; startOnline(info); };
+document.getElementById("go4").onclick=function(){ var info=collect(); if(!info) return; if(payable()<=0){ finishByVoucher(info); } else { startOnline(info); } };
+document.getElementById("vApply").onclick=function(){
+  var inp=document.getElementById("vCode"), msg=document.getElementById("vMsg"), code=(inp.value||"").trim().toUpperCase();
+  if(!code){ msg.style.color="#c0392b"; msg.textContent="Saisissez un code."; return; }
+  var btn=this, old=btn.textContent; btn.disabled=true; btn.textContent="…";
+  fetch("/api/voucher",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"validate",code:code})})
+    .then(function(r){return r.json();}).then(function(j){
+      btn.disabled=false; btn.textContent=old;
+      if(j && j.ok){ state.voucher={code:j.code, amount:Number(j.amount)||0}; msg.style.color="var(--gn)"; msg.textContent="✓ Bon de "+eur(state.voucher.amount)+" appliqué."; }
+      else { state.voucher=null; msg.style.color="#c0392b"; msg.textContent=(j&&j.reason==="déjà utilisé")?"Ce bon a déjà été utilisé.":"Code introuvable ou invalide."; }
+      paintRecap();
+    }).catch(function(){ btn.disabled=false; btn.textContent=old; msg.style.color="#c0392b"; msg.textContent="Vérification impossible, réessayez."; });
+};
+function finishByVoucher(info){
+  var go=document.getElementById("go4"); go.disabled=true; go.textContent="Validation…";
+  finishOrder(info, "Bon cadeau", "confirmed", true).catch(function(){ var e=document.getElementById("coErr"); if(e) e.textContent="Erreur d'enregistrement — contactez-nous au 06 01 48 28 90."; go.disabled=false; go.textContent="Valider ma commande (payé par le bon)"; });
+}
 
 function finishOrder(info, payMethod, status, paid){
   try{ localStorage.setItem("acontretemps_phone", String(info.phone||"").replace(/\D/g,"")); }catch(e){}
-  var total=grandTotal();
+  var applied=voucherAmount();
+  var total=payable();
   var items=[{name:FORMULE, price:UNIT, qty:state.qty}];
   if(ADDON && state.addon) items.push({name:ADDON.fullName, price:ADDON.price, qty:state.qty});
   if(state.occ){
@@ -525,23 +554,28 @@ function finishOrder(info, payMethod, status, paid){
     if(state.occCandle) items.push({name:"🎂 Bougies d'anniversaire", price:2, qty:1});
     if(state.occFestive) items.push({name:"🎀 Présentation festive", price:3, qty:1});
   }
+  if(state.voucher && applied>0) items.push({name:"🎁 Bon cadeau ("+state.voucher.code+")", price:-applied, qty:1});
   var shipping, pdate, locNote;
   if(state.mode==="marche"){ shipping="Retrait marché — "+state.market; pdate=state.marketDate; locNote="Retrait "+state.market+" le "+state.marketDateLabel; }
   else { var adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":""); shipping="Livraison — "+adr; pdate=state.date; locNote=state.dateLabel+" "+state.slot+" · "+adr; }
   var occNote="";
   if(state.occ){ var ob=[]; if(state.occCard)ob.push("carte"); if(state.occCandle)ob.push("bougies"); if(state.occFestive)ob.push("présentation festive");
     if(ob.length) occNote=" · 🎉 "+ob.join(", "); if(state.occCard&&state.occMsg) occNote+=' — Mot : "'+state.occMsg+'"'; }
+  var vNote = (state.voucher && applied>0) ? (" · 🎁 Bon cadeau "+state.voucher.code+" (−"+eur(applied)+")") : "";
+  var pm = (state.voucher && applied>0) ? (total>0 ? "SumUp + bon cadeau" : "Bon cadeau") : payMethod;
   var order={ name:info.name, email:info.mail, phone:info.phone,
     items:items,
     total:total, status:status, shipping:shipping, pickup_date:pdate,
-    payment_method:payMethod, paid:!!paid,
-    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+locNote+occNote+(paid?" — PAYÉ EN LIGNE":"") };
+    payment_method:pm, paid:!!paid,
+    note:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" · "+state.qty+" "+UNITLABELP+" · "+locNote+occNote+vNote+(paid?" — PAYÉ":"") };
   return sb("orders",{method:"POST",body:JSON.stringify(order)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(d){ var saved=(d&&d[0])?d[0]:order; fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); trk("7_commande"); showSuccess(info, paid); });
+    .then(function(d){ var saved=(d&&d[0])?d[0]:order;
+      if(state.voucher && applied>0){ fetch("/api/voucher",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"redeem",code:state.voucher.code,order_id:(saved&&saved.id)||null})}).catch(function(){}); }
+      fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:saved})}).catch(function(){}); trk("7_commande"); showSuccess(info, paid); });
 }
 function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
 function startOnline(info){
-  var go=document.getElementById("go4"), err=document.getElementById("coErr"), total=grandTotal();
+  var go=document.getElementById("go4"), err=document.getElementById("coErr"), total=payable();
   go.disabled=true; go.textContent="Préparation du paiement…";
   fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:total, description:TITLE+(ADDON&&state.addon?" + "+ADDON.name:"")+" "+state.qty+" "+UNITLABELP})})
     .then(function(r){return r.json();}).then(function(j){

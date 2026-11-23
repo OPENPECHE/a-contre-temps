@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Offrir un brunch — à contre-temps</title>
+<meta name="description" content="Offrez un brunch fait maison à contre-temps : un bon cadeau gourmand à Clermont-Ferrand, avec un petit mot personnalisé. Payez en ligne, recevez le code à offrir." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://www.fournilvivant.fr/offrir" />
+<meta property="og:title" content="Offrir un brunch — à contre-temps" />
+<meta property="og:description" content="Un bon cadeau gourmand : offrez un brunch fait maison à contre-temps." />
+<meta property="og:image" content="https://www.fournilvivant.fr/og-image.png" />
+<meta name="theme-color" content="#3E5A70" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bd:#3E5A70;--b:#7C97AC;--bs:#D6DFE5;--cr:#F3E7DA;--pp:#FBF8F4;--ink:#2B2925;--is:rgba(43,41,37,.62);--ru:#A6713F;--gn:#7C8B5E;--serif:'Fraunces',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;}
+  .topnav{background:var(--bd);}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:720px;margin:0 auto;}
+  .brand{display:inline-flex;align-items:center;gap:10px;font-family:var(--serif);font-size:24px;color:var(--cr);text-decoration:none;}
+  .brand img{height:32px;}
+  .nav a.cta{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bd);background:var(--cr);padding:9px 16px;border-radius:999px;text-decoration:none;}
+  header.h{background:var(--b);color:var(--cr);text-align:center;padding:48px 24px 40px;}
+  header.h h1{font-family:var(--serif);font-weight:500;font-size:clamp(28px,5vw,40px);}
+  header.h p{margin:14px auto 0;max-width:520px;font-size:16px;font-weight:300;opacity:.95;}
+  .wrap{max-width:560px;margin:0 auto;padding:26px 20px 60px;}
+  .card{background:#fff;border:1px solid var(--bs);border-radius:16px;padding:22px;margin-bottom:18px;}
+  label{display:block;font-size:12px;color:var(--is);font-weight:600;margin:12px 0 0;}
+  .fi{width:100%;margin-top:5px;padding:12px;border:1px solid var(--bs);border-radius:10px;font:inherit;font-size:15px;color:var(--ink);background:#fff;}
+  textarea.fi{resize:vertical;}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:20px;margin:6px 0;}
+  .stepper button{width:46px;height:46px;border-radius:50%;border:1px solid var(--bs);background:var(--pp);font-size:24px;color:var(--bd);cursor:pointer;}
+  .stepper .n{font-family:var(--serif);font-size:30px;color:var(--bd);min-width:40px;text-align:center;}
+  .val{text-align:center;font-family:var(--serif);font-size:22px;color:var(--bd);margin-top:8px;}
+  .val small{font-family:var(--sans);font-size:13px;color:var(--is);}
+  .btn{display:block;width:100%;border:none;cursor:pointer;background:var(--bd);color:var(--cr);padding:15px;border-radius:999px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;font-family:var(--sans);margin-top:8px;}
+  .btn.ghost{background:var(--pp);color:var(--bd);border:1px solid var(--bs);}
+  .btn:disabled{opacity:.6;cursor:default;}
+  .err{color:#c0392b;font-size:13px;margin-top:10px;min-height:1px;text-align:center;}
+  .sub{font-size:13px;color:var(--is);}
+  .okwrap{text-align:center;padding:30px 0;}
+  .okwrap .big{font-family:var(--serif);font-size:26px;color:var(--bd);margin:10px 0;}
+  .codebox{display:inline-block;background:var(--bd);color:var(--cr);border-radius:12px;padding:16px 26px;font-size:22px;font-weight:bold;letter-spacing:.08em;margin:10px 0;}
+  footer{background:var(--pp);border-top:1px solid var(--bs);padding:28px 24px;text-align:center;color:var(--is);font-size:13px;}
+  footer a{color:var(--b);text-decoration:none;}
+</style>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<div class="topnav"><div class="nav">
+  <a href="/" class="brand"><img src="/heart-cream.png" alt="" /> à contre-temps</a>
+  <a href="/brunch-clermont-ferrand" class="cta">Le brunch</a>
+</div></div>
+<header class="h">
+  <h1>Offrir un brunch 🎁</h1>
+  <p>Un cadeau gourmand et fait maison. Vous payez, vous recevez un code à offrir — la personne commande son brunch quand elle veut.</p>
+</header>
+
+<div class="wrap" id="wrap">
+  <div class="card">
+    <p style="font-family:var(--serif);font-size:18px;color:var(--bd);text-align:center;">Un brunch pour combien de personnes&nbsp;?</p>
+    <div class="stepper">
+      <button type="button" id="minus" aria-label="Moins">−</button>
+      <div class="n" id="nb">2</div>
+      <button type="button" id="plus" aria-label="Plus">+</button>
+    </div>
+    <div class="val" id="val">—</div>
+  </div>
+
+  <div class="card">
+    <p style="font-family:var(--serif);font-size:17px;color:var(--bd);">De la part de qui&nbsp;?</p>
+    <label>Votre nom</label><input class="fi" id="bName" placeholder="Nom et prénom" />
+    <label>Votre e-mail</label><input class="fi" id="bMail" type="email" placeholder="votre@email.fr" />
+    <p class="sub" style="margin-top:8px;">Vous recevrez le bon cadeau (code) sur cet e-mail.</p>
+  </div>
+
+  <div class="card">
+    <p style="font-family:var(--serif);font-size:17px;color:var(--bd);">Pour qui&nbsp;? <span style="font-size:13px;color:var(--is);font-family:var(--sans);">(facultatif)</span></p>
+    <label>Nom du destinataire</label><input class="fi" id="rName" placeholder="Prénom de la personne" />
+    <label>Son e-mail — pour lui envoyer le bon directement</label><input class="fi" id="rMail" type="email" placeholder="facultatif" />
+    <label>Votre petit mot</label><textarea class="fi" id="msg" rows="3" maxlength="400" placeholder="Joyeux anniversaire ! Régale-toi…"></textarea>
+  </div>
+
+  <button class="btn" id="pay">Payer</button>
+  <div class="err" id="err"></div>
+  <div id="sumupMount"></div>
+  <p style="text-align:center;margin-top:14px;"><a href="/brunch-clermont-ferrand" class="sub" style="color:var(--bd);">← Retour au brunch</a></p>
+</div>
+
+<footer>
+  à contre-temps — Fournil vivant · Gerzat (63360) · <a href="tel:+33601482890">06 01 48 28 90</a><br>
+  <a href="/">Accueil</a> · <a href="/mentions-legales">Mentions légales</a>
+</footer>
+
+<script>
+var SB_URL="https://jxxgafyqfbnqieiqltcn.supabase.co", SB_KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
+var UNIT=29, persons=2;
+function eur(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €"; }
+function value(){ return UNIT*persons; }
+function paint(){ document.getElementById("nb").textContent=persons; document.getElementById("val").innerHTML=eur(value())+" <small>le bon</small>"; var p=document.getElementById("pay"); if(p&&p.textContent.indexOf("Payer")===0) p.textContent="Payer "+eur(value()); }
+// Prix du brunch depuis le back-office (repli 29 €)
+fetch(SB_URL+"/rest/v1/products?id=eq.s1&select=price",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}})
+  .then(function(r){return r.json();}).then(function(d){ var p=(Array.isArray(d)&&d[0])||null; if(p&&Number(p.price)>0) UNIT=Number(p.price); paint(); }).catch(function(){ paint(); });
+paint();
+document.getElementById("minus").onclick=function(){ if(persons>1){persons--;paint();} };
+document.getElementById("plus").onclick=function(){ if(persons<20){persons++;paint();} };
+
+function collect(){
+  var err=document.getElementById("err"); err.textContent="";
+  var bn=document.getElementById("bName").value.trim(), bm=document.getElementById("bMail").value.trim();
+  if(!bn){ err.textContent="Indiquez votre nom."; return null; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bm)){ err.textContent="Votre e-mail n'est pas valide."; return null; }
+  var rm=document.getElementById("rMail").value.trim();
+  if(rm && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rm)){ err.textContent="L'e-mail du destinataire n'est pas valide."; return null; }
+  return { buyer_name:bn, buyer_email:bm, recipient_name:document.getElementById("rName").value.trim(), recipient_email:rm, message:document.getElementById("msg").value.trim(), amount:value(), persons:persons };
+}
+function loadSumUpSDK(cb){ if(window.SumUpCard) return cb(); var s=document.createElement("script"); s.src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js"; s.onload=function(){cb();}; s.onerror=function(){cb();}; document.head.appendChild(s); }
+
+document.getElementById("pay").onclick=function(){
+  var info=collect(); if(!info) return;
+  var go=document.getElementById("pay"), err=document.getElementById("err"); err.textContent="";
+  go.disabled=true; go.textContent="Préparation du paiement…";
+  fetch("/api/sumup-checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:info.amount, description:"Bon cadeau brunch ("+info.persons+" pers)"})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(!j.ok || !j.checkout_id){ err.textContent="Paiement en ligne indisponible"+(j.error?" : "+j.error:"")+". Réessayez ou contactez-nous."; go.disabled=false; go.textContent="Payer "+eur(info.amount); return; }
+      var mount=document.getElementById("sumupMount"); go.style.display="none";
+      mount.innerHTML='<div class="card"><p style="font-family:var(--serif);font-size:18px;color:var(--bd);">Paiement par carte</p><div class="sub">Montant : <strong>'+eur(info.amount)+'</strong></div><div id="sumup-card" style="margin-top:12px;"></div><div class="err" id="wErr"></div><button class="btn ghost" id="wCancel" style="margin-top:12px;">Annuler</button></div>';
+      mount.querySelector("#wCancel").onclick=function(){ mount.innerHTML=""; go.style.display=""; go.disabled=false; go.textContent="Payer "+eur(info.amount); };
+      loadSumUpSDK(function(){
+        if(!window.SumUpCard){ mount.querySelector("#wErr").textContent="Module de paiement indisponible. Réessayez."; return; }
+        window.SumUpCard.mount({ id:"sumup-card", checkoutId:j.checkout_id, locale:"fr-FR", showSubmitButton:true,
+          onResponse:function(type, body){
+            if(type==="success" || (body && (body.status==="PAID" || body.status==="SUCCESSFUL"))){
+              try{ window.SumUpCard.unmount(); }catch(_){}
+              createVoucher(info);
+            } else if(type==="error"){ mount.querySelector("#wErr").textContent="Le paiement a échoué. Réessayez."; }
+          }
+        });
+      });
+    }).catch(function(){ err.textContent="Erreur réseau. Réessayez."; go.disabled=false; go.textContent="Payer "+eur(info.amount); });
+};
+
+function createVoucher(info){
+  document.getElementById("sumupMount").innerHTML='<div class="card" style="text-align:center;">Création de votre bon…</div>';
+  fetch("/api/voucher",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:"create"},info))})
+    .then(function(r){return r.json();}).then(function(j){
+      if(!j.ok || !j.code){ document.getElementById("sumupMount").innerHTML='<div class="card err">Paiement OK mais erreur de création du bon — contactez-nous au 06 01 48 28 90 (on régularise tout de suite).</div>'; return; }
+      // e-mail du bon (acheteur + destinataire + notif)
+      fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"gift_voucher",voucher:Object.assign({code:j.code},info)})}).catch(function(){});
+      success(j.code, info);
+    }).catch(function(){ document.getElementById("sumupMount").innerHTML='<div class="card err">Paiement OK mais erreur réseau — contactez-nous au 06 01 48 28 90.</div>'; });
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+function success(code, info){
+  document.getElementById("wrap").innerHTML='<div class="okwrap"><div style="font-size:46px;">🎁</div>'
+    +'<div class="big">Bon cadeau prêt&nbsp;!</div>'
+    +'<p class="sub">Merci '+esc(info.buyer_name.split(" ")[0])+'. Voici le code à offrir'+(info.recipient_name?' à <strong>'+esc(info.recipient_name)+'</strong>':'')+'&nbsp;:</p>'
+    +'<div class="codebox">'+esc(code)+'</div>'
+    +'<p class="sub">Valeur : <strong>'+eur(info.amount)+'</strong> · brunch pour '+info.persons+' personne'+(info.persons>1?'s':'')+'.</p>'
+    +'<p class="sub" style="margin-top:10px;">Un e-mail avec le bon vous a été envoyé'+(info.recipient_email?' (et au destinataire)':'')+'. À utiliser sur la page de commande en saisissant le code au paiement.</p>'
+    +'<a href="/brunch-clermont-ferrand" class="btn" style="max-width:280px;margin:20px auto 0;text-decoration:none;text-align:center;">Voir le brunch</a></div>';
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
