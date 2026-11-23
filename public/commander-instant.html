@@ -154,14 +154,17 @@
   <!-- Étape 3 : créneau -->
   <div class="panel" id="p3">
     <button class="lnk" id="bk3">← Adresse</button>
-    <h2>Quel créneau ?</h2>
-    <div class="sub" id="p3sub">Choisissez votre jour et votre créneau de livraison.</div>
-    <p style="font-size:11px;letter-spacing:.1em;color:var(--is);text-transform:uppercase;margin-bottom:6px;">Jour</p>
-    <div class="picks" id="dayPicks"></div>
-    <p style="font-size:11px;letter-spacing:.1em;color:var(--is);text-transform:uppercase;margin:16px 0 6px;">Créneau de livraison</p>
-    <div class="picks" id="slotPicks"></div>
+    <h2 id="p3title">Quel jour ?</h2>
+    <div class="sub" id="p3sub">Choisissez votre jour de livraison.</div>
+    <div id="p3day">
+      <div class="picks" id="dayPicks"></div>
+    </div>
+    <div id="p3slot" style="display:none;">
+      <p id="slotHint" style="font-size:13.5px;color:var(--bd);margin-bottom:12px;"></p>
+      <div class="picks" id="slotPicks"></div>
+      <button class="lnk" id="bkDay" style="margin-top:16px;">← Changer de jour</button>
+    </div>
     <div class="err" id="cErr"></div>
-    <button class="btn" id="go3" disabled>Continuer</button>
   </div>
 
   <!-- Étape : retrait sur un marché -->
@@ -380,12 +383,14 @@ function buildCreneau(){
   }).join("") : '<div class="sub">Aucune date disponible pour le moment.</div>';
   var sp=document.getElementById("slotPicks");
   sp.innerHTML = SLOTS.map(function(s){ return '<button type="button" class="pick" data-slot="'+esc(s)+'">⏰ '+s+'</button>'; }).join("");
-  dp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ dp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on"); state.date=b.getAttribute("data-iso"); state.dateLabel=b.getAttribute("data-label"); checkCreneau(); }; });
-  sp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ sp.querySelectorAll(".pick").forEach(function(x){x.classList.remove("on");}); b.classList.add("on"); state.slot=b.getAttribute("data-slot"); checkCreneau(); }; });
+  dp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ state.date=b.getAttribute("data-iso"); state.dateLabel=b.getAttribute("data-label"); showSlotPhase(); }; });
+  sp.querySelectorAll(".pick").forEach(function(b){ b.onclick=function(){ state.slot=b.getAttribute("data-slot"); paintRecap(); renderLogin(); prefill(); showPanel("p4",4); }; });
+  showDayPhase();
 }
-function checkCreneau(){ document.getElementById("go3").disabled=!(state.date && state.slot); }
+function showDayPhase(){ document.getElementById("p3day").style.display=""; document.getElementById("p3slot").style.display="none"; var t=document.getElementById("p3title"); if(t)t.textContent="Quel jour ?"; var s=document.getElementById("p3sub"); if(s)s.textContent="Choisissez votre jour de livraison."; window.scrollTo(0,0); }
+function showSlotPhase(){ document.getElementById("p3day").style.display="none"; document.getElementById("p3slot").style.display=""; var t=document.getElementById("p3title"); if(t)t.textContent="Quel créneau ?"; var s=document.getElementById("p3sub"); if(s)s.textContent="Sélectionnez votre horaire de livraison."; var h=document.getElementById("slotHint"); if(h)h.innerHTML="🗓️ Livraison le <b>"+esc(state.dateLabel)+"</b>"; window.scrollTo(0,0); }
 document.getElementById("bk3").onclick=function(){ showPanel("p2",3); };
-document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); prefill(); showPanel("p4",4); };
+document.getElementById("bkDay").onclick=function(){ showDayPhase(); };
 
 /* ---- Retrait marché ---- */
 function loadMarkets(){
