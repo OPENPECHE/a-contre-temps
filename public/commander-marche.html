@@ -21,7 +21,7 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;padding-bottom:84px;-webkit-font-smoothing:antialiased;}
   a{color:inherit;}
-  header{background:var(--b);color:var(--cr);text-align:center;padding:34px 20px 34px;}
+  header{background-color:var(--b);background-image:linear-gradient(rgba(58,86,108,.68),rgba(58,86,108,.80)),url(/img/hero-marche.jpg);background-size:cover;background-position:center;color:var(--cr);text-align:center;padding:48px 20px 48px;}
   header .heart{height:62px;width:auto;margin:0 auto 14px;display:block;}
   header .brand{font-family:var(--serif);font-size:32px;font-style:italic;line-height:1.1;}
   header .sub{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin-top:8px;}
@@ -34,6 +34,8 @@
   .item .in b{font-weight:600;font-size:15.5px;color:var(--ink);line-height:1.25;}
   .item .in em{display:block;font-style:normal;font-size:12.5px;color:var(--is);font-weight:400;margin-top:4px;line-height:1.45;white-space:pre-line;}
   .item .in .det{display:block;width:fit-content;font-size:11px;color:var(--is);font-weight:500;margin-top:7px;background:var(--pp);border:1px solid var(--bs);border-radius:6px;padding:2px 8px;letter-spacing:.01em;}
+  .item .ph{position:relative;width:52px;height:52px;border-radius:10px;background:var(--cr);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden;}
+  .item .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   .item .right{display:flex;flex-direction:row;align-items:center;gap:12px;flex-shrink:0;}
   .item .right .pr{font-size:16px;font-weight:600;color:var(--bd);white-space:nowrap;line-height:1;min-width:52px;text-align:right;}
   .step{display:flex;align-items:center;gap:10px;flex-shrink:0;}
@@ -204,10 +206,11 @@ var MARKET_CLOSURES=[{match:/nnezat/i, iso:"2026-11-08", label:"dimanche 8 novem
 function marketClosures(name){ return MARKET_CLOSURES.filter(function(c){ return c.match.test(name||""); }); }
 function fmtWeight(g){ g=Number(g); return g>=1000 ? (g/1000).toString().replace(".",",")+" kg" : g+" g"; }
 function eurKg(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",")+" €/kg"; }
+function catEmoji(c){ c=String(c||"").toUpperCase(); if(c.indexOf("PAIN")>=0)return"🥖"; if(c.indexOf("VIENNOIS")>=0)return"🥐"; if(c.indexOf("VOYAGE")>=0)return"🍰"; if(c.indexOf("SUCR")>=0)return"🍮"; if(c.indexOf("SAL")>=0)return"🧀"; if(c.indexOf("BISCUIT")>=0)return"🍪"; if(c.indexOf("PICERIE")>=0)return"🫙"; if(c.indexOf("INSTANT")>=0)return"🥂"; return"🥖"; }
 var catGroups={}, catOrder=[], activeCat=null, articlesById={};
 function loadCatalog(){
   Promise.all([
-    sb("products?sell_market=eq.true&active=eq.true&select=id,name,price,cat,description,weight_g,price_per_kg,position&order=position.asc,name.asc").then(function(r){return r.json();}),
+    sb("products?sell_market=eq.true&active=eq.true&select=id,name,price,cat,description,weight_g,price_per_kg,position,photo&order=position.asc,name.asc").then(function(r){return r.json();}),
     sb("products?id=in.(s1,s2,s4,s5)&active=eq.true&select=id,name,price,description&order=price.asc").then(function(r){return r.json();})
   ]).then(function(res){
     var d=Array.isArray(res[0])?res[0]:[];
@@ -233,6 +236,7 @@ function showCat(cat){
     var key="a_"+a.id;
     var sub=[]; if(a.weight_g) sub.push(fmtWeight(a.weight_g)); if(a.price_per_kg) sub.push(eurKg(a.price_per_kg));
     html+='<div class="item">'
+      +'<div class="ph">'+catEmoji(cat)+(a.photo?'<img src="'+esc(a.photo)+'" alt="" onerror="this.remove()" />':'')+'</div>'
       +'<div class="in"><b>'+esc(a.name)+'</b>'
       +(a.description?'<em>'+esc(a.description)+'</em>':'')
       +(sub.length?'<span class="det">'+sub.join(" · ")+'</span>':'')
