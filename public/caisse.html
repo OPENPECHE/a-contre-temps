@@ -1399,32 +1399,56 @@ function showTicketQR(s){
 function findTicketMenu(){
   var ov=document.createElement("div"); ov.className="ov";
   ov.innerHTML='<div class="card"><h3>Retrouver un ticket</h3>'
-    +'<div class="sub">Par numéro de téléphone (fidélité), ou dans les ventes récentes.</div>'
-    +'<input class="fi" id="ftPhone" inputmode="tel" placeholder="Téléphone du client" style="margin-top:10px;" />'
-    +'<div class="row" style="margin-top:8px;"><button class="big ok" id="ftGo">🔎 Par téléphone</button><button class="big ghost" id="ftToday">Aujourd\'hui</button></div>'
-    +'<div id="ftList" style="margin-top:12px;max-height:48vh;overflow:auto;"></div>'
+    +'<div class="sub">Tous les derniers tickets s\'affichent ci-dessous. Filtrez par produit, montant ou numéro — ou choisissez une période.</div>'
+    +'<input class="fi" id="ftSearch" placeholder="Filtrer : produit, montant ou téléphone…" style="margin-top:10px;" />'
+    +'<div class="row" style="margin-top:8px;"><button class="big ghost" id="ftToday">Aujourd\'hui</button><button class="big ghost" id="ftWeek">7 jours</button><button class="big ok" id="ftAll">Tout</button></div>'
+    +'<div id="ftCount" class="sub" style="margin-top:8px;"></div>'
+    +'<div id="ftList" style="margin-top:6px;max-height:48vh;overflow:auto;"></div>'
     +'<button class="big ghost" id="ftC" style="margin-top:10px;">Fermer</button></div>';
   document.body.appendChild(ov);
-  var list=ov.querySelector("#ftList");
+  var list=ov.querySelector("#ftList"), countEl=ov.querySelector("#ftCount"), searchEl=ov.querySelector("#ftSearch");
+  var allRows=[];
+  function lineTxt(v){
+    return (v.items||[]).filter(function(l){return !/^remise/i.test(l.name||"");}).map(function(l){return (l.qty||1)+"× "+l.name;}).join(", ");
+  }
   function render(rows){
-    if(!rows||!rows.length){ list.innerHTML='<div class="sub" style="padding:10px 0;">Aucune vente trouvée.</div>'; return; }
+    if(!rows||!rows.length){ list.innerHTML='<div class="sub" style="padding:10px 0;">Aucun ticket.</div>'; return; }
     list.innerHTML=rows.map(function(v,i){
-      var d=new Date(v.created_at), it=(v.items||[]).filter(function(l){return !/^remise/i.test(l.name||"");}).map(function(l){return (l.qty||1)+"× "+l.name;}).join(", ");
-      return '<div class="ftrow" data-i="'+i+'" style="padding:9px 6px;border-bottom:1px solid #EFE9E1;cursor:pointer;"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px;"><b>'+d.toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+'</b><b style="color:var(--bd);white-space:nowrap">'+eur(v.total)+'</b></div><div style="color:var(--is);font-size:12px;margin-top:2px;">'+esc(it)+(v.phone?' · 📱 '+esc(v.phone):'')+'</div></div>';
+      var d=new Date(v.created_at), it=lineTxt(v);
+      return '<div class="ftrow" data-i="'+i+'" style="padding:9px 6px;border-bottom:1px solid #EFE9E1;cursor:pointer;"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px;"><b>'+d.toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+'</b><b style="color:var(--bd);white-space:nowrap">'+eur(v.total)+'</b></div><div style="color:var(--is);font-size:12px;margin-top:2px;">'+esc(it)+(v.lieu?' · '+esc(v.lieu):'')+(v.phone?' · 📱 '+esc(v.phone):'')+'</div></div>';
     }).join("");
     list.querySelectorAll(".ftrow").forEach(function(row){ row.onclick=function(){ var v=rows[+row.getAttribute("data-i")]; ov.remove(); showDocMenu(v); }; });
   }
-  function fetchQ(q){
-    if(!navigator.onLine){ list.innerHTML='<div class="sub" style="padding:10px 0;">Connexion nécessaire pour rechercher.</div>'; return; }
-    list.innerHTML='<div class="sub" style="padding:10px 0;">Recherche…</div>';
-    sbFetch("caisse_ventes?"+q+"&select=local_id,created_at,total,payment_method,items,phone,lieu,note&order=created_at.desc&limit=60")
-      .then(function(r){ return r.json(); }).then(function(rows){ render(Array.isArray(rows)?rows:[]); })
-      .catch(function(){ list.innerHTML='<div class="sub" style="padding:10px 0;">Erreur de recherche.</div>'; });
+  function applyFilter(){
+    var q=(searchEl.value||"").trim().toLowerCase();
+    var rows=allRows;
+    if(q){
+      var qd=q.replace(/\D/g,"");
+      rows=allRows.filter(function(v){
+        var hay=(lineTxt(v)+" "+(v.lieu||"")+" "+(v.phone||"")+" "+eur(v.total)).toLowerCase();
+        if(hay.indexOf(q)>=0) return true;
+        if(qd && String(v.phone||"").replace(/\D/g,"").indexOf(qd)>=0) return true;
+        return false;
+      });
+    }
+    countEl.textContent = rows.length ? (rows.length+" ticket"+(rows.length>1?"s":"")) : "";
+    render(rows);
   }
+  function fetchQ(q){
+    if(!navigator.onLine){ allRows=[]; countEl.textContent=""; list.innerHTML='<div class="sub" style="padding:10px 0;">Connexion nécessaire pour rechercher.</div>'; return; }
+    list.innerHTML='<div class="sub" style="padding:10px 0;">Chargement…</div>'; countEl.textContent="";
+    sbFetch("caisse_ventes?"+(q?q+"&":"")+"select=local_id,created_at,total,payment_method,items,phone,lieu,note&order=created_at.desc&limit=300")
+      .then(function(r){ return r.json(); }).then(function(rows){ allRows=Array.isArray(rows)?rows:[]; applyFilter(); })
+      .catch(function(){ allRows=[]; countEl.textContent=""; list.innerHTML='<div class="sub" style="padding:10px 0;">Erreur de recherche.</div>'; });
+  }
+  function dayISO(back){ var d=new Date(); d.setDate(d.getDate()-(back||0)); return new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString(); }
+  function setActive(id){ ["ftToday","ftWeek","ftAll"].forEach(function(b){ var el=ov.querySelector("#"+b); if(el){ el.classList.toggle("ok",b===id); el.classList.toggle("ghost",b!==id); } }); }
+  searchEl.oninput=applyFilter;
   ov.querySelector("#ftC").onclick=function(){ ov.remove(); };
-  ov.querySelector("#ftGo").onclick=function(){ var p=(ov.querySelector("#ftPhone").value||"").replace(/\D/g,""); if(p.length<6){ list.innerHTML='<div class="sub" style="padding:10px 0;">Entrez un numéro, ou « Aujourd\'hui ».</div>'; return; } fetchQ("phone=eq."+encodeURIComponent(p)); };
-  ov.querySelector("#ftToday").onclick=function(){ var d=new Date(); fetchQ("created_at=gte."+new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString()); };
-  var d0=new Date(); fetchQ("created_at=gte."+new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()).toISOString());
+  ov.querySelector("#ftToday").onclick=function(){ setActive("ftToday"); fetchQ("created_at=gte."+dayISO(0)); };
+  ov.querySelector("#ftWeek").onclick=function(){ setActive("ftWeek"); fetchQ("created_at=gte."+dayISO(7)); };
+  ov.querySelector("#ftAll").onclick=function(){ setActive("ftAll"); fetchQ(""); };
+  fetchQ("");   // par défaut : tous les derniers tickets
 }
 
 function showFactureForm(s){
