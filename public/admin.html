@@ -125,6 +125,10 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         Commandes
       </button>
+      <button class="nb" onclick="goTab('abandons',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 2"/></svg>
+        Abandons
+      </button>
       <button class="nb" onclick="goDocs('facture',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
         Factures
@@ -244,6 +248,17 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
       </div>
       <div class="fbar" id="filter-bar"></div>
       <div id="orders-list"></div>
+    </div>
+
+    <!-- ABANDONS (parcours commande brunch) -->
+    <div id="page-abandons" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
+        <h1 style="margin-bottom:0">Paniers abandonnés — brunch</h1>
+        <button class="btn bg bsm" onclick="loadAbandons()">↻ Actualiser</button>
+      </div>
+      <p style="font-size:12px;color:var(--is);margin:-6px 0 14px">Qui a commencé une commande, <b>où il s'est arrêté</b> et combien de temps il est resté. Rappelez ceux qui ont laissé un numéro.</p>
+      <div id="abandons-funnel" style="margin-bottom:16px"></div>
+      <div id="abandons-list"></div>
     </div>
 
     <!-- CLIENTS -->
@@ -716,6 +731,7 @@ function goTab(name,btn){
   if(name==="dashboard") loadDashboard();
   if(name==="pilotage") loadPilotage();
   if(name==="orders") loadOrders();
+  if(name==="abandons") loadAbandons();
   if(name==="clients") loadClients();
   if(name==="products") loadProducts();
   if(name==="couts") loadCouts();
@@ -725,6 +741,61 @@ function goTab(name,btn){
   if(name==="settings") loadSettings();
   if(name==="annonces") loadAnnonces();
   if(name==="factures") loadInvoices();
+}
+
+// ── Paniers abandonnés — parcours de commande brunch ───────────────────────────
+const AB_STEPS = [
+  {n:1,label:"Personnes"},{n:2,label:"Adresse"},{n:3,label:"Créneau"},{n:4,label:"Coordonnées"},{n:5,label:"Payé"}
+];
+function abDur(a){
+  try{ var s=Math.max(0,Math.round((new Date(a.updated_at)-new Date(a.created_at))/1000));
+    if(s<60) return s+" s"; if(s<3600) return Math.round(s/60)+" min"; return Math.floor(s/3600)+"h"+String(Math.round(s%3600/60)).padStart(2,"0"); }catch(e){ return "—"; }
+}
+function abWhen(d){ try{ return new Date(d).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); }catch(e){ return ""; } }
+async function loadAbandons(){
+  const box=document.getElementById("abandons-list"); box.innerHTML='<div style="color:var(--is);font-size:13px">Chargement…</div>';
+  let rows=[]; try{ rows=await sbFetch("funnel_brunch?select=*&order=updated_at.desc&limit=1000"); }catch(e){ rows=[]; }
+  if(!Array.isArray(rows)) rows=[];
+  renderAbandons(rows);
+}
+function renderAbandons(rows){
+  const total=rows.length;
+  const reached=n=>rows.filter(r=>Number(r.step)>=n).length;
+  const paid=rows.filter(r=>r.paid).length;
+  // Entonnoir
+  let f='<div class="card card0" style="padding:1rem"><div style="font-weight:600;margin-bottom:.6rem">Entonnoir ('+total+' parcours)</div>';
+  AB_STEPS.forEach(s=>{
+    const c = s.n===5 ? paid : reached(s.n);
+    const pct = total? Math.round(c/total*100):0;
+    f+='<div style="display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px">'
+      +'<div style="width:110px;color:var(--is)">'+s.n+'. '+escF(s.label)+'</div>'
+      +'<div style="flex:1;background:#EDE6DA;border-radius:6px;height:16px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(s.n===5?"#4A7C59":"#7C97AC")+'"></div></div>'
+      +'<div style="width:86px;text-align:right"><b>'+c+'</b> <span style="color:var(--is)">('+pct+'%)</span></div></div>';
+  });
+  const abandonCount = total - paid;
+  f+='<div style="margin-top:.7rem;font-size:12.5px;color:var(--is)">➡️ '+abandonCount+' panier(s) abandonné(s). La plus grosse chute entre deux étapes = le point à corriger en priorité.</div></div>';
+  document.getElementById("abandons-funnel").innerHTML=f;
+
+  // Liste des abandons (non payés), les plus récents d'abord
+  const ab=rows.filter(r=>!r.paid);
+  const box=document.getElementById("abandons-list");
+  if(!ab.length){ box.innerHTML='<div style="color:var(--is);font-size:13px;padding:1rem;background:var(--pp);border:1px solid var(--bs);border-radius:10px">Aucun panier abandonné pour le moment. 🎉</div>'; return; }
+  let h='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:var(--is)">'
+    +'<th style="padding:8px 6px">Date</th><th style="padding:8px 6px">Client</th><th style="padding:8px 6px">Téléphone</th><th style="padding:8px 6px">E‑mail</th><th style="padding:8px 6px;text-align:center">Pers.</th><th style="padding:8px 6px">Arrêté à</th><th style="padding:8px 6px">Resté</th></tr></thead><tbody>';
+  ab.forEach(r=>{
+    const st=AB_STEPS.find(s=>s.n===Number(r.step))||{n:r.step,label:r.step_label||("étape "+r.step)};
+    const tel=(r.phone||"").replace(/\s/g,"");
+    h+='<tr style="border-top:1px solid #EDE6DA">'
+      +'<td style="padding:8px 6px;white-space:nowrap">'+abWhen(r.updated_at)+'</td>'
+      +'<td style="padding:8px 6px">'+(escF(r.name||"")||'<span style="color:var(--is)">—</span>')+(r.logged_in?' <span style="font-size:10px;color:#4A7C59">●compte</span>':'')+'</td>'
+      +'<td style="padding:8px 6px">'+(tel?'<a href="tel:'+escF(tel)+'" style="color:#7C97AC;font-weight:600">'+escF(r.phone)+'</a>':'<span style="color:var(--is)">—</span>')+'</td>'
+      +'<td style="padding:8px 6px">'+(r.email?escF(r.email):'<span style="color:var(--is)">—</span>')+'</td>'
+      +'<td style="padding:8px 6px;text-align:center">'+(r.persons||"—")+'</td>'
+      +'<td style="padding:8px 6px"><span style="background:#F3E7DA;color:#A6713F;border-radius:20px;padding:2px 9px;font-size:12px;white-space:nowrap">'+st.n+'. '+escF(st.label)+'</span></td>'
+      +'<td style="padding:8px 6px;white-space:nowrap">'+abDur(r)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
 }
 
 // ── Factures (micro-entreprise, franchise TVA art. 293 B) ──────────────────────

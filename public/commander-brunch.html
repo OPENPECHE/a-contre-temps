@@ -118,7 +118,12 @@
       </div>
       <label>Complément (étage, digicode…) — facultatif</label>
       <input class="fi" id="aExtra" placeholder="Bât. A, 2e étage, code 1234" />
-      <button class="btn ghost" id="aCheck" style="margin-top:14px;">Vérifier l'adresse</button>
+      <div class="row2" style="margin-top:0;">
+        <div><label>Votre nom</label><input class="fi" id="aName" placeholder="Nom et prénom" autocomplete="name" /></div>
+        <div><label>Téléphone</label><input class="fi" id="aPhone" type="tel" inputmode="tel" placeholder="06 …" autocomplete="tel" /></div>
+      </div>
+      <div class="sub" style="margin:-4px 0 10px;font-size:12px;">On vous prévient par SMS/appel le jour de la livraison (facultatif).</div>
+      <button class="btn ghost" id="aCheck" style="margin-top:4px;">Vérifier l'adresse</button>
       <div class="err" id="aErr"></div>
       <div class="ok" id="aOk"></div>
     </div>
@@ -174,9 +179,46 @@ var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 var MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 var SLOTS=["9h00 – 10h30","10h30 – 12h00"];
 
-var state={ persons:2, addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24 };
+var state={ persons:2, addr:null, date:null, dateLabel:"", slot:null, days:[6,0], advance:24, contactName:"", contactPhone:"" };
 var currentUser=null;
 var zone=null;
+
+/* ===== Suivi du parcours : Vercel Analytics (étape + temps) + Supabase (qui rappeler) ===== */
+window.va = window.va || function(){ (window.vaq = window.vaq || []).push(arguments); };
+var FSID; try{ FSID=localStorage.getItem("acp_fsid"); if(!FSID){ FSID=Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem("acp_fsid",FSID);} }catch(e){ FSID=Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+var T_START=Date.now(), LAST_STEP=0;
+var EV={1:"brunch_etape1_personnes",2:"brunch_etape2_adresse",3:"brunch_etape3_creneau",4:"brunch_etape4_coordonnees",5:"brunch_paye"};
+var LBL={1:"1-personnes",2:"2-adresse",3:"3-creneau",4:"4-coordonnees",5:"paye"};
+function tranche(s){ return s<30?"<30s":s<60?"30-60s":s<120?"1-2min":s<300?"2-5min":"5min+"; }
+function fval(id){ var e=document.getElementById(id); return e?(e.value||"").trim():""; }
+function knownContact(){
+  return {
+    name: fval("coName") || state.contactName || (currentUser&&currentUser.name) || "",
+    phone: (fval("coPhone") || state.contactPhone || (currentUser&&currentUser.phone) || "").replace(/\s/g,""),
+    email: fval("coMail") || (currentUser&&currentUser.email) || ""
+  };
+}
+function logFunnel(step, paid){
+  var k=knownContact();
+  var addr = state.addr ? state.addr.label : (fval("aStreet") ? (fval("aStreet")+" "+fval("aCp")+" "+fval("aCity")).trim() : "");
+  var row={ session_id:FSID, step:step, step_label:(LBL[step]||String(step)),
+    persons:state.persons, address:addr||null, slot_date:state.date||null, slot:state.slot||null,
+    name:k.name||null, phone:k.phone||null, email:k.email||null,
+    logged_in:!!currentUser, paid:!!paid, updated_at:new Date().toISOString() };
+  try{ sb("funnel_brunch",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(row)}); }catch(e){}
+}
+function markStep(n, paid){
+  LAST_STEP=n;
+  var secs=Math.round((Date.now()-T_START)/1000);
+  try{ window.va("event",{ name:(EV[n]||("brunch_"+n)), data:{ secondes:secs, tranche:tranche(secs), personnes:state.persons } }); }catch(e){}
+  logFunnel(n, !!paid);
+}
+window.addEventListener("pagehide",function(){
+  if(LAST_STEP>=1 && LAST_STEP<5){
+    var secs=Math.round((Date.now()-T_START)/1000);
+    try{ window.va("event",{ name:"brunch_abandon", data:{ etape:(LBL[LAST_STEP]||String(LAST_STEP)), secondes:secs, tranche:tranche(secs) } }); }catch(e){}
+  }
+});
 
 /* ---- Session partagée avec /mon-compte ---- */
 function loadUser(){
@@ -198,7 +240,12 @@ function setUser(u){
   prefill();
 }
 function prefill(){
+  // Reporte ce qui a été saisi à l'étape 2 (ou le compte) vers l'étape 4.
+  if(state.contactName && document.getElementById("coName") && !document.getElementById("coName").value) document.getElementById("coName").value=state.contactName;
+  if(state.contactPhone && document.getElementById("coPhone") && !document.getElementById("coPhone").value) document.getElementById("coPhone").value=state.contactPhone;
   if(!currentUser) return;
+  if(document.getElementById("aName") && !document.getElementById("aName").value) document.getElementById("aName").value=currentUser.name;
+  if(document.getElementById("aPhone") && !document.getElementById("aPhone").value) document.getElementById("aPhone").value=currentUser.phone;
   if(!document.getElementById("coName").value) document.getElementById("coName").value=currentUser.name;
   if(!document.getElementById("coPhone").value) document.getElementById("coPhone").value=currentUser.phone;
   if(!document.getElementById("coMail").value) document.getElementById("coMail").value=currentUser.email;
@@ -218,7 +265,7 @@ function show(n){
 function paintPersons(){ document.getElementById("pNb").textContent=state.persons; document.getElementById("pTotal").innerHTML=eur(UNIT*state.persons); }
 document.getElementById("pMinus").onclick=function(){ if(state.persons>1){ state.persons--; paintPersons(); } };
 document.getElementById("pPlus").onclick=function(){ if(state.persons<40){ state.persons++; paintPersons(); } };
-document.getElementById("go1").onclick=function(){ show(2); };
+document.getElementById("go1").onclick=function(){ show(2); markStep(2); };
 
 /* ---- Étape 2 : adresse + zone ---- */
 function distKm(la1,lo1,la2,lo2){ var R=6371, p=Math.PI/180; var dLa=(la2-la1)*p, dLo=(lo2-lo1)*p;
@@ -248,7 +295,7 @@ document.getElementById("aCheck").onclick=function(){
 };
 ["aStreet","aCp","aCity"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ document.getElementById("go2").disabled=true; document.getElementById("aOk").textContent=""; }); });
 document.getElementById("bk2").onclick=function(){ show(1); };
-document.getElementById("go2").onclick=function(){ buildCreneau(); show(3); };
+document.getElementById("go2").onclick=function(){ state.contactName=fval("aName"); state.contactPhone=fval("aPhone"); buildCreneau(); show(3); markStep(3); };
 
 /* ---- Étape 3 : créneau ---- */
 function upcomingDates(days, advanceH, startHour){
@@ -277,7 +324,7 @@ function buildCreneau(){
 }
 function checkCreneau(){ document.getElementById("go3").disabled=!(state.date && state.slot); }
 document.getElementById("bk3").onclick=function(){ show(2); };
-document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); prefill(); show(4); };
+document.getElementById("go3").onclick=function(){ paintRecap(); renderLogin(); prefill(); show(4); markStep(4); };
 
 /* ---- Étape 4 : coordonnées + connexion + paiement ---- */
 function paintRecap(){
@@ -354,6 +401,7 @@ document.getElementById("go4").onclick=function(){
 
 function finishOrder(info, payMethod, status, paid){
   try{ localStorage.setItem("acontretemps_phone", String(info.phone||"").replace(/\D/g,"")); }catch(e){}
+  if(paid){ try{ markStep(5, true); }catch(e){} }
   var total=UNIT*state.persons;
   var adr=state.addr.label+(state.addr.extra?" ("+state.addr.extra+")":"");
   var order={ name:info.name, email:info.mail, phone:info.phone,
@@ -409,6 +457,7 @@ renderLogin();
 loadUser();
 loadZone();
 loadRule();
+markStep(1);  // entrée dans le tunnel (étape 1)
 </script>
 </body>
 </html>
