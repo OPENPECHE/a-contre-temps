@@ -225,7 +225,34 @@ var state={ qty:2, mode:"domicile", addr:null, date:null, dateLabel:"", slot:nul
             occ:false, occCard:false, occCandle:false, occFestive:false, occMsg:"", voucher:null,
             market:null, marketId:null, marketDays:[], marketDate:null, marketDateLabel:"" };
 var currentUser=null, zone=null;
-function trk(n){ try{ if(window.va) window.va("event",{name:n}); }catch(e){} }
+/* Suivi du parcours : Vercel (étape + temps passé) + Supabase (back-office « Abandons »). */
+var FSID; try{ FSID=localStorage.getItem("acp_fsid"); if(!FSID){ FSID=Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem("acp_fsid",FSID);} }catch(e){ FSID=Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+var T_START=Date.now(), LAST_PROG=0;
+var PROG={ "1_arrivee":[1,"Arrivée"], "2_quantite":[2,"Quantité"], "3_mode_livraison":[3,"Mode / Adresse"], "3_mode_marche":[3,"Mode / Marché"], "x_hors_zone":[3,"Hors zone"], "5_creneau":[5,"Coordonnées"], "6_paiement":[6,"Paiement"], "7_commande":[7,"Payé"] };
+function trkTranche(s){ return s<30?"<30s":s<60?"30-60s":s<120?"1-2min":s<300?"2-5min":"5min+"; }
+function trkVal(id){ var e=document.getElementById(id); return e?(e.value||"").trim():""; }
+function trkContact(){ var cu=(typeof currentUser!=="undefined"&&currentUser)||null;
+  return { name: trkVal("coName")||(cu&&cu.name)||"", phone:(trkVal("coPhone")||(cu&&cu.phone)||"").replace(/\s/g,""), email: trkVal("coMail")||(cu&&cu.email)||"" }; }
+function trkFunnel(step,label,paid){
+  try{
+    var k=trkContact();
+    var addr = (state.addr&&state.addr.label) ? state.addr.label : (trkVal("aStreet") ? (trkVal("aStreet")+" "+trkVal("aCp")+" "+trkVal("aCity")).trim() : (state.market||null));
+    var row={ session_id:FSID, step:step, step_label:label, persons:state.qty,
+      address:addr||null, slot_date:state.date||state.marketDate||null, slot:state.slot||null,
+      name:k.name||null, phone:k.phone||null, email:k.email||null,
+      logged_in:!!(typeof currentUser!=="undefined"&&currentUser), paid:!!paid, updated_at:new Date().toISOString() };
+    sb("funnel_brunch",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(row)});
+  }catch(e){}
+}
+function trk(n){
+  var secs=Math.round((Date.now()-T_START)/1000);
+  try{ if(window.va) window.va("event",{name:n, data:{ secondes:secs, tranche:trkTranche(secs) }}); }catch(e){}
+  var p=PROG[n]; if(p){ if(p[0]>LAST_PROG) LAST_PROG=p[0]; trkFunnel(p[0], p[1], n==="7_commande"); }
+}
+window.addEventListener("pagehide",function(){
+  if(LAST_PROG>=1 && LAST_PROG<7){ var secs=Math.round((Date.now()-T_START)/1000);
+    try{ if(window.va) window.va("event",{name:"brunch_abandon", data:{ progression:LAST_PROG, secondes:secs, tranche:trkTranche(secs) }}); }catch(e){} }
+});
 var markets=[], marketDays={};
 var ADDONS={ s2:{ id:"s4" } };   // l'apéro peut ajouter le café gourmand (s4)
 var ADDON=null;                   // {id, name, fullName, price}
@@ -370,7 +397,7 @@ document.getElementById("aCheck").onclick=function(){
 };
 ["aStreet","aCp","aCity"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ document.getElementById("go2").disabled=true; document.getElementById("aOk").textContent=""; }); });
 document.getElementById("bk2").onclick=function(){ showPanel("pMode",2); };
-document.getElementById("go2").onclick=function(){ buildCreneau(); showPanel("p3",3); };
+document.getElementById("go2").onclick=function(){ buildCreneau(); showPanel("p3",3); trkFunnel(4,"Créneau",false); };
 
 /* ---- Créneau ---- */
 function upcomingDates(days, advanceH, startHour){
@@ -623,6 +650,7 @@ loadUser();
 loadZone();
 loadMarkets();
 loadProduct().then(function(){ paintQty(); }).catch(function(){});
+trk("1_arrivee");  // entrée dans le tunnel
 </script>
 </body>
 </html>

@@ -745,7 +745,7 @@ function goTab(name,btn){
 
 // ── Paniers abandonnés — parcours de commande brunch ───────────────────────────
 const AB_STEPS = [
-  {n:1,label:"Personnes"},{n:2,label:"Adresse"},{n:3,label:"Créneau"},{n:4,label:"Coordonnées"},{n:5,label:"Payé"}
+  {n:1,label:"Arrivée"},{n:2,label:"Quantité"},{n:3,label:"Mode / Adresse"},{n:4,label:"Créneau"},{n:5,label:"Coordonnées"},{n:6,label:"Paiement"},{n:7,label:"Payé"}
 ];
 function abDur(a){
   try{ var s=Math.max(0,Math.round((new Date(a.updated_at)-new Date(a.created_at))/1000));
@@ -765,11 +765,11 @@ function renderAbandons(rows){
   // Entonnoir
   let f='<div class="card card0" style="padding:1rem"><div style="font-weight:600;margin-bottom:.6rem">Entonnoir ('+total+' parcours)</div>';
   AB_STEPS.forEach(s=>{
-    const c = s.n===5 ? paid : reached(s.n);
+    const c = s.n===7 ? paid : reached(s.n);
     const pct = total? Math.round(c/total*100):0;
     f+='<div style="display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px">'
       +'<div style="width:110px;color:var(--is)">'+s.n+'. '+escF(s.label)+'</div>'
-      +'<div style="flex:1;background:#EDE6DA;border-radius:6px;height:16px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(s.n===5?"#4A7C59":"#7C97AC")+'"></div></div>'
+      +'<div style="flex:1;background:#EDE6DA;border-radius:6px;height:16px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(s.n===7?"#4A7C59":"#7C97AC")+'"></div></div>'
       +'<div style="width:86px;text-align:right"><b>'+c+'</b> <span style="color:var(--is)">('+pct+'%)</span></div></div>';
   });
   const abandonCount = total - paid;
