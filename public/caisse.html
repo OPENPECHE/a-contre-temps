@@ -289,17 +289,32 @@ function sumSales(arr){
     (s.items||[]).forEach(function(l){ t.cost += (Number(l.cost)||0)*(Number(l.qty)||0); }); });
   return t;
 }
-function pendingDayTotals(){   // ventes en file locale datées d'aujourd'hui
+var dayRows = [];   // toutes les ventes du jour (cloud), tous lieux, pour la répartition
+function todaysPending(){   // ventes en file locale datées d'aujourd'hui (tous lieux)
   var ms=new Date(); ms.setHours(0,0,0,0); ms=ms.getTime();
-  var q=LS.get("caisse_queue", []).filter(function(s){ return new Date(s.created_at).getTime()>=ms; });
-  return sumSales(q);
+  return LS.get("caisse_queue", []).filter(function(s){ return new Date(s.created_at).getTime()>=ms; });
+}
+function pendingDayTotals(){  // + filtré sur le lieu courant (le compteur suit le marché en cours)
+  return sumSales(todaysPending().filter(function(s){ return !currentLieu || (s.lieu||"")===currentLieu; }));
+}
+function recomputeServerDay(){   // serverDay = ventes cloud du jour, filtrées sur le lieu courant
+  var sel = currentLieu ? dayRows.filter(function(r){ return (r.lieu||"")===currentLieu; }) : dayRows;
+  var t = sumSales(sel); t.date = todayKey(); serverDay = t;
 }
 function refreshDayFromCloud(){
   if(!navigator.onLine) return;
-  sbFetch("caisse_ventes?created_at=gte."+encodeURIComponent(dayStartISO())+"&select=total,payment_method,items&limit=5000")
+  sbFetch("caisse_ventes?created_at=gte."+encodeURIComponent(dayStartISO())+"&select=total,payment_method,items,lieu&limit=5000")
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(rows){ if(!Array.isArray(rows)) return; var t=sumSales(rows); t.date=todayKey(); serverDay=t; renderDay(); })
+    .then(function(rows){ if(!Array.isArray(rows)) return; dayRows=rows; recomputeServerDay(); renderDay(); })
     .catch(function(){ /* on garde le compteur local */ });
+}
+/* Répartition du jour par lieu (cloud + ventes locales en attente), pour les jours à 2 marchés. */
+function dayBreakdownByLieu(){
+  var rows = dayRows.concat(todaysPending());
+  var by = {};
+  rows.forEach(function(r){ var l=r.lieu||"(sans lieu)"; (by[l]=by[l]||[]).push(r); });
+  return Object.keys(by).map(function(l){ var t=sumSales(by[l]); t.lieu=l; t.total=t.especes+t.carte+t.sumup; return t; })
+    .sort(function(a,b){ return b.total-a.total; });
 }
 /* File de ventes : on relit toujours le localStorage avant d'écrire, pour ne pas
    écraser les ventes ajoutées par une autre fenêtre ouverte en même temps. */
@@ -1039,7 +1054,7 @@ function renderDay(){
   strip.innerHTML =
       '<div><b>'+eur(disp.especes)+'</b>Espèces</div>'
     + '<div><b>'+eur(disp.carte+disp.sumup)+'</b>Carte</div>'
-    + '<div><b>'+eur(tot)+'</b>Total ('+disp.count+')</div>'
+    + '<div><b>'+eur(tot)+'</b>Total ('+disp.count+')'+(currentLieu?' · '+esc(currentLieu):'')+'</div>'
     + (disp.cost>0 ? '<div><b style="color:var(--gn,#4A7C59)">'+eur(marge)+'</b>Marge</div>' : '');
 }
 /* ───────────────── Export du journal de caisse (Excel) ───────────────── */
@@ -1100,6 +1115,7 @@ function setLieu(name){
   LS.set("caisse_lieu", currentLieu);
   if (currentLieu && lieuxConnus.indexOf(currentLieu)<0){ lieuxConnus.push(currentLieu); LS.set("caisse_lieux", lieuxConnus); }
   updateLieuLabel();
+  recomputeServerDay(); renderDay();   // le "CA du jour" suit le marché sélectionné
 }
 function loadLieux(){
   if(!navigator.onLine) return;
@@ -1271,17 +1287,26 @@ document.getElementById("btnStats").onclick = function(){
 };
 
 document.getElementById("btnDay").onclick = function(){
-  var tot = today.especes+today.carte+today.sumup;
+  var allDay = sumSales(dayRows.concat(todaysPending()));   // tous lieux confondus (cloud + en attente)
+  var tot = allDay.especes+allDay.carte+allDay.sumup;
+  var pend = LS.get("caisse_queue", []).length;
+  var brk = dayBreakdownByLieu();
+  var brkHtml = (brk.length>1) ? (
+      '<div style="border-top:1px dashed var(--bs);margin:10px 0;"></div>'
+    + '<div class="sub" style="margin-bottom:2px;">Répartition par lieu :</div>'
+    + brk.map(function(b){ return line("📍 "+esc(b.lieu)+" ("+b.count+")", b.total); }).join("")
+  ) : "";
   var ov = document.createElement("div"); ov.className="ov";
-  ov.innerHTML = '<div class="card"><h3>Journée du '+ (today.date||"") +'</h3>'
-    + '<div class="sub">Récapitulatif encaissé aujourd\'hui.</div>'
-    + line("Espèces", today.especes) + line("Carte (terminal + manuel)", today.carte+today.sumup)
+  ov.innerHTML = '<div class="card"><h3>Journée du '+ todayKey() +'</h3>'
+    + '<div class="sub">Récapitulatif encaissé aujourd\'hui'+(brk.length>1?' — '+brk.length+' lieux':'')+'.</div>'
+    + line("Espèces", allDay.especes) + line("Carte (terminal + manuel)", allDay.carte+allDay.sumup)
     + '<div style="border-top:2px solid var(--bs);margin:10px 0;"></div>'
-    + line("TOTAL", tot) + '<div class="sub" style="margin-top:4px;">'+today.count+' vente(s) · '+queue.length+' en attente de synchro</div>'
-    + (today.cost>0 ? '<div style="border-top:1px dashed var(--bs);margin:10px 0;"></div>'
-        + line("Coût de revient (matières + charges var.)", today.cost||0)
-        + '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:16px;color:var(--gn,#4A7C59);"><span><b>Marge sur coût variable</b></span><b>'+eur(tot-(today.cost||0))+'</b></div>'
-        + '<div class="sub" style="font-size:11.5px;">'+(tot>0?Math.round((tot-(today.cost||0))/tot*100):0)+' % du CA · hors main-d\'œuvre (coûts de revient du back-office)</div>' : '')
+    + line("TOTAL", tot) + '<div class="sub" style="margin-top:4px;">'+allDay.count+' vente(s) · '+pend+' en attente de synchro</div>'
+    + brkHtml
+    + (allDay.cost>0 ? '<div style="border-top:1px dashed var(--bs);margin:10px 0;"></div>'
+        + line("Coût de revient (matières + charges var.)", allDay.cost||0)
+        + '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:16px;color:var(--gn,#4A7C59);"><span><b>Marge sur coût variable</b></span><b>'+eur(tot-(allDay.cost||0))+'</b></div>'
+        + '<div class="sub" style="font-size:11.5px;">'+(tot>0?Math.round((tot-(allDay.cost||0))/tot*100):0)+' % du CA · hors main-d\'œuvre (coûts de revient du back-office)</div>' : '')
     + '<div style="border-top:1px solid var(--bs);margin:14px 0 8px;"></div>'
     + '<div class="sub" style="margin-bottom:8px;">Exporter le journal de caisse (Excel) :</div>'
     + '<div class="row"><button class="big ghost" id="exM">Ce mois</button><button class="big ghost" id="exL">Mois dernier</button></div>'
