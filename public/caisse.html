@@ -624,7 +624,17 @@ function recordSale(method, extra){
   syncQueue();
   promptLoyalty();
 }
-function postSales(arr){ return sbFetch("caisse_ventes", { method:"POST", body: JSON.stringify(arr) }); }
+/* PostgREST (PGRST102) exige que TOUTES les ventes d'un même lot aient exactement
+   les mêmes clés. Une vente SumUp (sumup_tx_id), une vente fidélité (phone) et une
+   vente espèces n'ont pas les mêmes champs → tout le lot était rejeté (400) et plus
+   rien ne remontait. On uniformise les clés (union, champs manquants à null). */
+function normalizeBatch(arr){
+  if(!arr || arr.length<2) return arr;
+  var keys={}; arr.forEach(function(o){ for(var k in o){ if(Object.prototype.hasOwnProperty.call(o,k)) keys[k]=1; } });
+  var all=Object.keys(keys);
+  return arr.map(function(o){ var r={}; all.forEach(function(k){ r[k] = Object.prototype.hasOwnProperty.call(o,k) ? o[k] : null; }); return r; });
+}
+function postSales(arr){ return sbFetch("caisse_ventes", { method:"POST", body: JSON.stringify(normalizeBatch(arr)) }); }
 function syncQueue(){
   if (!navigator.onLine || syncQueue._busy) return;
   queue = LS.get("caisse_queue", []);                       // relire (autres fenêtres)
