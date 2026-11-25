@@ -303,9 +303,16 @@ function loadArticles(){
 function baseName(name){ var s=String(name||""); var i=s.indexOf(" - "); return (i>0 ? s.slice(0,i) : s).trim(); }
 function variantLabel(name){ var s=String(name||""); var i=s.indexOf(" - "); return (i>0 ? s.slice(i+3) : s).trim(); }
 var groupMap = {};
+var FREE_TILE = '<div class="cat">Divers</div><div class="grid">'
+  + '<button class="art" id="artFree" style="background:#A6713F"><span class="n">✏️ Prix libre</span><span class="p">montant au choix</span></button>'
+  + '</div>';
+function bindFreeTile(box){ var ff=box.querySelector("#artFree"); if(ff) ff.onclick=freePricePrompt; }
 function renderArticles(){
   var box = document.getElementById("articles");
-  if (!articles.length){ box.innerHTML = '<div class="tk-empty">Aucun article marché. Ajoutez des produits dans le back-office et cochez « Afficher sur le marché ».</div>'; return; }
+  if (!articles.length){
+    box.innerHTML = FREE_TILE + '<div class="tk-empty">Aucun autre article marché. Ajoutez des produits dans le back-office et cochez « Afficher sur le marché ».</div>';
+    bindFreeTile(box); return;
+  }
   var cats = {}; var order = [];
   articles.forEach(function(a){ var c=a.category||"Articles"; if(!cats[c]){cats[c]=[];order.push(c);} cats[c].push(a); });
   groupMap = {}; var gi = 0;
@@ -331,9 +338,43 @@ function renderArticles(){
     });
     html += '</div>';
   });
-  box.innerHTML = html;
+  box.innerHTML = html + FREE_TILE;
   box.querySelectorAll(".art[data-id]").forEach(function(b){ b.addEventListener("click", function(){ addToTicket(b.getAttribute("data-id")); }); });
   box.querySelectorAll(".art[data-group]").forEach(function(b){ b.addEventListener("click", function(){ openDeclinaisons(groupMap[b.getAttribute("data-group")]); }); });
+  bindFreeTile(box);
+}
+/* ───────── Prix libre : article dont on saisit le montant (et un libellé) ───────── */
+function freePricePrompt(){
+  var ov=document.createElement("div"); ov.className="ov";
+  ov.innerHTML='<div class="card">'
+    +'<h3 style="text-align:center;">✏️ Prix libre</h3>'
+    +'<div class="sub" style="text-align:center;margin-top:2px;">Saisissez le montant, et un libellé si besoin.</div>'
+    +'<label style="font-size:12px;color:var(--is);margin-top:14px;display:block;text-align:center;">Montant (€)</label>'
+    +'<input class="fi" id="fpEur" inputmode="decimal" placeholder="0,00" style="font-size:34px;text-align:center;margin-top:6px;" />'
+    +'<input class="fi" id="fpLbl" placeholder="Libellé (optionnel) — ex : Divers, Pain spécial…" style="margin-top:12px;" />'
+    +'<div id="fpCalc" style="text-align:center;margin-top:16px;min-height:30px;"></div>'
+    +'<button class="big ok" id="fpGo" style="margin-top:8px;" disabled>Ajouter</button>'
+    +'<button class="big ghost" id="fpCancel" style="margin-top:10px;">Annuler</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  var inp=ov.querySelector("#fpEur"), lbl=ov.querySelector("#fpLbl"), go=ov.querySelector("#fpGo"), calc=ov.querySelector("#fpCalc");
+  function amount(){ return Math.round((parseFloat(String(inp.value).replace(",",".").replace(/[^\d.]/g,""))||0)*100)/100; }
+  function paint(){ var v=amount();
+    if(v>0){ calc.innerHTML='<b style="color:var(--bd);font-size:26px;">'+eur(v)+'</b>'; go.disabled=false; }
+    else { calc.innerHTML='<span style="color:var(--is);font-size:13px;">Saisissez un montant.</span>'; go.disabled=true; }
+  }
+  function add(){ var v=amount(); if(v<=0) return; ov.remove();
+    var name=(lbl.value||"").trim() || "Prix libre";
+    ticket.push({ id:"f"+(++lineSeq), name:name, price:v, cost:0, qty:1 });
+    renderTicket();
+  }
+  inp.addEventListener("input", paint);
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter" && amount()>0){ go.click(); } });
+  lbl.addEventListener("keydown", function(e){ if(e.key==="Enter" && amount()>0){ go.click(); } });
+  ov.querySelector("#fpCancel").onclick=function(){ ov.remove(); };
+  go.onclick=add;
+  paint();
+  setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
 }
 /* Menu des déclinaisons d'un pain (baguette, 500 g, 1 kg, au poids…) */
 function openDeclinaisons(prods){
