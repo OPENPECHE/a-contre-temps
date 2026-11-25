@@ -240,7 +240,8 @@ function loadPinHash(){
 var articles = LS.get("caisse_articles_cache", []);
 var ticket = [];           // {id,name,price,qty}
 var queue = LS.get("caisse_queue", []);      // ventes non synchronisées
-var today = LS.get("caisse_today", {date:"", especes:0, carte:0, sumup:0, count:0, cost:0});
+var today = LS.get("caisse_today", {date:"", especes:0, carte:0, sumup:0, count:0, cost:0});  // repli hors-ligne
+var serverDay = null;       // totaux du jour recalculés depuis le cloud (source de vérité quand en ligne)
 var lastSale = null;
 var discount = { mode:null, value:0 };   // mode: null | 'pct' | 'eur'
 var currentLieu = LS.get("caisse_lieu", "");
@@ -260,15 +261,58 @@ var SELLER = {
 };
 
 /* ───────────────── Réseau ───────────────── */
-function setNet(){
+function updateNetLabel(){
   var on = navigator.onLine;
-  var el = document.getElementById("net");
-  el.className = "net " + (on ? "on" : "off");
-  document.getElementById("netLabel").textContent = on ? (queue.length ? ("En ligne · "+queue.length+" à sync") : "En ligne") : "Hors ligne";
-  if (on) { syncQueue(); flushLoyalty(); }
+  var el = document.getElementById("net"); if(el) el.className = "net " + (on ? "on" : "off");
+  var n = (LS.get("caisse_queue", [])||[]).length;
+  var lab = document.getElementById("netLabel");
+  if(lab) lab.textContent = on ? (n ? ("En ligne · "+n+" à sync") : "En ligne") : "Hors ligne";
+}
+function setNet(){
+  updateNetLabel();
+  if (navigator.onLine) { syncQueue(); flushLoyalty(); refreshDayFromCloud(); }
 }
 window.addEventListener("online", setNet);
 window.addEventListener("offline", setNet);
+
+/* ─── Totaux du jour partagés (cloud) + file de ventes résistante au multi-fenêtres ───
+   Le « CA du jour » n'est plus un compteur propre à chaque fenêtre : quand on est en
+   ligne, il est recalculé depuis la base (identique sur toutes les fenêtres/appareils),
+   plus les ventes encore en attente de synchro sur cet appareil. Hors-ligne, on retombe
+   sur le compteur local. */
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function dayStartISO(){ var d=new Date(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString(); }
+function sumSales(arr){
+  var t={ especes:0, carte:0, sumup:0, count:0, cost:0 };
+  (arr||[]).forEach(function(s){ var pm=s.payment_method; if(t[pm]==null) t[pm]=0;
+    t[pm]+=(Number(s.total)||0); t.count++;
+    (s.items||[]).forEach(function(l){ t.cost += (Number(l.cost)||0)*(Number(l.qty)||0); }); });
+  return t;
+}
+function pendingDayTotals(){   // ventes en file locale datées d'aujourd'hui
+  var ms=new Date(); ms.setHours(0,0,0,0); ms=ms.getTime();
+  var q=LS.get("caisse_queue", []).filter(function(s){ return new Date(s.created_at).getTime()>=ms; });
+  return sumSales(q);
+}
+function refreshDayFromCloud(){
+  if(!navigator.onLine) return;
+  sbFetch("caisse_ventes?created_at=gte."+encodeURIComponent(dayStartISO())+"&select=total,payment_method,items&limit=5000")
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(rows){ if(!Array.isArray(rows)) return; var t=sumSales(rows); t.date=todayKey(); serverDay=t; renderDay(); })
+    .catch(function(){ /* on garde le compteur local */ });
+}
+/* File de ventes : on relit toujours le localStorage avant d'écrire, pour ne pas
+   écraser les ventes ajoutées par une autre fenêtre ouverte en même temps. */
+function pushToQueue(sale){
+  var q=LS.get("caisse_queue", []);
+  if(!q.some(function(s){ return s.local_id===sale.local_id; })) q.push(sale);
+  queue=q; LS.set("caisse_queue", queue);
+}
+function removeFromQueue(ids){
+  var set={}; (ids||[]).forEach(function(id){ set[id]=1; });
+  queue=LS.get("caisse_queue", []).filter(function(s){ return !set[s.local_id]; });
+  LS.set("caisse_queue", queue);
+}
 
 /* ───────────────── Articles ─────────────────
    Source unique : les produits « marché » gérés dans le back-office (table products,
@@ -556,8 +600,8 @@ function recordSale(method, extra){
   today[method] = (today[method]||0) + sale.total; today.count++;
   today.cost = (today.cost||0) + its.reduce(function(s,l){ return s + (Number(l.cost)||0)*(Number(l.qty)||0); }, 0);
   LS.set("caisse_today", today);
-  // File de synchro
-  queue.push(sale); LS.set("caisse_queue", queue);
+  // File de synchro (relit le localStorage pour ne pas écraser une autre fenêtre)
+  pushToQueue(sale);
   lastSale = sale; var bd = document.getElementById("btnDoc"); if (bd){ bd.disabled = false; bd.style.opacity = 1; }
   ticket = []; discount = { mode:null, value:0 }; renderTicket(); renderDay();
   document.body.classList.remove("noteopen");
@@ -565,14 +609,33 @@ function recordSale(method, extra){
   syncQueue();
   promptLoyalty();
 }
+function postSales(arr){ return sbFetch("caisse_ventes", { method:"POST", body: JSON.stringify(arr) }); }
 function syncQueue(){
-  if (!navigator.onLine || !queue.length || syncQueue._busy) return;
+  if (!navigator.onLine || syncQueue._busy) return;
+  queue = LS.get("caisse_queue", []);                       // relire (autres fenêtres)
+  if (!queue.length) return;
+  var lock = LS.get("caisse_sync_lock", 0);
+  if (Date.now() - lock < 10000) return;                    // une autre fenêtre synchronise
+  LS.set("caisse_sync_lock", Date.now());
   syncQueue._busy = true;
   var batch = queue.slice();
-  sbFetch("caisse_ventes", { method:"POST", body: JSON.stringify(batch) })
+  function done(){ LS.set("caisse_sync_lock", 0); syncQueue._busy = false; updateNetLabel(); refreshDayFromCloud(); }
+  postSales(batch)
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(){ queue = queue.slice(batch.length); LS.set("caisse_queue", queue); syncQueue._busy=false; setNet(); })
-    .catch(function(){ syncQueue._busy=false; });
+    .then(function(){ removeFromQueue(batch.map(function(s){ return s.local_id; })); done(); })
+    .catch(function(){
+      // Le lot a échoué : on envoie vente par vente pour qu'une seule vente fautive
+      // ne bloque plus toute la file (cause probable de l'arrêt des remontées).
+      var ok = [], i = 0;
+      (function next(){
+        if (i >= batch.length){ if (ok.length) removeFromQueue(ok); done(); return; }
+        var s = batch[i++];
+        postSales([s])
+          .then(function(r){ if(r.ok) ok.push(s.local_id); })
+          .catch(function(){})
+          .then(next);
+      })();
+    });
 }
 
 /* ───────────────── Fidélité (carte à tampons par n° de téléphone) ───────────────── */
@@ -958,16 +1021,26 @@ function showSumUp(tot, label){
 
 /* ───────────────── Totaux du jour ───────────────── */
 function renderDay(){
-  var d = new Date().toISOString().slice(0,10);
-  if (today.date !== d) today = { date:d, especes:0, carte:0, sumup:0, count:0, cost:0 };
+  var d = todayKey();
+  if (today.date !== d){ today = { date:d, especes:0, carte:0, sumup:0, count:0, cost:0 }; LS.set("caisse_today", today); }
+  // Source de vérité : le cloud (si en ligne et chargé) + les ventes encore en attente de synchro.
+  // Sinon, repli sur le compteur local de cette fenêtre.
+  var disp;
+  var closed = LS.get("caisse_day_closed","") === d;   // clôture manuelle de cet appareil pour aujourd'hui
+  if (!closed && navigator.onLine && serverDay && serverDay.date===d){
+    var p = pendingDayTotals();
+    disp = { especes:serverDay.especes+p.especes, carte:serverDay.carte+p.carte, sumup:serverDay.sumup+p.sumup, count:serverDay.count+p.count, cost:serverDay.cost+p.cost };
+  } else {
+    disp = today;
+  }
   var strip = document.getElementById("dayStrip");
-  var tot = today.especes+today.carte+today.sumup;
-  var marge = tot - (today.cost||0);
+  var tot = disp.especes+disp.carte+disp.sumup;
+  var marge = tot - (disp.cost||0);
   strip.innerHTML =
-      '<div><b>'+eur(today.especes)+'</b>Espèces</div>'
-    + '<div><b>'+eur(today.carte+today.sumup)+'</b>Carte</div>'
-    + '<div><b>'+eur(tot)+'</b>Total ('+today.count+')</div>'
-    + (today.cost>0 ? '<div><b style="color:var(--gn,#4A7C59)">'+eur(marge)+'</b>Marge</div>' : '');
+      '<div><b>'+eur(disp.especes)+'</b>Espèces</div>'
+    + '<div><b>'+eur(disp.carte+disp.sumup)+'</b>Carte</div>'
+    + '<div><b>'+eur(tot)+'</b>Total ('+disp.count+')</div>'
+    + (disp.cost>0 ? '<div><b style="color:var(--gn,#4A7C59)">'+eur(marge)+'</b>Marge</div>' : '');
 }
 /* ───────────────── Export du journal de caisse (Excel) ───────────────── */
 function itemsSummary(items){ try{ return (items||[]).map(function(l){ return l.qty+"× "+l.name; }).join(", "); }catch(e){ return ""; } }
@@ -1229,8 +1302,9 @@ document.getElementById("btnDay").onclick = function(){
   ov.querySelector("#exT").onclick=function(){ exportJournal("all"); };
   ov.querySelector("#dR").onclick=function(){
     if (confirm("Clôturer la journée ? Les ventes restent enregistrées dans la base, seul le compteur du jour est remis à zéro.")){
-      today = { date:new Date().toISOString().slice(0,10), especes:0, carte:0, sumup:0, count:0, cost:0 };
-      LS.set("caisse_today", today); renderDay(); ov.remove(); toast("Journée clôturée");
+      today = { date:todayKey(), especes:0, carte:0, sumup:0, count:0, cost:0 };
+      LS.set("caisse_today", today); LS.set("caisse_day_closed", todayKey()); serverDay=null;
+      renderDay(); ov.remove(); toast("Journée clôturée");
     }
   };
 };
@@ -1598,6 +1672,8 @@ updateBorneLabel();
 buildPad(); drawDots(); loadPinHash(); updateCaisseLabel();
 if (!pinNeeded()) document.getElementById("pinScreen").classList.add("hidden");
 renderArticles(); renderTicket(); renderDay(); setNet(); loadArticles(); updateLieuLabel(); loadLieux();
+refreshDayFromCloud();                                              // CA du jour partagé dès l'ouverture
+setInterval(function(){ if(navigator.onLine){ syncQueue(); refreshDayFromCloud(); } }, 30000);  // garde la file vidée + total à jour
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/caisse-sw.js", { scope:"/caisse" }).catch(function(){});
 
 /* ───────── Douchette code-barres (USB = clavier rapide + Entrée) ───────── */
