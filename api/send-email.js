@@ -59,7 +59,7 @@ function shell(bodyHtml) {
         </td></tr>
         <tr><td style="padding:18px 28px;border-top:1px solid #D6DFE5;text-align:center;">
           <p style="font-size:11px;color:#8A857E;line-height:1.7;margin:0;">
-            <strong style="color:#3E5A70;">à contre-temps — Fournil vivant</strong><br>
+            <strong style="color:#7894AC;">à contre-temps — Fournil vivant</strong><br>
             4 rue des Vignes Rousses, 63360 Gerzat · SIRET 108 719 105 00018<br>
             TVA non applicable, art. 293 B du CGI<br>
             <a href="https://fournilvivant.fr" style="color:#7C97AC;">fournilvivant.fr</a> · ${OWNER}<br>
@@ -92,14 +92,14 @@ function recapBlock(invoiceNum, items, total, note) {
 }
 
 function siteButton(label = "VOIR LE SITE", href = "https://fournilvivant.fr") {
-  return `<a href="${href}" style="display:inline-block;padding:.75rem 1.5rem;background:#3E5A70;color:#F3E7DA;border-radius:999px;font-size:11px;letter-spacing:.12em;text-decoration:none;">${label}</a>`;
+  return `<a href="${href}" style="display:inline-block;padding:.75rem 1.5rem;background:#7894AC;color:#F3E7DA;border-radius:999px;font-size:11px;letter-spacing:.12em;text-decoration:none;">${label}</a>`;
 }
 function reviewBlock() {
   return `
       <div style="margin:1.5rem 0 0;padding:1.1rem 1.25rem;background:#F3E7DA;border-radius:10px;text-align:center;">
         <div style="font-size:20px;color:#F4B400;letter-spacing:3px;">★★★★★</div>
         <p style="font-size:13.5px;color:rgba(43,41,37,.75);margin:.4rem 0 .8rem;">Vous avez aimé&nbsp;? Votre avis nous aide énormément.</p>
-        <a href="https://www.fournilvivant.fr/avis" style="display:inline-block;padding:.7rem 1.4rem;background:#3E5A70;color:#F3E7DA;border-radius:999px;font-size:12px;letter-spacing:.06em;text-decoration:none;font-weight:600;">Laisser un avis Google</a>
+        <a href="https://www.fournilvivant.fr/avis" style="display:inline-block;padding:.7rem 1.4rem;background:#7894AC;color:#F3E7DA;border-radius:999px;font-size:12px;letter-spacing:.06em;text-decoration:none;font-weight:600;">Laisser un avis Google</a>
       </div>`;
 }
 
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
     const items = Array.isArray(d.items) ? d.items : [];
     const rows = items.map((it) => `<tr><td style="padding:4px 0;font-size:13px;color:#2B2925">${esc(it.label)}${it.qty ? (" × " + (Number(it.qty) || 0)) : ""}</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#2B2925">${money((Number(it.qty) || 0) * (Number(it.pu) || 0))}</td></tr>`).join("");
     const body = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">✓ Devis accepté 🎉</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 .5rem;">✓ Devis accepté 🎉</h1>
       <p style="font-size:14px;color:rgba(43,41,37,.78);line-height:1.8;margin:0 0 1rem;"><strong>${esc(d.client_name)}</strong> vient d'accepter le devis <strong>${esc(d.number)}</strong> en ligne.</p>
       <div style="background:#F3E7DA;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px;color:rgba(43,41,37,.8);line-height:1.9">
         <div>Devis : <strong>${esc(d.number)}</strong></div>
@@ -130,12 +130,12 @@ export default async function handler(req, res) {
         ${d.service_date ? `<div>Prestation prévue : ${esc(d.service_date)}</div>` : ""}
       </div>
       <table style="width:100%;border-collapse:collapse;border-top:1px solid #E6DFD3;border-bottom:1px solid #E6DFD3;margin-bottom:.6rem">${rows}</table>
-      <p style="font-size:16px;font-weight:600;color:#3E5A70;text-align:right;margin:0 0 1rem">Total : ${money(d.total)}</p>
+      <p style="font-size:16px;font-weight:600;color:#7894AC;text-align:right;margin:0 0 1rem">Total : ${money(d.total)}</p>
       <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7">Tu peux le convertir en facture dans le back-office : <strong>Devis → ➡ Facturer</strong>.</p>`;
     let svc = "";
     try { if (d.service_date) svc = new Date(String(d.service_date).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch { /* */ }
     const clientBody = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Merci pour votre validation 🙏</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 10px;">Merci pour votre validation 🙏</h1>
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 16px;">Bonjour,<br>Nous avons bien reçu votre <strong>accord</strong> pour le devis <strong>${esc(d.number)}</strong> d'un montant de <strong>${money(d.total)}</strong>. Merci de votre confiance&nbsp;!</p>
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 16px;">Nous revenons <strong>rapidement vers vous</strong> pour organiser la planification de votre prestation${svc ? ` (prévue le ${esc(svc)})` : ""}.</p>
       <p style="font-size:13px;color:#555;line-height:1.7;margin:0;">À très bientôt,<br>Mylène — à contre-temps, Fournil vivant</p>`;
@@ -194,7 +194,7 @@ export default async function handler(req, res) {
         const dsc = String(it.desc == null ? "" : it.desc).trim();
         // En-tête identique pour toutes les prestations : désignation + qté × prix unitaire = montant
         const head = `${label}<span style="font-weight:normal;color:#6B6B6B;"> — ${qty} &times; ${pu} = ${montant}</span>`;
-        const headRow = `<div style="padding:12px 14px;background:#F3E7DA;font-size:14px;color:#3E5A70;font-weight:bold;">${head}</div>`;
+        const headRow = `<div style="padding:12px 14px;background:#F3E7DA;font-size:14px;color:#7894AC;font-weight:bold;">${head}</div>`;
         if (dsc) {
           return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;overflow:hidden;">${headRow}<div style="padding:11px 14px;font-size:13px;color:#4A443E;line-height:1.7;border-top:1px solid #E6DFD3;">${fmtDesc(dsc)}</div></div>`;
         }
@@ -204,13 +204,13 @@ export default async function handler(req, res) {
     const att = d.attachment && d.attachment.content ? { filename: String(d.attachment.filename || "piece-jointe"), content: String(d.attachment.content) } : null;
     const attNote = att ? `<p style="font-size:13px;color:#4A443E;line-height:1.7;margin:0 0 16px;">📎 Un document est joint à cet e-mail : <strong>${esc(att.filename)}</strong>.</p>` : "";
     const body = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Votre devis est prêt</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 10px;">Votre devis est prêt</h1>
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 ${msgHtml ? "14px" : "18px"};">Bonjour,</p>
       ${msgHtml}
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Voici votre devis <strong>${esc(d.number)}</strong>${presTxt}, d'un montant de <strong>${money(d.total)}</strong>.</p>
       ${presBlock}
       ${attNote}
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:10px auto 34px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:10px auto 34px;"><tr><td align="center" bgcolor="#7894AC" style="border-radius:10px;mso-padding-alt:15px 32px;">
         <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:10px;white-space:nowrap;"><span style="color:#FFFFFF;">Voir et valider mon devis &nbsp;&rarr;</span></a>
       </td></tr></table>
       <div style="line-height:24px;font-size:24px;height:24px;">&nbsp;</div>
@@ -237,7 +237,7 @@ export default async function handler(req, res) {
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
     const row = (k, v) => v ? `<tr><td style="padding:4px 12px 4px 0;color:#8A857E;font-size:13px;white-space:nowrap;vertical-align:top;">${k}</td><td style="padding:4px 0;color:#2B2925;font-size:13px;"><strong>${esc(v)}</strong></td></tr>` : "";
     const body = `
-      <h1 style="font-size:20px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Nouvelle demande événementielle 🎉</h1>
+      <h1 style="font-size:20px;font-weight:400;color:#7894AC;margin:0 0 10px;">Nouvelle demande événementielle 🎉</h1>
       <p style="font-size:14px;color:#4A443E;margin:0 0 16px;">Reçue via la page « Événementiel » du site.</p>
       <table style="border-collapse:collapse;margin:0 0 16px;">${row("Nom", c.name)}${row("E-mail", c.email)}${row("Téléphone", c.phone)}${row("Type d'événement", c.eventtype)}${row("Date", c.date)}${row("Nombre d'invités", c.guests)}</table>
       ${c.message ? `<p style="font-size:14px;color:#4A443E;line-height:1.7;margin:0;"><strong>Message :</strong><br>${esc(c.message).replace(/\n/g, "<br>")}</p>` : ""}`;
@@ -257,19 +257,19 @@ export default async function handler(req, res) {
     if (!v.code) return res.status(400).json({ error: "Code manquant" });
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
     const money = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
-    const codeBox = `<div style="text-align:center;margin:8px auto 18px;"><div style="display:inline-block;background:#3E5A70;color:#F3E7DA;border-radius:12px;padding:16px 28px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;letter-spacing:.08em;">${esc(v.code)}</div></div>`;
+    const codeBox = `<div style="text-align:center;margin:8px auto 18px;"><div style="display:inline-block;background:#7894AC;color:#F3E7DA;border-radius:12px;padding:16px 28px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;letter-spacing:.08em;">${esc(v.code)}</div></div>`;
     const valueLine = `<p style="font-size:14px;color:#4A443E;text-align:center;margin:0 0 6px;">Valeur&nbsp;: <strong>${money(v.amount)}</strong>${v.persons ? ` · brunch pour <strong>${esc(String(v.persons))} personne${Number(v.persons) > 1 ? "s" : ""}</strong>` : ""}</p>`;
     const how = `<p style="font-size:13px;color:#555;line-height:1.7;text-align:center;margin:12px 0 0;">À utiliser sur <a href="https://www.fournilvivant.fr/commander-instant?p=s1" style="color:#7C97AC;">fournilvivant.fr</a> : saisissez le code au moment du paiement. Valable sur toute commande.</p>`;
     const msgLine = v.message ? `<p style="font-size:13px;color:#4A443E;font-style:italic;text-align:center;margin:0 0 6px;">« ${esc(v.message)} »</p>` : "";
     const emails = [];
     const buyerBody = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;text-align:center;">Votre bon cadeau est prêt 🎁</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 10px;text-align:center;">Votre bon cadeau est prêt 🎁</h1>
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 14px;text-align:center;">Merci ${esc(v.buyer_name || "")}&nbsp;! Voici votre bon cadeau${v.recipient_name ? ` pour <strong>${esc(v.recipient_name)}</strong>` : ""}.</p>
       ${valueLine}${codeBox}${msgLine}${how}`;
     emails.push(sendEmail(RESEND_API_KEY, { from: FROM, to: [v.buyer_email], reply_to: OWNER, subject: `Votre bon cadeau ${v.code} — à contre-temps`, html: shell(buyerBody) }));
     if (v.recipient_email) {
       const recBody = `
-        <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;text-align:center;">Vous avez reçu un bon cadeau 🎁</h1>
+        <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 10px;text-align:center;">Vous avez reçu un bon cadeau 🎁</h1>
         <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 14px;text-align:center;">${esc(v.buyer_name || "Quelqu'un")} vous offre un brunch à contre-temps&nbsp;!</p>
         ${valueLine}${codeBox}${msgLine}${how}`;
       emails.push(sendEmail(RESEND_API_KEY, { from: FROM, to: [v.recipient_email], reply_to: v.buyer_email || OWNER, subject: `${v.buyer_name || "Quelqu'un"} vous offre un brunch 🎁`, html: shell(recBody) }));
@@ -287,7 +287,7 @@ export default async function handler(req, res) {
     if (!client.email) return res.status(400).json({ error: "Missing client email" });
     const firstName = (client.name || "").split(" ")[0] || "";
     const body = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Bienvenue chez à contre-temps 🌾</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 .5rem;">Bienvenue chez à contre-temps 🌾</h1>
       <p style="font-size:14px;color:rgba(43,41,37,.7);line-height:1.8;margin:0 0 1.25rem;">
         Bonjour ${firstName}, votre compte est créé — merci et bienvenue dans la maison&nbsp;!
         Vous pouvez désormais commander en quelques clics et retrouver vos informations à chaque fois.
@@ -334,10 +334,10 @@ export default async function handler(req, res) {
     try { when = new Date(t.created_at || Date.now()).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch { /* */ }
     const rows = items.map((l) => `<tr><td style="padding:5px 0;font-size:13px;color:#2B2925;">${Number(l.qty) || 1}× ${esc(l.name)}</td><td style="padding:5px 0;font-size:13px;text-align:right;color:#2B2925;white-space:nowrap;">${money((Number(l.price) || 0) * (Number(l.qty) || 0))}</td></tr>`).join("");
     const body = `
-      <h1 style="font-size:20px;font-weight:400;color:#3E5A70;margin:0 0 .2rem;">Votre ticket 🧾</h1>
+      <h1 style="font-size:20px;font-weight:400;color:#7894AC;margin:0 0 .2rem;">Votre ticket 🧾</h1>
       <p style="font-size:12.5px;color:rgba(43,41,37,.6);margin:0 0 1rem;">à contre-temps — Fournil vivant · ${esc(when)}</p>
       <table style="width:100%;border-collapse:collapse;border-top:1px solid #E6DFD3;border-bottom:1px solid #E6DFD3;">${rows}</table>
-      <p style="font-size:18px;font-weight:600;color:#3E5A70;text-align:right;margin:.8rem 0 .15rem;">Total : ${money(t.total)}</p>
+      <p style="font-size:18px;font-weight:600;color:#7894AC;text-align:right;margin:.8rem 0 .15rem;">Total : ${money(t.total)}</p>
       <p style="font-size:12px;color:rgba(43,41,37,.6);text-align:right;margin:0 0 1.3rem;">Payé en ${esc(PAY[t.payment_method] || t.payment_method || "")}</p>
       <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;">Merci pour votre achat et à très vite, sur le marché ou en livraison&nbsp;!</p>`;
     const html = shell(body);
@@ -370,7 +370,7 @@ export default async function handler(req, res) {
       ? new Date(order.pickup_date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
       : "";
     const body = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Votre commande est confirmée ✓</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 .5rem;">Votre commande est confirmée ✓</h1>
       <p style="font-size:14px;color:rgba(43,41,37,.7);line-height:1.8;margin:0 0 1.25rem;">
         Bonjour ${firstName}, bonne nouvelle&nbsp;: votre commande est confirmée et prise en compte.
         Nous la préparons avec soin${quand ? ` pour le <strong>${quand}</strong>` : ""}${retrait ? ` — ${retrait}` : ""}.
@@ -406,7 +406,7 @@ export default async function handler(req, res) {
 
   // ── Accusé de réception (type "received", par défaut) ──────────────────────
   const clientBody = `
-      <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 .5rem;">Commande reçue ✓</h1>
+      <h1 style="font-size:22px;font-weight:400;color:#7894AC;margin:0 0 .5rem;">Commande reçue ✓</h1>
       <p style="font-size:14px;color:rgba(43,41,37,.6);margin:0 0 1.5rem;">Bonjour ${firstName}, merci pour votre commande ! Nous revenons vers vous très vite pour la confirmer.</p>
       ${recapBlock(invoiceNum, items, total, order.note)}
       <p style="font-size:13px;color:rgba(43,41,37,.7);line-height:1.7;margin-bottom:1.5rem;">
@@ -429,7 +429,7 @@ export default async function handler(req, res) {
   const fmtO = (n) => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",") + " €";
   const itemRowsO = items.map((it) => `
         <tr>
-          <td style="text-align:center;padding:10px 8px;font-size:18px;font-weight:bold;color:#3E5A70;border-bottom:1px solid #eee;white-space:nowrap;">${Number(it.qty) || 1}&nbsp;×</td>
+          <td style="text-align:center;padding:10px 8px;font-size:18px;font-weight:bold;color:#7894AC;border-bottom:1px solid #eee;white-space:nowrap;">${Number(it.qty) || 1}&nbsp;×</td>
           <td style="text-align:left;padding:10px 8px;font-size:14px;color:#2B2925;border-bottom:1px solid #eee;">${escO(it.name)}</td>
           <td style="text-align:right;padding:10px 8px;font-size:13px;color:#555;border-bottom:1px solid #eee;white-space:nowrap;">${fmtO((Number(it.price) || 0) * (Number(it.qty) || 0))}</td>
         </tr>`).join("");
@@ -438,7 +438,7 @@ export default async function handler(req, res) {
 <html lang="fr"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#EDF0F3;font-family:Arial,sans-serif;">
   <div style="max-width:560px;margin:30px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #D6DFE5;">
-    <div style="background:#3E5A70;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:10px;">
+    <div style="background:#7894AC;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:10px;">
       <img src="https://www.fournilvivant.fr/heart-cream.png" width="26" alt="" style="display:inline-block;" />
       <p style="font-size:16px;color:#F3E7DA;margin:0;">Nouvelle commande — ${invoiceNum}</p>
     </div>
@@ -460,7 +460,7 @@ export default async function handler(req, res) {
         <tr>
           <td></td>
           <td style="text-align:right;padding:11px 8px;font-weight:bold;font-size:15px;color:#2B2925;">Total</td>
-          <td style="text-align:right;padding:11px 8px;font-weight:bold;font-size:16px;color:#3E5A70;white-space:nowrap;">${fmtO(order.total)}</td>
+          <td style="text-align:right;padding:11px 8px;font-weight:bold;font-size:16px;color:#7894AC;white-space:nowrap;">${fmtO(order.total)}</td>
         </tr>
       </table>
       ${order.note ? `<p style="font-size:13px;color:#555;margin-top:1rem;padding:.75rem;background:#F3E7DA;border-radius:6px;"><strong>Note :</strong> ${order.note}</p>` : ""}
