@@ -21,8 +21,8 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--sans);color:var(--ink);background:var(--pp);line-height:1.6;padding:16px;}
   .wrap{max-width:620px;margin:0 auto;}
-  .band{background:var(--bd);color:var(--cr);border-radius:12px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;}
-  .band img{height:36px;}
+  .band{background:#7894AC;color:var(--cr);border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
+  .band img{height:58px;width:auto;border-radius:6px;display:block;}
   .band .bL{display:flex;align-items:center;gap:10px;}
   .band .n{font-family:var(--serif);font-style:italic;font-size:21px;line-height:1;}
   .band .s{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(243,231,218,.75);margin-top:3px;}
@@ -55,7 +55,7 @@
   @media print{ .noprint{display:none!important;} body{padding:8mm;background:#fff;} .card{border:none;box-shadow:none;padding:0;margin-top:14px;} .band{border-radius:0;} .foot{margin-top:28px;} .tot{-webkit-print-color-adjust:exact;print-color-adjust:exact;} .band{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }
 </style></head>
 <body><div class="wrap" id="wrap">
-  <div class="band"><div class="bL"><img src="/heart-cream.png" alt=""><div><div class="n">à contre-temps</div><div class="s">Fournil vivant · Créateur d'instants</div></div></div>
+  <div class="band"><div class="bL"><img src="/logo-email.jpg" alt="à contre-temps"></div>
     <div><div class="ft">Devis</div><div class="no" id="d-no"></div></div></div>
   <div id="content"><div class="card muted" style="text-align:center">Chargement du devis…</div></div>
   <div class="foot">à contre-temps — Fournil vivant · 4 rue des Vignes Rousses, 63360 Gerzat · SIRET 108 719 105 00018<br>TVA non applicable, art. 293 B du CGI · Devis gratuit, valable 30 jours.</div>
@@ -105,7 +105,7 @@ function render(){
   var body;
   if(f.signed_at){
     body='<div class="card"><div class="ok">✓ Devis accepté le '+dateHeureFR(f.signed_at)+(f.signed_name?' par <b>'+esc(f.signed_name)+'</b>':'')+'</div>'
-      +'<p class="muted" style="text-align:center;margin-top:14px">Votre accord a bien été <b>transmis à à contre-temps</b>. Merci&nbsp;! Nous revenons vers vous pour la suite. 🥐</p></div>';
+      +'<p class="muted" style="text-align:center;margin-top:14px">Votre accord a bien été <b>transmis à à contre-temps</b>. Merci&nbsp;! Nous revenons vers vous pour la suite.</p></div>';
   } else {
     body='<div class="card noprint"><h2>Valider ce devis</h2>'
       +'<p class="muted" style="margin-bottom:14px">Vérifiez le devis ci-dessus. Pour l\'accepter, indiquez votre nom puis cliquez sur «&nbsp;Bon pour accord&nbsp;». Votre acceptation nous sera transmise immédiatement.</p>'
