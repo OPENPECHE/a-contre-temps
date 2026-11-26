@@ -997,23 +997,19 @@ function printInvoiceDoc(f){
   w.document.write(invoiceHTML(f)); w.document.close();
   setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 450);
 }
-// Génère et télécharge directement un PDF prêt à partager (html2pdf chargé dans une iframe isolée).
+// PDF propre = impression native du navigateur (texte vectoriel, coupures entre les lignes,
+// en-tête de tableau répété, pas de page blanche). On imprime dans une iframe cachée pour
+// éviter les bloqueurs de pop-up ; l'utilisateur choisit « Enregistrer au format PDF ».
 function downloadInvoicePdf(f){
   if(!f) return;
-  var name=(f.type==="devis"?"Devis-":"Facture-")+String(f.number||"doc").replace(/[^\w-]/g,"")+".pdf";
   var ifr=document.createElement("iframe");
-  ifr.style.cssText="position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;";
+  ifr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
   document.body.appendChild(ifr);
-  var inject='<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></scr'+'ipt>'
-    +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){try{'
-    +'html2pdf().set({margin:0,filename:'+JSON.stringify(name)+',image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"]}}).from(document.body).save().then(function(){parent.postMessage("acp-pdf-done","*");}).catch(function(){parent.postMessage("acp-pdf-fail","*");});'
-    +'}catch(e){parent.postMessage("acp-pdf-fail","*");}},500);});</scr'+'ipt>';
-  var htmlDoc=invoiceHTML(f).replace("</body>", inject+"</body>");
-  var doc=ifr.contentWindow.document; doc.open(); doc.write(htmlDoc); doc.close();
+  var doc=ifr.contentWindow.document; doc.open(); doc.write(invoiceHTML(f)); doc.close();
   var done=false;
-  var onMsg=function(e){ if(e.data==="acp-pdf-done"||e.data==="acp-pdf-fail"){ done=true; window.removeEventListener("message",onMsg); if(e.data==="acp-pdf-fail"){ try{printInvoiceDoc(f);}catch(_){} } setTimeout(function(){ try{ifr.remove();}catch(_){} },800); } };
-  window.addEventListener("message",onMsg);
-  setTimeout(function(){ if(!done){ window.removeEventListener("message",onMsg); try{ifr.remove();}catch(_){} } }, 20000);
+  function go(){ if(done) return; done=true; try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){ try{ printInvoiceDoc(f); }catch(_){} } setTimeout(function(){ try{ ifr.remove(); }catch(_){} }, 3000); }
+  ifr.onload=function(){ setTimeout(go, 500); };          // attend le logo
+  setTimeout(go, 1500);                                    // filet de sécurité
 }
 function downloadPdfById(id){ var f=INVOICES.find(function(x){return x.id===id;}); if(f) downloadInvoicePdf(f); }
 function copyDevisLink(id){
