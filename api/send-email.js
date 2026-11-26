@@ -169,14 +169,22 @@ export default async function handler(req, res) {
     const presTxt = stitle ? ` pour <strong>${esc(stitle)}${svc ? ` du ${esc(svc)}` : ""}</strong>` : (svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : "");
     const msg = String(d.message == null ? "" : d.message).trim();
     const msgHtml = msg ? `<p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;white-space:pre-line;">${esc(msg)}</p>` : "";
-    // Descriptif des prestations : **gras**, *italique*, ++agrandi++ (échappé puis converti)
-    const fmtDesc = (s) => {
+    // Descriptif : nouveau format HTML (éditeur visuel) nettoyé, ou ancien texte à marqueurs.
+    const fmtDescMarkers = (s) => {
       let t = esc(s);
-      t = t.replace(/\+\+([^+]+)\+\+/g, '<span style="font-size:1.15em">$1</span>');
-      t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-      t = t.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+      t = t.replace(/\+\+([^+\n]+)\+\+/g, '<span style="font-size:1.15em">$1</span>');
+      t = t.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+      t = t.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
       return t.replace(/\n/g, "<br>");
     };
+    const sanitizeDesc = (html) => {
+      let s = String(html == null ? "" : html);
+      s = s.replace(/<\/?(script|style|iframe|object|embed|link|meta|title|head|html|body)[^>]*>/gi, "");
+      s = s.replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+      s = s.replace(/(href|src)\s*=\s*("\s*javascript:[^"]*"|'\s*javascript:[^']*')/gi, "");
+      return s;
+    };
+    const fmtDesc = (s) => (/<[a-z!/][\s\S]*>/i.test(String(s || "")) ? sanitizeDesc(s) : fmtDescMarkers(s));
     const items = Array.isArray(d.items) ? d.items : [];
     const presBlock = items.length ? (
       `<p style="font-size:12px;color:#8A857E;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;">Détail des prestations</p>` +

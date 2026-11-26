@@ -65,8 +65,11 @@
 var SB="https://jxxgafyqfbnqieiqltcn.supabase.co", KEY="sb_publishable_MdBMZ53hCDINWEu8jfsrzQ_sOeIuqZo";
 function H(){return {"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"};}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
-/* Descriptif : **gras**, *italique*, ++agrandi++ (échappé d'abord, puis marqueurs). */
-function fmtDesc(s){var t=esc(s);t=t.replace(/\+\+([^+]+)\+\+/g,'<span style="font-size:1.3em">$1</span>');t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');t=t.replace(/\*([^*]+)\*/g,'<em>$1</em>');return t.replace(/\n/g,"<br>");}
+/* Ancien format texte (marqueurs) → conservé pour les anciens devis. */
+function fmtDesc(s){var t=esc(s);t=t.replace(/\+\+([^+\n]+)\+\+/g,'<span style="font-size:1.3em">$1</span>');t=t.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');t=t.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');return t.replace(/\n/g,"<br>");}
+function sanitizeDesc(html){var s=String(html==null?"":html);s=s.replace(/<\/?(script|style|iframe|object|embed|link|meta|title|head|html|body)[^>]*>/gi,"");s=s.replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,"");s=s.replace(/(href|src)\s*=\s*("\s*javascript:[^"]*"|'\s*javascript:[^']*')/gi,"");return s;}
+function looksHtml(s){return /<[a-z!\/][\s\S]*>/i.test(String(s||""));}
+function descToHtml(v){v=String(v==null?"":v);return looksHtml(v)?sanitizeDesc(v):fmtDesc(v);}
 function eur(n){return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €";}
 function dateFR(d){ if(!d) return ""; try{return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});}catch(e){return d;} }
 function dateHeureFR(d){ try{return new Date(d).toLocaleString("fr-FR",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch(e){return d;} }
@@ -85,7 +88,7 @@ function fail(msg){ document.getElementById("content").innerHTML='<div class="ca
 
 function itemsTable(f){
   var its=Array.isArray(f.items)?f.items:[];
-  var rows=its.map(function(it){ return '<tr><td>'+esc(it.label)+(it.desc?'<div class="d">'+fmtDesc(it.desc)+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right;white-space:nowrap">'+eur((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>'; }).join("");
+  var rows=its.map(function(it){ return '<tr><td>'+esc(it.label)+(it.desc?'<div class="d">'+descToHtml(it.desc)+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right;white-space:nowrap">'+eur((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>'; }).join("");
   return '<table><thead><tr><th>Prestation</th><th style="text-align:center">Qté</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
