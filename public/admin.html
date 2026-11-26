@@ -823,6 +823,22 @@ function applyDocKind(){
   const save=document.getElementById("if-save"); if(save&&!editingInvId) save.textContent= isD?"Créer le devis (PDF)":"Créer & télécharger (PDF)";
 }
 function escF(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+/* Mise en forme simple du descriptif : **gras**, *italique*, ++agrandi++. On échappe
+   d'abord le HTML (sécurité), puis on convertit les marqueurs. */
+function fmtDescF(s){
+  let t=escF(s);
+  t=t.replace(/\+\+([^+]+)\+\+/g,'<span style="font-size:1.3em">$1</span>');
+  t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  t=t.replace(/\*([^*]+)\*/g,'<em>$1</em>');
+  return t.replace(/\n/g,"<br>");
+}
+/* Barre d'outils : entoure la sélection du descriptif par les marqueurs. */
+function wrapDesc(btn,pre,post){
+  const ta=btn.closest(".invline").querySelector(".il-desc"); if(!ta) return;
+  const s=ta.selectionStart, e=ta.selectionEnd, v=ta.value, sel=v.slice(s,e)||"texte";
+  ta.value=v.slice(0,s)+pre+sel+post+v.slice(e);
+  ta.focus(); ta.selectionStart=s+pre.length; ta.selectionEnd=s+pre.length+sel.length;
+}
 function eurF(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace(".",",")+" €"; }
 function fmtDateFR(d){ if(!d) return ""; try{ return new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"}); }catch(e){ return d; } }
 function invTotal(items){ return (items||[]).reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.pu)||0),0); }
@@ -842,7 +858,13 @@ function addInvLine(label,qty,pu,desc){
     +'<input class="fi il-qty" type="number" step="1" min="0" style="width:60px;text-align:center" value="'+(qty!=null?qty:1)+'" oninput="calcInvTotal()" title="Quantité">'
     +'<input class="fi il-pu" type="number" step="0.01" min="0" style="width:92px;text-align:right" placeholder="PU €" value="'+(pu!=null?pu:"")+'" oninput="calcInvTotal()" title="Prix unitaire net">'
     +'<button class="btn bg bsm" style="padding:4px 8px" onclick="this.closest(\'.invline\').remove();calcInvTotal()">✕</button></div>'
-    +'<textarea class="fi il-desc" rows="2" style="width:100%;margin-top:5px;resize:vertical;font-size:12px;line-height:1.5" placeholder="Descriptif (optionnel) — ex. pains au levain, viennoiseries &amp; brioches maison, café/thé, bar à pains, salé &amp; sucré du fournil…">'+escF(desc||"")+'</textarea>';
+    +'<div style="display:flex;gap:5px;align-items:center;margin-top:5px">'
+      +'<button type="button" class="btn bg bsm" style="padding:2px 9px;font-weight:700" title="Gras (sélection)" onclick="wrapDesc(this,\'**\',\'**\')">G</button>'
+      +'<button type="button" class="btn bg bsm" style="padding:2px 9px;font-style:italic" title="Italique (sélection)" onclick="wrapDesc(this,\'*\',\'*\')">I</button>'
+      +'<button type="button" class="btn bg bsm" style="padding:2px 9px" title="Agrandir (sélection)" onclick="wrapDesc(this,\'++\',\'++\')">A+</button>'
+      +'<span style="font-size:11px;color:var(--is)">sélectionnez un mot puis cliquez</span>'
+    +'</div>'
+    +'<textarea class="fi il-desc" rows="2" style="width:100%;margin-top:4px;resize:vertical;font-size:12px;line-height:1.5" placeholder="Descriptif (optionnel) — ex. pains au levain, viennoiseries &amp; brioches maison, café/thé, bar à pains, salé &amp; sucré du fournil…">'+escF(desc||"")+'</textarea>';
   box.appendChild(row);
 }
 function calcInvTotal(){
@@ -994,7 +1016,7 @@ async function sendDevisLink(id){
   if(msg===null) return;
   var url=location.origin+"/devis?id="+id;
   try{
-    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,service_title:f.service_title,url:url,message:msg}})});
+    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,service_title:f.service_title,items:Array.isArray(f.items)?f.items:[],url:url,message:msg}})});
     const j=await r.json().catch(function(){return {};});
     if(r.ok && j.ok!==false){ alert("Devis envoyé à "+f.client_email+" ✓"); }
     else { alert("L'envoi a échoué.\n"+(j.error?JSON.stringify(j.error):"Réessaie dans un instant.")); }
@@ -1020,18 +1042,18 @@ async function convertToInvoice(id){
 }
 function invoiceHTML(f){
   const items=Array.isArray(f.items)?f.items:[];
-  const rows=items.map(it=>'<tr><td>'+escF(it.label)+(it.desc?'<div style="font-size:11px;color:#777;margin-top:4px;line-height:1.5">'+escF(it.desc).replace(/\n/g,"<br>")+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right">'+eurF(it.pu)+'</td><td style="text-align:right">'+eurF((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>').join("");
+  const rows=items.map(it=>'<tr><td>'+escF(it.label)+(it.desc?'<div style="font-size:11px;color:#777;margin-top:4px;line-height:1.5">'+fmtDescF(it.desc)+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right">'+eurF(it.pu)+'</td><td style="text-align:right">'+eurF((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>').join("");
   const dep=Number(f.deposit)||0, net=(Number(f.total)||0)-dep, isDevis=f.type==="devis";
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'+(isDevis?"Devis":"Facture")+' '+escF(f.number)+' — à contre-temps</title><style>'
     +'@page{size:A4;margin:0;} *{box-sizing:border-box;margin:0;padding:0;} body{font-family:Georgia,"Times New Roman",serif;color:#2B2925;font-size:13px;line-height:1.5;padding:15mm;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
     +'.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;} @media print{.band,th,.tot .grand{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
-    +'.sheet{min-height:calc(297mm - 42mm);display:flex;flex-direction:column;} .bottom{margin-top:auto;padding-top:22px;}'
+    +'.sheet{} .bottom{padding-top:22px;}'
     +'.band{background:#3E5A70;color:#F3E7DA;border-radius:10px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}'
     +'.band .bL{display:flex;align-items:center;gap:12px;} .band img{width:44px;height:auto;} .band .n{font-size:24px;font-style:italic;line-height:1;} .band .s{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,231,218,.8);margin-top:4px;}'
     +'.band .bR{text-align:right;} .band .ft{font-size:26px;font-style:italic;line-height:1;} .band .no{font-size:11px;letter-spacing:.04em;color:rgba(243,231,218,.85);margin-top:5px;}'
     +'.subrow{display:flex;justify-content:space-between;gap:24px;margin-bottom:34px;} .em{font-size:12px;color:#555;line-height:1.7;} .em b{color:#3E5A70;} .dates{font-size:12px;color:#555;margin-top:10px;}'
     +'.box{background:#F3E7DA;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.6;max-width:300px;margin:0;} .box h4{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#A6713F;margin-bottom:4px;}'
-    +'table{width:100%;border-collapse:collapse;margin:26px 0 16px;} th{background:#3E5A70;color:#F3E7DA;font-size:11px;text-align:left;padding:11px 12px;font-weight:normal;} td{padding:13px 12px;border-bottom:1px solid #E6DFD3;vertical-align:top;}'
+    +'table{width:100%;border-collapse:collapse;margin:26px 0 16px;} thead{display:table-header-group;} tr{page-break-inside:auto;} th{background:#3E5A70;color:#F3E7DA;font-size:11px;text-align:left;padding:11px 12px;font-weight:normal;} td{padding:13px 12px;border-bottom:1px solid #E6DFD3;vertical-align:top;}'
     +'.tot{display:flex;justify-content:flex-end;} .tot .t{min-width:270px;} .tot .r{display:flex;justify-content:space-between;padding:4px 10px;} .tot .grand{background:#3E5A70;color:#F3E7DA;border-radius:6px;font-size:16px;padding:9px 10px;margin-top:3px;}'
     +'.legal{margin-top:24px;font-size:10.5px;color:#666;line-height:1.6;border-top:1px solid #E6DFD3;padding-top:12px;} .legal b{color:#3E5A70;} .foot{margin-top:16px;text-align:center;font-size:10px;color:#999;} .accord{margin-top:14px;border:1px solid #D6DFE5;border-radius:8px;padding:14px 16px;font-size:11.5px;color:#444;line-height:2;}'
     +'</style></head><body><div class="sheet"><div class="top">'

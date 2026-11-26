@@ -169,11 +169,35 @@ export default async function handler(req, res) {
     const presTxt = stitle ? ` pour <strong>${esc(stitle)}${svc ? ` du ${esc(svc)}` : ""}</strong>` : (svc ? ` pour votre prestation du <strong>${esc(svc)}</strong>` : "");
     const msg = String(d.message == null ? "" : d.message).trim();
     const msgHtml = msg ? `<p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;white-space:pre-line;">${esc(msg)}</p>` : "";
+    // Descriptif des prestations : **gras**, *italique*, ++agrandi++ (échappé puis converti)
+    const fmtDesc = (s) => {
+      let t = esc(s);
+      t = t.replace(/\+\+([^+]+)\+\+/g, '<span style="font-size:1.15em">$1</span>');
+      t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      t = t.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+      return t.replace(/\n/g, "<br>");
+    };
+    const items = Array.isArray(d.items) ? d.items : [];
+    const presBlock = items.length ? (
+      `<p style="font-size:12px;color:#8A857E;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;">Détail des prestations</p>` +
+      items.map((it) => {
+        const label = esc(it.label || "");
+        const qty = Number(it.qty) || 1;
+        const montant = money((Number(it.qty) || 0) * (Number(it.pu) || 0));
+        const dsc = String(it.desc == null ? "" : it.desc).trim();
+        const head = `${label}<span style="font-weight:normal;color:#6B6B6B;"> — ${qty}&times; · ${montant}</span>`;
+        if (dsc) {
+          return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;overflow:hidden;"><details><summary style="cursor:pointer;padding:12px 14px;background:#F3E7DA;font-size:14px;color:#3E5A70;font-weight:bold;">${head} &nbsp;<span style="color:#A6713F;">▾&nbsp;voir le détail</span></summary><div style="padding:12px 14px;font-size:13px;color:#4A443E;line-height:1.7;">${fmtDesc(dsc)}</div></details></div>`;
+        }
+        return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;padding:12px 14px;font-size:14px;color:#3E5A70;font-weight:bold;">${head}</div>`;
+      }).join("")
+    ) : "";
     const body = `
       <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Votre devis est prêt 🥐</h1>
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 ${msgHtml ? "14px" : "18px"};">Bonjour,</p>
       ${msgHtml}
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Voici votre devis <strong>${esc(d.number)}</strong>${presTxt}, d'un montant de <strong>${money(d.total)}</strong>.</p>
+      ${presBlock}
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:10px auto 34px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
         <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:10px;white-space:nowrap;"><span style="color:#FFFFFF;">Voir et valider mon devis &nbsp;&rarr;</span></a>
       </td></tr></table>
