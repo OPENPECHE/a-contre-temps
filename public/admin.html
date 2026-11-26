@@ -1017,19 +1017,47 @@ function copyDevisLink(id){
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ alert("Lien de signature copié — à envoyer au client :\n\n"+url); },function(){ prompt("Copiez le lien de signature :", url); }); }
   else { prompt("Copiez le lien de signature :", url); }
 }
-async function sendDevisLink(id){
+function fileToBase64(file){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ var s=String(r.result||""); var i=s.indexOf(","); res(i>=0?s.slice(i+1):s); }; r.onerror=rej; r.readAsDataURL(file); }); }
+function sendDevisLink(id){
   var f=INVOICES.find(x=>x.id===id); if(!f) return;
   if(!f.client_email){ alert("Ce devis n'a pas d'e-mail client.\nClique sur « Modifier » pour ajouter l'adresse, puis réessaie."); return; }
-  if(!confirm("Envoyer le devis "+f.number+" à "+f.client_email+" ?\n\nLe client recevra un e-mail à l'en-tête à contre-temps avec un bouton pour consulter et valider son devis.")) return;
-  var msg=prompt("Message personnalisé (optionnel) — il s'affichera en haut de l'e-mail, juste après « Bonjour, ».\n\nLaisse vide pour aucun message. (Annuler = ne pas envoyer)", "");
-  if(msg===null) return;
-  var url=location.origin+"/devis?id="+id;
-  try{
-    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,service_title:f.service_title,items:Array.isArray(f.items)?f.items:[],url:url,message:msg}})});
-    const j=await r.json().catch(function(){return {};});
-    if(r.ok && j.ok!==false){ alert("Devis envoyé à "+f.client_email+" ✓"); }
-    else { alert("L'envoi a échoué.\n"+(j.error?JSON.stringify(j.error):"Réessaie dans un instant.")); }
-  }catch(e){ alert("Échec de l'envoi : "+(e.message||e)); }
+  var ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;";
+  ov.innerHTML='<div style="background:#fff;border-radius:14px;max-width:460px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    +'<h3 style="margin:0 0 4px;color:#3E5A70">Envoyer le devis '+escF(f.number)+'</h3>'
+    +'<div style="font-size:13px;color:#666;margin-bottom:14px">À : <b>'+escF(f.client_email||"")+'</b></div>'
+    +'<label style="font-size:12px;color:#666">Message personnalisé (optionnel) — affiché en haut de l\'e-mail.</label>'
+    +'<textarea id="sd-msg" rows="4" style="width:100%;margin-top:4px;border:1px solid #e5ddce;border-radius:8px;padding:8px 10px;font-size:13px;resize:vertical" placeholder="Bonjour, voici votre devis…"></textarea>'
+    +'<label style="font-size:12px;color:#666;display:block;margin-top:12px">📎 Pièce jointe (optionnel) — PDF, image, document… (max 8 Mo)</label>'
+    +'<input id="sd-file" type="file" style="margin-top:4px;font-size:13px;width:100%">'
+    +'<div id="sd-fileinfo" style="font-size:12px;color:#888;margin-top:4px"></div>'
+    +'<div id="sd-err" style="font-size:12px;color:#c0392b;min-height:16px;margin-top:8px"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'
+      +'<button id="sd-cancel" class="btn bg bsm" style="padding:8px 14px">Annuler</button>'
+      +'<button id="sd-send" class="btn bp bsm" style="padding:8px 16px">Envoyer ✉️</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  var fileInput=ov.querySelector("#sd-file"), info=ov.querySelector("#sd-fileinfo"), err=ov.querySelector("#sd-err");
+  var MAXB=8*1024*1024;
+  fileInput.addEventListener("change", function(){ var fl=fileInput.files&&fileInput.files[0]; if(fl){ info.textContent=fl.name+" ("+Math.round(fl.size/1024)+" Ko)"; err.textContent=fl.size>MAXB?"Fichier trop lourd (max 8 Mo).":""; } else { info.textContent=""; } });
+  ov.querySelector("#sd-cancel").onclick=function(){ ov.remove(); };
+  ov.querySelector("#sd-send").onclick=async function(){
+    var btn=this; err.textContent="";
+    var fl=fileInput.files&&fileInput.files[0];
+    if(fl && fl.size>MAXB){ err.textContent="Fichier trop lourd (max 8 Mo)."; return; }
+    btn.disabled=true; btn.textContent="Envoi…";
+    var attachment=null;
+    try{ if(fl){ attachment={ filename:fl.name, content:await fileToBase64(fl) }; } }
+    catch(e){ err.textContent="Lecture du fichier impossible."; btn.disabled=false; btn.textContent="Envoyer ✉️"; return; }
+    var url=location.origin+"/devis?id="+f.id;
+    var msg=(ov.querySelector("#sd-msg").value||"").trim();
+    try{
+      const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"devis_link",devis:{number:f.number,client_name:f.client_name,client_email:f.client_email,total:f.total,service_date:f.service_date,service_title:f.service_title,items:Array.isArray(f.items)?f.items:[],url:url,message:msg,attachment:attachment}})});
+      const j=await r.json().catch(function(){return {};});
+      if(r.ok && j.ok!==false){ ov.remove(); alert("Devis envoyé à "+f.client_email+" ✓"); }
+      else { err.textContent="L'envoi a échoué. "+(j.error?JSON.stringify(j.error):"Réessaie dans un instant."); btn.disabled=false; btn.textContent="Envoyer ✉️"; }
+    }catch(e){ err.textContent="Échec : "+(e.message||e); btn.disabled=false; btn.textContent="Envoyer ✉️"; }
+  };
 }
 async function convertToInvoice(id){
   const d=INVOICES.find(x=>x.id===id); if(!d) return;

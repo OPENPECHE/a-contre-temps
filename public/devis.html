@@ -88,8 +88,8 @@ function fail(msg){ document.getElementById("content").innerHTML='<div class="ca
 
 function itemsTable(f){
   var its=Array.isArray(f.items)?f.items:[];
-  var rows=its.map(function(it){ return '<tr><td>'+esc(it.label)+(it.desc?'<div class="d">'+descToHtml(it.desc)+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right;white-space:nowrap">'+eur((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>'; }).join("");
-  return '<table><thead><tr><th>Prestation</th><th style="text-align:center">Qté</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  var rows=its.map(function(it){ return '<tr><td>'+esc(it.label)+(it.desc?'<div class="d">'+descToHtml(it.desc)+'</div>':'')+'</td><td style="text-align:center">'+(Number(it.qty)||0)+'</td><td style="text-align:right;white-space:nowrap">'+eur(it.pu)+'</td><td style="text-align:right;white-space:nowrap">'+eur((Number(it.qty)||0)*(Number(it.pu)||0))+'</td></tr>'; }).join("");
+  return '<table><thead><tr><th>Prestation</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unitaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function render(){

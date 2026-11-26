@@ -191,21 +191,27 @@ export default async function handler(req, res) {
       items.map((it) => {
         const label = esc(it.label || "");
         const qty = Number(it.qty) || 1;
+        const pu = money(it.pu);
         const montant = money((Number(it.qty) || 0) * (Number(it.pu) || 0));
         const dsc = String(it.desc == null ? "" : it.desc).trim();
-        const head = `${label}<span style="font-weight:normal;color:#6B6B6B;"> — ${qty}&times; · ${montant}</span>`;
+        // En-tête identique pour toutes les prestations : désignation + qté × prix unitaire = montant
+        const head = `${label}<span style="font-weight:normal;color:#6B6B6B;"> — ${qty} &times; ${pu} = ${montant}</span>`;
+        const headRow = `<div style="padding:12px 14px;background:#F3E7DA;font-size:14px;color:#3E5A70;font-weight:bold;">${head}</div>`;
         if (dsc) {
-          return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;overflow:hidden;"><details><summary style="cursor:pointer;padding:12px 14px;background:#F3E7DA;font-size:14px;color:#3E5A70;font-weight:bold;">${head} &nbsp;<span style="color:#A6713F;">▾&nbsp;voir le détail</span></summary><div style="padding:12px 14px;font-size:13px;color:#4A443E;line-height:1.7;">${fmtDesc(dsc)}</div></details></div>`;
+          return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;overflow:hidden;">${headRow}<div style="padding:11px 14px;font-size:13px;color:#4A443E;line-height:1.7;border-top:1px solid #E6DFD3;">${fmtDesc(dsc)}</div></div>`;
         }
-        return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;padding:12px 14px;font-size:14px;color:#3E5A70;font-weight:bold;">${head}</div>`;
+        return `<div style="border:1px solid #E6DFD3;border-radius:8px;margin:0 0 10px;overflow:hidden;">${headRow}</div>`;
       }).join("")
     ) : "";
+    const att = d.attachment && d.attachment.content ? { filename: String(d.attachment.filename || "piece-jointe"), content: String(d.attachment.content) } : null;
+    const attNote = att ? `<p style="font-size:13px;color:#4A443E;line-height:1.7;margin:0 0 16px;">📎 Un document est joint à cet e-mail : <strong>${esc(att.filename)}</strong>.</p>` : "";
     const body = `
       <h1 style="font-size:22px;font-weight:400;color:#3E5A70;margin:0 0 10px;">Votre devis est prêt 🥐</h1>
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 ${msgHtml ? "14px" : "18px"};">Bonjour,</p>
       ${msgHtml}
       <p style="font-size:14px;color:#4A443E;line-height:1.8;margin:0 0 18px;">Voici votre devis <strong>${esc(d.number)}</strong>${presTxt}, d'un montant de <strong>${money(d.total)}</strong>.</p>
       ${presBlock}
+      ${attNote}
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:10px auto 34px;"><tr><td align="center" bgcolor="#3E5A70" style="border-radius:10px;mso-padding-alt:15px 32px;">
         <a href="${esc(url)}" target="_blank" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:10px;white-space:nowrap;"><span style="color:#FFFFFF;">Voir et valider mon devis &nbsp;&rarr;</span></a>
       </td></tr></table>
@@ -213,7 +219,11 @@ export default async function handler(req, res) {
       <p style="font-size:13px;color:#555;line-height:1.7;margin:0 0 6px;text-align:center;">En un clic, vous pourrez le consulter, le télécharger et donner votre <strong>bon pour accord</strong> en ligne.</p>
       <p style="font-size:12px;color:#8A857E;line-height:1.6;margin:16px 0 0;text-align:center;">Devis gratuit, valable 30 jours.<br>Si le bouton ne s'affiche pas, copiez ce lien&nbsp;:<br><a href="${esc(url)}" style="text-decoration:underline;word-break:break-all;"><span style="color:#8A857E;">${esc(url)}</span></a></p>`;
     try {
-      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [d.client_email], reply_to: OWNER, subject: `Votre devis ${d.number || ""} — à contre-temps`, html: shell(body) });
+      const atts = [];
+      const heart = await heartAttachment();
+      if (heart) atts.push(heart);
+      if (att) atts.push(att);
+      const r = await sendEmail(RESEND_API_KEY, { from: FROM, to: [d.client_email], reply_to: OWNER, subject: `Votre devis ${d.number || ""} — à contre-temps`, html: shell(body), attachments: atts });
       if (!r.ok) console.error("Resend devis_link error:", r.status, r.data);
       return res.status(200).json({ ok: r.ok, status: r.status, error: r.ok ? null : r.data });
     } catch (e) {
