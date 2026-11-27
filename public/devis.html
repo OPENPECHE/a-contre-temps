@@ -97,7 +97,7 @@ function render(){
   document.getElementById("d-no").textContent="N° "+f.number;
   var head='<div class="card"><div class="muted">Établi le '+dateFR(f.issue_date)+(f.service_title?(' · Prestation : '+esc(f.service_title)+(f.service_date?(' du '+dateFR(f.service_date)):'')):(f.service_date?(' · Prestation prévue le '+dateFR(f.service_date)):''))+'</div>'
     +'<h2 style="margin-top:6px">Devis pour '+esc(f.client_name)+'</h2>'
-    +(function(){var fa=f.client_address?('<b>Facturation :</b> '+esc(f.client_address)):'';var liv=f.delivery_address||f.client_address;var lv=liv?('<b>Livraison :</b> '+esc(String(liv).replace(/\n/g,", "))):'';if(!fa&&!lv)return '';return '<div class="muted" style="margin-top:2px;font-size:13px;line-height:1.5">'+fa+((fa&&lv)?'<br>':'')+lv+'</div>';})()
+    +(function(){var fa=f.client_address?('<b>Facturation :</b> '+esc(f.client_address)):'';var lv=f.delivery_address?('<b>Livraison :</b> '+esc(String(f.delivery_address).replace(/\n/g,", "))):'';if(!fa&&!lv)return '';return '<div class="muted" style="margin-top:2px;font-size:13px;line-height:1.5">'+fa+((fa&&lv)?'<br>':'')+lv+'</div>';})()
     +itemsTable(f)
     +'<div class="tot"><span>Montant total à payer</span><span>'+eur(f.total)+'</span></div>'
     +'<div class="muted" style="margin-top:4px;font-size:12px;text-align:right">Montant net · <b>TVA non applicable, art. 293 B du CGI</b></div>'
