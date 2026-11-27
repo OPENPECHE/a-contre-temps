@@ -46,6 +46,8 @@ alter table invoices add column if not exists signed_at   timestamptz;
 alter table invoices add column if not exists signature   text;   -- data URL PNG du tracé
 -- Nom libre de la prestation (optionnel, remplace la date affichée) :
 alter table invoices add column if not exists service_title text;
+-- Adresse de livraison (optionnelle, si différente de l'adresse de facturation) :
+alter table invoices add column if not exists delivery_address text;
 
 create index if not exists invoices_year_seq_idx on invoices(type, year, seq desc);
 

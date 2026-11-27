@@ -187,7 +187,8 @@ h1{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin-bottom:.25
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Client (nom / société)<input class="fi" id="if-client" placeholder="Ex. Entreprise Durand SARL"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">SIRET client (si pro)<input class="fi" id="if-siret" placeholder="Optionnel"></label>
-          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;grid-column:1/3">Adresse client<input class="fi" id="if-adr" placeholder="Rue, code postal, ville"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;grid-column:1/3">Adresse de facturation<input class="fi" id="if-adr" placeholder="Rue, code postal, ville"></label>
+          <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px;grid-column:1/3">Adresse de livraison (si différente)<input class="fi" id="if-delivery" placeholder="Laisser vide si identique à l'adresse de facturation"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">E-mail client<input class="fi" id="if-email" placeholder="Optionnel"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Date de prestation / vente<input class="fi" type="date" id="if-service"></label>
           <label style="font-size:12px;color:var(--is);display:flex;flex-direction:column;gap:3px">Date d'émission<input class="fi" type="date" id="if-issue"></label>
@@ -884,7 +885,7 @@ function calcInvTotal(){
   const el=document.getElementById("if-total"); if(el) el.textContent=eurF(t);
 }
 function resetInvForm(){
-  ["if-client","if-siret","if-adr","if-email","if-note","if-stitle"].forEach(id=>{const e=document.getElementById(id); if(e)e.value="";});
+  ["if-client","if-siret","if-adr","if-delivery","if-email","if-note","if-stitle"].forEach(id=>{const e=document.getElementById(id); if(e)e.value="";});
   const t=document.getElementById("if-terms"); if(t)t.value="À réception";
   const today=new Date().toISOString().slice(0,10);
   const is=document.getElementById("if-issue"); if(is)is.value=today;
@@ -902,6 +903,7 @@ function editInvoice(id){
   document.getElementById("if-client").value=f.client_name||"";
   document.getElementById("if-siret").value=f.client_siret||"";
   document.getElementById("if-adr").value=f.client_address||"";
+  {const e=document.getElementById("if-delivery"); if(e)e.value=f.delivery_address||"";}
   document.getElementById("if-email").value=f.client_email||"";
   document.getElementById("if-service").value=(f.service_date||"").slice(0,10);
   var st=document.getElementById("if-stitle"); if(st)st.value=f.service_title||"";
@@ -933,13 +935,14 @@ async function saveInvoice(){
   const total=Math.round(invTotal(items)*100)/100;
   const svc=document.getElementById("if-service").value||null;
   const adr=(document.getElementById("if-adr").value||"").trim()||null;
+  const deliv=((document.getElementById("if-delivery")||{}).value||"").trim()||null;
   const siret=(document.getElementById("if-siret").value||"").trim()||null;
   const email=(document.getElementById("if-email").value||"").trim()||null;
   const note=(document.getElementById("if-note").value||"").trim()||null;
   const terms=(document.getElementById("if-terms").value||"À réception").trim();
   const stitle=((document.getElementById("if-stitle")||{}).value||"").trim()||null;
   if(editingInvId){
-    const patch={ issue_date:issue, service_date:svc, service_title:stitle, client_name:client, client_address:adr, client_siret:siret, client_email:email, items, total, notes:note, payment_terms:terms };
+    const patch={ issue_date:issue, service_date:svc, service_title:stitle, client_name:client, client_address:adr, delivery_address:deliv, client_siret:siret, client_email:email, items, total, notes:note, payment_terms:terms };
     const pid=editingInvId;
     try{ const data=await sbFetch("invoices?id=eq."+pid,{method:"PATCH",body:JSON.stringify(patch)});
       const upd=Array.isArray(data)?data[0]:data;
@@ -956,6 +959,7 @@ async function saveInvoice(){
     service_title:stitle,
     client_name:client,
     client_address:(document.getElementById("if-adr").value||"").trim()||null,
+    delivery_address:deliv,
     client_siret:(document.getElementById("if-siret").value||"").trim()||null,
     client_email:(document.getElementById("if-email").value||"").trim()||null,
     items, total, deposit:0,
@@ -1067,7 +1071,7 @@ async function convertToInvoice(id){
   try{ const rows=await sbFetch("invoices?type=eq.facture&year=eq."+year+"&select=seq&order=seq.desc&limit=1"); if(Array.isArray(rows)&&rows[0]) seq=Number(rows[0].seq)+1; }catch(e){}
   const number=year+"-"+String(seq).padStart(3,"0");
   const row={ type:"facture", number, seq, year, issue_date:issue, service_date:d.service_date||null,
-    client_name:d.client_name, client_address:d.client_address, client_siret:d.client_siret, client_email:d.client_email,
+    client_name:d.client_name, client_address:d.client_address, delivery_address:d.delivery_address, client_siret:d.client_siret, client_email:d.client_email,
     items:d.items, total:d.total, deposit:0, notes:d.notes, payment_terms:d.payment_terms||"À réception", status:"unpaid" };
   try{
     const data=await sbFetch("invoices",{method:"POST",body:JSON.stringify(row)});
@@ -1097,10 +1101,14 @@ function invoiceHTML(f){
     +'<div class="band"><div class="bL"><img src="https://www.fournilvivant.fr/logo-email.jpg" alt="à contre-temps"></div>'
     +'<div class="bR"><div class="ft">'+(isDevis?"Devis":"Facture")+'</div><div class="no">N° '+escF(f.number)+'</div></div></div>'
     +'<div class="subrow"><div class="em"><b>'+escF(EMETTEUR.nom)+'</b><br>'+escF(EMETTEUR.adr)+'<br>SIRET '+escF(EMETTEUR.siret)+'<br>'+escF(EMETTEUR.tel)+' · '+escF(EMETTEUR.email)+'<div class="dates">'+(isDevis?'Établi le ':'Émise le ')+fmtDateFR(f.issue_date)+(f.service_title?(' · Prestation : '+escF(f.service_title)+(f.service_date?(' du '+fmtDateFR(f.service_date)):'')):(f.service_date?(' · Prestation '+(isDevis?'prévue le ':'du ')+fmtDateFR(f.service_date)):''))+'</div></div>'
-    +'<div class="box"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px;max-width:300px">'
+    +'<div class="box" style="max-width:none;margin:0"><h4>Facturé à</h4><strong>'+escF(f.client_name)+'</strong>'+(f.client_address?('<br>'+escF(f.client_address)):'')+(f.client_siret?('<br>SIRET '+escF(f.client_siret)):'')+(f.client_email?('<br>'+escF(f.client_email)):'')+'</div>'
+    +(f.delivery_address?('<div class="box" style="max-width:none;margin:0;background:#EEF2F5"><h4 style="color:#7894AC">Livré à</h4>'+escF(f.delivery_address).replace(/\n/g,"<br>")+'</div>'):'')
+    +'</div></div>'
     +'<table><thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unitaire</th><th style="text-align:right">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="tot"><div class="t">'+(dep>0?('<div class="r"><span>Total</span><span>'+eurF(f.total)+'</span></div><div class="r"><span>Acompte versé</span><span>− '+eurF(dep)+'</span></div>'):'')
-    +'<div class="r grand"><span>'+(isDevis?'Montant total':(dep>0?'Reste à payer':'Total à payer'))+'</span><span>'+eurF(net)+'</span></div></div></div>'
+    +'<div class="r grand"><span>'+(isDevis?'Montant total à payer':(dep>0?'Reste à payer':'Total à payer'))+'</span><span>'+eurF(net)+'</span></div>'
+    +'<div style="font-size:10.5px;color:#777;text-align:right;margin-top:5px;padding:0 10px">Montant net · <b style="color:#7894AC">TVA non applicable, art. 293&nbsp;B du CGI</b></div></div></div>'
     +'<div style="font-size:12px;color:#555;margin-top:18px">Conditions de règlement : '+escF(f.payment_terms||"À réception")+'.'+(f.notes?(' '+escF(f.notes)):'')+'</div>'
     +'</div><div class="bottom">'
     +(isDevis
